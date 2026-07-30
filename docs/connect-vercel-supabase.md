@@ -4,34 +4,23 @@
 
 | Schritt | Status |
 |---------|--------|
-| Supabase-Schema (alle Migrationen) | ✅ live auf `uoqlusgimvinjmajtesz` |
-| Space `SharedLife` | ✅ |
-| Auth-User Dennis `urich9696@gmail.com` | ✅ `ee77d528-db9b-4480-9501-81e044593038` |
-| Profile + Space-Mitgliedschaft (owner) | ✅ |
-| Storage-Bucket `media` + RLS | ✅ |
-| Publishable Key im Client nutzbar | ✅ |
+| Supabase-Schema + RLS + Storage | ✅ |
+| Space SharedLife + Dennis Membership | ✅ |
+| Vercel Env Vars (Supabase + Demo off + VAPID) | ✅ |
+| Auth Redirects + Signup disabled | ✅ |
+| Edge Functions deployed | ✅ `sync-mutations`, `manage-push-subscription`, `dispatch-reminders`, `export-data` |
+| Cron alle 2 Min → dispatch-reminders | ✅ |
 
-## Noch von dir (kurz)
+## App-URLs
 
-### 1) Vercel Environment Variables — ✅ erledigt
+| Umgebung | URL |
+|----------|-----|
+| Production | https://shared-life-theta.vercel.app |
+| Preview (PR) | https://shared-life-git-cursor-sharedli-e1a1ae-urich9696-1938s-projects.vercel.app |
 
-Env-Vars für Production/Preview/Development gesetzt und Redeploy ausgelöst.
-Niemals `sb_secret_…` in Vercel-Frontend-Vars.
+Login: `urich9696@gmail.com` → OTP-Code aus der E-Mail.
 
-### 2) Auth Redirect URLs
+## Optional noch
 
-https://supabase.com/dashboard/project/uoqlusgimvinjmajtesz/auth/url-configuration  
-
-- Site URL: deine Vercel Production-URL  
-- Redirects: Preview-URL + `http://localhost:5173/**`
-
-### 3) Optional: Edge Functions + Lea
-
-Für Sync/Push/Export braucht der Agent noch einen **Supabase Access Token**:  
-https://supabase.com/dashboard/account/tokens  
-
-Lea-Account: E-Mail schicken, dann wird sie als Space-Mitglied angelegt.
-
-## Sicherheit
-
-DB-Passwort und Secret-Key wurden im Chat geteilt → nach dem Go-Live unter API Keys / Database password rotieren.
+- Lea-Account: E-Mail schicken → Mitgliedschaft anlegen
+- Vercel Token / Supabase Access Token / DB-Passwort / Secret-Key nach Setup rotieren (wurden im Chat geteilt)
