@@ -24,6 +24,7 @@ import {
 } from '@/features/sync/sync-triggers'
 import { subscribeToSpaceChanges, unsubscribeFromSpaceChanges } from '@/features/sync/realtime'
 import { pullSpaceIntoDexie } from '@/features/sync/pull-space'
+import { ensureRemoteDevice } from '@/features/sync/ensure-device'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { DEMO_MODE } from '@/lib/demo'
 
@@ -101,6 +102,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     setStatus('syncing')
     setLastError(null)
     try {
+      if (!DEMO_MODE && spaceId) {
+        await ensureRemoteDevice(spaceId, session.userId)
+      }
       const result = await flushOutbox()
       await refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
       if (result.failed > 0 && result.applied === 0) {
@@ -122,7 +126,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     } finally {
       void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
     }
-  }, [session, online, pendingCount])
+  }, [session, online, pendingCount, spaceId])
 
   useEffect(() => {
     registerFlushHandler(flushNow)

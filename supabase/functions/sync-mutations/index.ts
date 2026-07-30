@@ -118,6 +118,22 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Not a member of this space' }, 403)
   }
 
+  // Gerät sicherstellen (FK mutation_receipts.device_id → devices.id)
+  const { error: deviceError } = await admin.from('devices').upsert(
+    {
+      id: mutation.deviceId,
+      space_id: mutation.spaceId,
+      user_id: user.id,
+      label: 'Unbenanntes Gerät',
+      platform: 'web',
+      last_seen_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' },
+  )
+  if (deviceError) {
+    return jsonResponse({ error: `Device registration failed: ${deviceError.message}` }, 500)
+  }
+
   const { data: existingReceipt } = await admin
     .from('mutation_receipts')
     .select('*')
