@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { QueryClient } from '@tanstack/react-query'
+import { DEMO_MODE } from '@/lib/demo'
 import { db } from '@/lib/indexed-db/db'
 import type { EntityRow } from '@/lib/indexed-db/schema'
 import { hasPendingOutboxForResource } from '@/features/sync/outbox'
@@ -23,7 +24,9 @@ async function applyEntityChange(payload: { new: EntityRow; eventType: string })
 export function subscribeToSpaceChanges(
   spaceId: string,
   queryClient: QueryClient,
-): RealtimeChannel {
+): RealtimeChannel | null {
+  if (DEMO_MODE) return null
+
   if (channel) {
     void getSupabaseClient().removeChannel(channel)
     channel = null
@@ -80,6 +83,10 @@ export function subscribeToSpaceChanges(
 }
 
 export function unsubscribeFromSpaceChanges(): void {
+  if (DEMO_MODE) {
+    channel = null
+    return
+  }
   if (channel) {
     void getSupabaseClient().removeChannel(channel)
     channel = null

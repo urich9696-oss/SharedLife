@@ -69,6 +69,16 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    host: true,
+    allowedHosts: true,
+    port: 5173,
+  },
+  preview: {
+    host: true,
+    allowedHosts: true,
+    port: 4173,
+  },
   test: {
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],

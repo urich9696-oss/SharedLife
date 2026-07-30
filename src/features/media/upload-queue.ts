@@ -189,6 +189,8 @@ function parseVariantFromKey(localBlobKey: string): MediaVariant {
 
 export async function processUploadQueue(): Promise<{ uploaded: number; failed: number }> {
   if (!navigator.onLine) return { uploaded: 0, failed: 0 }
+  // Demo: Bilder bleiben lokal in IndexedDB, kein Storage-Upload.
+  if (import.meta.env.VITE_DEMO_MODE === 'true') return { uploaded: 0, failed: 0 }
 
   const pending = await listPendingUploads()
   let uploaded = 0

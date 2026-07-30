@@ -8,6 +8,12 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  DEMO_DISPLAY_NAME,
+  DEMO_MODE,
+  DEMO_SPACE_ID,
+  DEMO_USER_ID,
+} from '@/lib/demo'
+import {
   getSession,
   onAuthStateChange,
   signOut as authSignOut,
@@ -53,6 +59,16 @@ const authService: AuthService = {
 }
 
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
+  if (DEMO_MODE) {
+    return {
+      id: DEMO_USER_ID,
+      displayName: DEMO_DISPLAY_NAME,
+      avatarUrl: null,
+      timezone: 'Europe/Zurich',
+      locale: 'de-CH',
+    }
+  }
+
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('profiles')
@@ -72,6 +88,8 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
 }
 
 async function fetchSpaceId(userId: string): Promise<string | null> {
+  if (DEMO_MODE) return DEMO_SPACE_ID
+
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('space_members')

@@ -5,6 +5,7 @@ import { AppLogo } from '@/components/shared/AppLogo'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { OtpInput } from '@/components/ui/OtpInput'
+import { DEMO_EMAIL, DEMO_MODE } from '@/lib/demo'
 
 type Step = 'email' | 'otp'
 
@@ -12,7 +13,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { authService, refreshSession } = useAuth()
   const [step, setStep] = useState<Step>('email')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(DEMO_MODE ? DEMO_EMAIL : '')
   const [otp, setOtp] = useState('')
   const [error, setError] = useState<string | undefined>()
   const [loading, setLoading] = useState(false)
@@ -50,6 +51,13 @@ export function LoginPage() {
           <AppLogo size="lg" />
         </div>
 
+        {DEMO_MODE ? (
+          <p className="mb-6 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-center text-sm text-text-muted">
+            Demo-Modus: beliebige E-Mail, danach beliebiger 6-stelliger Code (z. B.{' '}
+            <span className="font-medium text-text">123456</span>).
+          </p>
+        ) : null}
+
         {step === 'email' ? (
           <>
             <h1 className="text-heading text-center">Willkommen zurück</h1>
@@ -76,8 +84,14 @@ export function LoginPage() {
           <>
             <h1 className="text-heading text-center">Code eingeben</h1>
             <p className="mt-2 text-center text-text-muted">
-              Wir haben einen 6-stelligen Code an{' '}
-              <span className="font-medium text-text">{email}</span> gesendet.
+              {DEMO_MODE ? (
+                <>Gib einen beliebigen 6-stelligen Code ein.</>
+              ) : (
+                <>
+                  Wir haben einen 6-stelligen Code an{' '}
+                  <span className="font-medium text-text">{email}</span> gesendet.
+                </>
+              )}
             </p>
             <div className="mt-8">
               <OtpInput

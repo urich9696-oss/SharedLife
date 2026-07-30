@@ -1,4 +1,9 @@
 import { clearUserData } from '@/lib/indexed-db/clear-user-data'
+import {
+  DEMO_EMAIL,
+  DEMO_MODE,
+  DEMO_USER_ID,
+} from '@/lib/demo'
 import { toUserMessage } from '@/lib/errors/to-user-message'
 import { toAppError } from '@/lib/errors/types'
 import { getSupabaseClient, resetSupabaseClient } from '@/lib/supabase/client'
@@ -14,9 +19,33 @@ export interface AuthResult {
   error?: string
 }
 
+const DEMO_SESSION_KEY = 'sharedlife.demo.session'
+
+function readDemoSession(): AuthSession | null {
+  try {
+    const raw = localStorage.getItem(DEMO_SESSION_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as AuthSession
+  } catch {
+    return null
+  }
+}
+
+function writeDemoSession(session: AuthSession | null): void {
+  if (!session) {
+    localStorage.removeItem(DEMO_SESSION_KEY)
+    return
+  }
+  localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(session))
+}
+
 export async function sendOtp(email: string): Promise<AuthResult> {
   if (!email.includes('@')) {
     return { success: false, error: 'Bitte gib eine gültige E-Mail-Adresse ein.' }
+  }
+
+  if (DEMO_MODE) {
+    return { success: true }
   }
 
   try {
@@ -41,6 +70,15 @@ export async function verifyOtp(email: string, otp: string): Promise<AuthResult>
     return { success: false, error: 'Der Code muss 6 Ziffern haben.' }
   }
 
+  if (DEMO_MODE) {
+    writeDemoSession({
+      userId: DEMO_USER_ID,
+      email: email.trim() || DEMO_EMAIL,
+      accessToken: 'demo-token',
+    })
+    return { success: true }
+  }
+
   try {
     const supabase = getSupabaseClient()
     const { error } = await supabase.auth.verifyOtp({
@@ -60,6 +98,12 @@ export async function verifyOtp(email: string, otp: string): Promise<AuthResult>
 }
 
 export async function signOut(): Promise<void> {
+  if (DEMO_MODE) {
+    writeDemoSession(null)
+    await clearUserData()
+    return
+  }
+
   const supabase = getSupabaseClient()
   await supabase.auth.signOut()
   await clearUserData()
@@ -67,6 +111,10 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getSession(): Promise<AuthSession | null> {
+  if (DEMO_MODE) {
+    return readDemoSession()
+  }
+
   const supabase = getSupabaseClient()
   const {
     data: { session },
@@ -89,6 +137,15 @@ export async function getAccessToken(): Promise<string | null> {
 export function onAuthStateChange(
   callback: (session: AuthSession | null) => void,
 ): () => void {
+  if (DEMO_MODE) {
+    callback(readDemoSession())
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === DEMO_SESSION_KEY) callback(readDemoSession())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }
+
   const supabase = getSupabaseClient()
   const {
     data: { subscription },

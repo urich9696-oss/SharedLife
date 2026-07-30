@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
+import { DEMO_MODE } from '@/lib/demo'
 import { db } from '@/lib/indexed-db/db'
 import type { ConflictCopyRow, EntityRow, OutboxMutationRow } from '@/lib/indexed-db/schema'
 import { toAppError } from '@/lib/errors/types'
@@ -170,6 +171,16 @@ export async function flushOutbox(): Promise<FlushResult> {
     conflicts: [],
     failed: 0,
     errors: [],
+  }
+
+  // Demo: lokale Daten bleiben kanonisch, Outbox wird als angewendet markiert.
+  if (DEMO_MODE) {
+    for (const mutation of pending) {
+      await markApplied(mutation.mutationId)
+      result.applied += 1
+    }
+    await db.syncMeta.put({ key: 'lastSyncAt', value: new Date().toISOString() })
+    return result
   }
 
   for (const mutation of pending) {
