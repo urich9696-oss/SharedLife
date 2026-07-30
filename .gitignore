@@ -24,3 +24,4 @@ supabase/.temp
 
 # Generated local
 *.tsbuildinfo
+.env.remote.local

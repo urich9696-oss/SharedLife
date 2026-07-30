@@ -1,69 +1,62 @@
 # Vercel + Supabase einbinden – Status
 
-## Bereits erledigt (automatisch erkannt)
+## Erledigt
 
 | Schritt | Status |
 |---------|--------|
-| GitHub-Repo `urich9696-oss/SharedLife` | ✅ |
-| Vercel-Projekt verknüpft | ✅ `shared-life` (`prj_DF7ASObHbMeRDOswJ0uiUvFTGyT1`) |
-| Vercel Preview-Deployments | ✅ laufen über GitHub |
-| Vercel Preview-URL (PR) | https://shared-life-git-cursor-sharedli-e1a1ae-urich9696-1938s-projects.vercel.app |
-| Code + Migrationen + Edge Functions im Repo | ✅ |
-| Bootstrap-Skript | ✅ `scripts/bootstrap-remote.sh` |
+| Vercel-Projekt `shared-life` am Repo | ✅ |
+| Supabase-Projekt `uoqlusgimvinjmajtesz` | ✅ Keys vorhanden |
+| Publishable Key funktioniert mit Client | ✅ |
+| Auth-User Dennis (`urich9696@gmail.com`) | ✅ `ee77d528-db9b-4480-9501-81e044593038` |
+| OTP-Versand getestet | ✅ |
+| Bootstrap-SQL | ✅ `scripts/remote-bootstrap.sql` |
+| Apply-Skript | ✅ `scripts/apply-supabase-remote.mjs` |
 
-## Blockiert für den Cloud-Agenten (braucht deine Secrets)
+## Blocker: Datenbank-Passwort
 
-Ohne Tokens kann der Agent **weder** Supabase-Migrationen pushen **noch** Vercel-Env-Vars setzen:
+Der `sb_secret_…`-Key ist **nicht** das Postgres-Passwort. Für Migrationen braucht das Skript:
 
-1. **Supabase Access Token** – https://supabase.com/dashboard/account/tokens  
-2. **Supabase Project Ref** – aus der Projekt-URL `https://supabase.com/dashboard/project/<REF>`  
-3. **Supabase URL + anon key** – Project Settings → API  
-4. Optional: **Vercel Token** – https://vercel.com/account/tokens (für Env-Vars per CLI)
+**Supabase Dashboard → Project Settings → Database → Database password**  
+(falls unbekannt: „Reset database password“)
 
-Vercel-MCP-Auth ist in dieser Cloud-Umgebung nicht interaktiv verfügbar.
+Dann im Agent-Chat nur das Passwort schicken, oder lokal:
 
-## Was du jetzt kurz schicken kannst (Chat)
-
-Bitte diese Werte hier posten (oder als Cursor-Secrets hinterlegen), dann kann der Agent den Rest ausführen:
-
-```
-SUPABASE_PROJECT_REF=...
-SUPABASE_ACCESS_TOKEN=...
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=...
-VERCEL_TOKEN=...   # optional, sonst Env manuell in Vercel setzen
-```
-
-## Manuell in 5 Minuten (falls ohne Tokens)
-
-### A) Vercel Env Vars
-Vercel → Project `shared-life` → Settings → Environment Variables  
-Für Preview **und** Production:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_DEFAULT_TIMEZONE` = `Europe/Zurich`
-- `VITE_APP_NAME` = `SharedLife`
-- `VITE_DEMO_MODE` = `false` (oder weglassen)
-- optional `VITE_VAPID_PUBLIC_KEY`
-
-Danach Redeploy.
-
-### B) Supabase
 ```bash
-npx supabase login
-npx supabase link --project-ref <REF>
-npx supabase db push
-npx supabase functions deploy sync-mutations
-npx supabase functions deploy manage-push-subscription
-npx supabase functions deploy dispatch-reminders
-npx supabase functions deploy export-data
+export SUPABASE_DB_PASSWORD='...'
+export SUPABASE_SECRET_KEY='sb_secret_...'
+export DENNIS_EMAIL='urich9696@gmail.com'
+# optional:
+export LEA_EMAIL='lea@example.com'
+node scripts/apply-supabase-remote.mjs
 ```
 
-Dann Auth-User Dennis/Lea + Space laut `docs/setup.md`.
+### Alternative ohne Passwort (1 Klick)
 
-### C) Auth Redirects
-Supabase Auth → URL Configuration:
+1. Supabase → **SQL Editor** → New query  
+2. Inhalt von `scripts/remote-bootstrap.sql` einfügen → Run  
+3. Agent Bescheid geben → dann Memberships/Profile per Secret-Key fertigstellen
+
+## Vercel Env Vars (manuell, 2 Minuten)
+
+Vercel → `shared-life` → Settings → Environment Variables → Preview **und** Production:
+
+| Name | Wert |
+|------|------|
+| `VITE_SUPABASE_URL` | `https://uoqlusgimvinjmajtesz.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | `sb_publishable_mUE7s-De5ltBZKghydM77Q_EuT0PHI-` |
+| `VITE_DEFAULT_TIMEZONE` | `Europe/Zurich` |
+| `VITE_APP_NAME` | `SharedLife` |
+| `VITE_DEMO_MODE` | `false` |
+
+Danach Redeploy. **Niemals** `sb_secret_…` in Vercel Frontend-Env legen.
+
+## Auth Redirects
+
+Supabase → Authentication → URL Configuration:
 
 - Site URL: Production-Domain von Vercel
-- Redirect: Preview-Domain + `http://localhost:5173/**`
+- Additional Redirect URLs: Preview-URL + `http://localhost:5173/**`
+
+## Sicherheit
+
+Der Secret-Key wurde im Chat geteilt. Nach dem Setup unter **API Keys** rotieren/neu erzeugen und alten löschen.
