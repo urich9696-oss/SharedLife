@@ -1,0 +1,54 @@
+// SharedLife data model
+// Households have members. Members pay for expenses that are split among members.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Household {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  members   Member[]
+  expenses  Expense[]
+}
+
+model Member {
+  id          String         @id @default(cuid())
+  name        String
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  householdId String
+  createdAt   DateTime        @default(now())
+  paid        Expense[]       @relation("PaidBy")
+  splits      ExpenseSplit[]
+}
+
+model Expense {
+  id          String         @id @default(cuid())
+  description String
+  // Amount is stored in integer cents to avoid floating point rounding issues.
+  amount      Int
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  householdId String
+  paidBy      Member          @relation("PaidBy", fields: [paidById], references: [id], onDelete: Cascade)
+  paidById    String
+  createdAt   DateTime        @default(now())
+  splits      ExpenseSplit[]
+}
+
+model ExpenseSplit {
+  id        String  @id @default(cuid())
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expenseId String
+  member    Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  // Share of the expense owed by this member, in integer cents.
+  amount    Int
+
+  @@unique([expenseId, memberId])
+}
