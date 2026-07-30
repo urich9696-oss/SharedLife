@@ -13,21 +13,10 @@
 
 ## Noch von dir (kurz)
 
-### 1) Vercel Environment Variables
+### 1) Vercel Environment Variables — ✅ erledigt
 
-https://vercel.com/urich9696-1938s-projects/shared-life/settings/environment-variables  
-
-Für **Production** und **Preview**:
-
-| Name | Wert |
-|------|------|
-| `VITE_SUPABASE_URL` | `https://uoqlusgimvinjmajtesz.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | `sb_publishable_mUE7s-De5ltBZKghydM77Q_EuT0PHI-` |
-| `VITE_DEFAULT_TIMEZONE` | `Europe/Zurich` |
-| `VITE_APP_NAME` | `SharedLife` |
-| `VITE_DEMO_MODE` | `false` |
-
-Danach **Redeploy**. Niemals `sb_secret_…` in Vercel-Frontend-Vars.
+Env-Vars für Production/Preview/Development gesetzt und Redeploy ausgelöst.
+Niemals `sb_secret_…` in Vercel-Frontend-Vars.
 
 ### 2) Auth Redirect URLs
 
