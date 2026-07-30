@@ -66,7 +66,10 @@ export async function createReminder(
         resourceId: row.id,
         operation: 'create',
         expectedVersion: null,
-        payload: parsed as Record<string, unknown>,
+        payload: {
+          ...(parsed as Record<string, unknown>),
+          next_trigger_at: parsed.remind_at,
+        },
         createdAt: now,
       },
       { tx: db },

@@ -211,29 +211,46 @@ export async function reorderChecklistItem(
     throw new Error('Checklistenpunkt nicht gefunden')
   }
 
+  const siblings = await listChecklistItems(existing.checklist_id)
+  const fromIndex = siblings.findIndex((item) => item.id === id)
+  if (fromIndex < 0) throw new Error('Checklistenpunkt nicht gefunden')
+
+  const toIndex = Math.max(0, Math.min(sortOrder, siblings.length - 1))
+  if (fromIndex === toIndex) return existing
+
+  const reordered = [...siblings]
+  const [moved] = reordered.splice(fromIndex, 1)
+  reordered.splice(toIndex, 0, moved)
+
   const deviceId = await getOrCreateDeviceId()
   const now = nowIso()
-  const updated: ChecklistItemRow = { ...existing, sort_order: sortOrder, updated_at: now }
+  let updatedMoved: ChecklistItemRow = existing
 
   await db.transaction('rw', [db.checklistItems, db.outbox], async () => {
-    await db.checklistItems.put(updated)
-    await enqueueMutation(
-      {
-        mutationId: uuidv4(),
-        deviceId,
-        spaceId,
-        resourceType: 'checklist_item',
-        resourceId: id,
-        operation: 'update',
-        expectedVersion: null,
-        payload: { sort_order: sortOrder },
-        createdAt: now,
-      },
-      { tx: db },
-    )
+    for (let index = 0; index < reordered.length; index += 1) {
+      const item = reordered[index]
+      if (item.sort_order === index) continue
+      const updated: ChecklistItemRow = { ...item, sort_order: index, updated_at: now }
+      await db.checklistItems.put(updated)
+      await enqueueMutation(
+        {
+          mutationId: uuidv4(),
+          deviceId,
+          spaceId,
+          resourceType: 'checklist_item',
+          resourceId: item.id,
+          operation: 'update',
+          expectedVersion: null,
+          payload: { sort_order: index },
+          createdAt: now,
+        },
+        { tx: db },
+      )
+      if (item.id === id) updatedMoved = updated
+    }
   })
 
-  return updated
+  return updatedMoved
 }
 
 export async function softDeleteChecklistItem(id: string, spaceId: string): Promise<void> {

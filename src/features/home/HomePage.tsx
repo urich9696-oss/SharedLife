@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -27,6 +27,7 @@ function GoalProgressCard({ goalId }: { goalId: string }) {
 }
 
 export function HomePage() {
+  const navigate = useNavigate()
   const { profile } = useAuth()
   const { data: entities = [], isLoading } = useEntities()
   const now = new Date()
@@ -69,7 +70,7 @@ export function HomePage() {
           description="Startet mit einem Eintrag über den Plus-Button — Termine, Ziele und mehr warten auf euch."
           actionLabel="Planen öffnen"
           onAction={() => {
-            window.location.href = '/planen'
+            void navigate('/planen')
           }}
         />
       ) : (

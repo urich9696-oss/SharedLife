@@ -30,7 +30,7 @@ export async function ensureRemoteDevice(spaceId: string, userId: string): Promi
       platform: local?.platform ?? detectPlatform(),
       user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 500) : null,
       last_seen_at: new Date().toISOString(),
-      push_enabled: false,
+      // push_enabled bewusst nicht setzen — sonst überschreibt Sync Push-Abo-Status
     },
     { onConflict: 'id' },
   )

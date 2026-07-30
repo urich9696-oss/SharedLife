@@ -130,10 +130,21 @@ Deno.serve(async (req) => {
         continue
       }
 
+      let deepLink = '/'
+      if (reminder.entity_id) {
+        const { data: entity } = await admin
+          .from('entities')
+          .select('entity_type')
+          .eq('id', reminder.entity_id)
+          .maybeSingle()
+        const type = (entity as { entity_type?: string } | null)?.entity_type ?? 'event'
+        deepLink = `/entities/${type}/${reminder.entity_id}`
+      }
+
       const payload = JSON.stringify({
         title: reminder.title,
         body: reminder.body ?? 'Erinnerung',
-        url: reminder.entity_id ? `/entities/event/${reminder.entity_id}` : '/',
+        url: deepLink,
         tag: `reminder-${reminder.id}`,
       })
 

@@ -39,10 +39,15 @@ export function localPayloadToDetailColumns(
     }
     case 'wish':
       return {
-        url: (payload.url as string) || null,
+        url: (payload.url as string) || (payload.link as string) || null,
         price: payload.price ? Number(payload.price) : null,
         currency: (payload.currency as string) || 'CHF',
         priority: (payload.priority as string) || 'normal',
+        acquired_at: payload.fulfilled
+          ? new Date().toISOString()
+          : payload.fulfilled === false
+            ? null
+            : undefined,
       }
     case 'moment':
       return {

@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   DEMO_DISPLAY_NAME,
   DEMO_MODE,
@@ -106,6 +107,7 @@ async function fetchSpaceId(userId: string): Promise<string | null> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [session, setSession] = useState<AuthSession | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [spaceId, setSpaceId] = useState<string | null>(null)
@@ -153,7 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setProfile(null)
     setSpaceId(null)
-  }, [])
+    queryClient.clear()
+  }, [queryClient])
 
   const value = useMemo(
     () => ({

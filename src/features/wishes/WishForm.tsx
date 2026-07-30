@@ -3,19 +3,24 @@ import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 
 export interface WishDetailValues {
-  category: string
+  url: string
   price: string
-  link: string
+  currency: string
+  priority: 'low' | 'normal' | 'high' | 'dream'
   fulfilled: boolean
 }
 
-const categoryOptions = [
-  { value: '', label: 'Keine Kategorie' },
-  { value: 'reise', label: 'Reise' },
-  { value: 'haushalt', label: 'Haushalt' },
-  { value: 'erlebnis', label: 'Erlebnis' },
-  { value: 'geschenk', label: 'Geschenk' },
-  { value: 'sonstiges', label: 'Sonstiges' },
+const priorityOptions = [
+  { value: 'low', label: 'Niedrig' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'Hoch' },
+  { value: 'dream', label: 'Traum' },
+]
+
+const currencyOptions = [
+  { value: 'CHF', label: 'CHF' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'USD', label: 'USD' },
 ]
 
 interface WishFormFieldsProps {
@@ -27,24 +32,34 @@ export function WishFormFields({ values, onChange }: WishFormFieldsProps) {
   return (
     <>
       <Select
-        label="Kategorie"
-        options={categoryOptions}
-        value={values.category}
-        onChange={(e) => onChange({ ...values, category: e.target.value })}
+        label="Priorität"
+        options={priorityOptions}
+        value={values.priority}
+        onChange={(e) =>
+          onChange({ ...values, priority: e.target.value as WishDetailValues['priority'] })
+        }
       />
-      <Input
-        label="Preis (CHF)"
-        type="number"
-        step="0.01"
-        value={values.price}
-        onChange={(e) => onChange({ ...values, price: e.target.value })}
-        placeholder="Optional"
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input
+          label="Preis"
+          type="number"
+          step="0.01"
+          value={values.price}
+          onChange={(e) => onChange({ ...values, price: e.target.value })}
+          placeholder="Optional"
+        />
+        <Select
+          label="Währung"
+          options={currencyOptions}
+          value={values.currency}
+          onChange={(e) => onChange({ ...values, currency: e.target.value })}
+        />
+      </div>
       <Input
         label="Link"
         type="url"
-        value={values.link}
-        onChange={(e) => onChange({ ...values, link: e.target.value })}
+        value={values.url}
+        onChange={(e) => onChange({ ...values, url: e.target.value })}
         placeholder="https://…"
       />
       <Switch
@@ -57,8 +72,9 @@ export function WishFormFields({ values, onChange }: WishFormFieldsProps) {
 }
 
 export const defaultWishDetail: WishDetailValues = {
-  category: '',
+  url: '',
   price: '',
-  link: '',
+  currency: 'CHF',
+  priority: 'normal',
   fulfilled: false,
 }

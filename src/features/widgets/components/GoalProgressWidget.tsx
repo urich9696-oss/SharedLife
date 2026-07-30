@@ -1,6 +1,5 @@
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { computeGoalProgressPercent } from '@/lib/dates/goal-progress'
-import type { GoalProgressInput } from '@/lib/validation/goal-progress'
+import { getGoalProgressFromPayload } from '@/features/home/relevance'
 import type { WidgetProps } from '@/features/widgets/registry'
 import { useEntity, useEntityDetail } from '@/features/widgets/use-widget-data'
 import { WidgetShell } from '@/features/widgets/components/WidgetShell'
@@ -10,16 +9,8 @@ export function GoalProgressWidget({ spaceId, entityId, config, title }: WidgetP
   const { data: entity } = useEntity(spaceId, resolvedEntityId)
   const { data: detail } = useEntityDetail(resolvedEntityId, 'goal')
 
-  const payload = detail?.payload as Record<string, unknown> | undefined
-  let percent = 0
-
-  if (payload?.progress) {
-    try {
-      percent = computeGoalProgressPercent(payload.progress as GoalProgressInput)
-    } catch {
-      percent = 0
-    }
-  }
+  const payload = (detail?.payload as Record<string, unknown> | undefined) ?? null
+  const percent = getGoalProgressFromPayload(payload) ?? 0
 
   return (
     <WidgetShell title={title ?? config.title ?? entity?.title ?? 'Ziel'}>

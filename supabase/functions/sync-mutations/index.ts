@@ -208,6 +208,18 @@ Deno.serve(async (req) => {
       return await applyGenericTableMutation(userClient, mutation, 'locations')
     }
 
+    if (mutation.resourceType === 'entity_location') {
+      return await applyGenericTableMutation(userClient, mutation, 'entity_locations')
+    }
+
+    if (mutation.resourceType === 'media_asset') {
+      return await applyMediaAssetMutation(userClient, mutation)
+    }
+
+    if (mutation.resourceType === 'entity_media') {
+      return await applyGenericTableMutation(userClient, mutation, 'entity_media')
+    }
+
     return jsonResponse({ error: `Unsupported resource type: ${mutation.resourceType}` }, 400)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Mutation failed'
@@ -514,10 +526,17 @@ async function applyReminderMutation(
   client: ReturnType<typeof createClient>,
   mutation: OutboxMutation,
 ): Promise<Response> {
-  const { next_trigger_at: _next, id: _id, ...rest } = mutation.payload
+  const { id: _id, ...rest } = mutation.payload
+  const remindAt = (rest.remind_at as string | undefined) ?? undefined
+  const payload = {
+    ...rest,
+    // Dispatch liest next_trigger_at — ohne Wert feuern Erinnerungen nie.
+    next_trigger_at:
+      (rest.next_trigger_at as string | null | undefined) ?? remindAt ?? null,
+  }
   const cleaned: OutboxMutation = {
     ...mutation,
-    payload: rest,
+    payload,
   }
   return applyGenericTableMutation(client, cleaned, 'reminders')
 }
@@ -557,10 +576,15 @@ function localPayloadToDetailColumns(
     }
     case 'wish':
       return {
-        url: (payload.url as string) || null,
+        url: (payload.url as string) || (payload.link as string) || null,
         price: payload.price ? Number(payload.price) : null,
         currency: (payload.currency as string) || 'CHF',
         priority: (payload.priority as string) || 'normal',
+        acquired_at: payload.fulfilled
+          ? new Date().toISOString()
+          : payload.fulfilled === false
+            ? null
+            : undefined,
       }
     case 'moment':
       return {
@@ -599,6 +623,37 @@ function localPayloadToDetailColumns(
   }
 }
 
+async function applyMediaAssetMutation(
+  client: ReturnType<typeof createClient>,
+  mutation: OutboxMutation,
+): Promise<Response> {
+  const { entity_id: entityId, caption, ...rest } = mutation.payload
+  const response = await applyGenericTableMutation(
+    client,
+    { ...mutation, payload: rest },
+    'media_assets',
+  )
+
+  if (
+    response.ok &&
+    typeof entityId === 'string' &&
+    (mutation.operation === 'create' || mutation.operation === 'upsert_related')
+  ) {
+    const linkId = crypto.randomUUID()
+    await client.from('entity_media').upsert({
+      id: linkId,
+      space_id: mutation.spaceId,
+      entity_id: entityId,
+      media_id: mutation.resourceId,
+      role: 'gallery',
+      sort_order: 0,
+      caption: (caption as string | null) ?? null,
+    })
+  }
+
+  return response
+}
+
 async function applyEntityDetailMutation(
   client: ReturnType<typeof createClient>,
   mutation: OutboxMutation,
@@ -611,11 +666,11 @@ async function applyEntityDetailMutation(
 
   const table = `${detailType}_details`
   const columns = localPayloadToDetailColumns(detailType, nested)
-  const row = {
+  const row = stripUndefined({
     entity_id: mutation.resourceId,
     space_id: mutation.spaceId,
     ...columns,
-  }
+  })
 
   const { data, error } = await client.from(table).upsert(row).select('*').single()
   if (error) throw new Error(error.message)

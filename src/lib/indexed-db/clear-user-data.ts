@@ -23,6 +23,7 @@ const USER_DATA_TABLES = [
   'uploadQueue',
   'conflictCopies',
   'localMediaBlobs',
+  'activityLog',
 ] as const
 
 /** Wipes all private mirrored data on logout. Preserves device id for re-registration. */

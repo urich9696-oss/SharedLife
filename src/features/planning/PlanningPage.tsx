@@ -26,7 +26,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 export function PlanningPage() {
   const navigate = useNavigate()
-  const { spaceId, session } = useAuth()
+  const { spaceId, session, profile } = useAuth()
   const queryClient = useQueryClient()
   const [segment, setSegment] = useState<string>('trips')
   const [query, setQuery] = useState('')
@@ -34,6 +34,7 @@ export function PlanningPage() {
   const [reminderOpen, setReminderOpen] = useState(false)
   const [budgetForm, setBudgetForm] = useState(defaultBudgetForm)
   const [reminderForm, setReminderForm] = useState(defaultReminderForm)
+  const [reminderError, setReminderError] = useState<string | null>(null)
 
   const activeSegment = PLANNING_SEGMENTS.find((s) => s.key === segment) ?? PLANNING_SEGMENTS[0]
   const entityTypes = activeSegment.entityType ? [activeSegment.entityType] : undefined
@@ -76,9 +77,14 @@ export function PlanningPage() {
   const createReminderMutation = useMutation({
     mutationFn: async () => {
       if (!spaceId) return
+      if (reminderForm.mode === 'absolute' && !reminderForm.remindAt) {
+        throw new Error('Bitte Datum für die Erinnerung wählen.')
+      }
       const remindAt =
-        reminderForm.mode === 'absolute' && reminderForm.remindAt
-          ? zonedLocalToUtcIso(`${reminderForm.remindAt}T${reminderForm.remindTime}:00`)
+        reminderForm.mode === 'absolute'
+          ? zonedLocalToUtcIso(
+              `${reminderForm.remindAt}T${reminderForm.remindTime || '09:00'}:00`,
+            )
           : new Date(Date.now() + reminderForm.relativeMinutes * 60_000).toISOString()
 
       await createReminder(
@@ -88,7 +94,7 @@ export function PlanningPage() {
           title: reminderForm.title,
           body: reminderForm.body || null,
           remind_at: remindAt,
-          timezone: 'Europe/Zurich',
+          timezone: profile?.timezone ?? 'Europe/Zurich',
           is_active: reminderForm.isActive,
           notify_push: true,
           notify_in_app: true,
@@ -99,7 +105,11 @@ export function PlanningPage() {
     onSuccess: () => {
       setReminderOpen(false)
       setReminderForm(defaultReminderForm)
+      setReminderError(null)
       void queryClient.invalidateQueries({ queryKey: ['reminders', spaceId] })
+    },
+    onError: (err) => {
+      setReminderError(err instanceof Error ? err.message : 'Erinnerung fehlgeschlagen')
     },
   })
 
@@ -161,9 +171,25 @@ export function PlanningPage() {
       ) : showEmpty ? (
         <EmptyState
           title={`Keine ${activeSegment.label}`}
-          description="Erstelle einen neuen Eintrag über den Plus-Button."
-          actionLabel="Kalender anzeigen"
-          onAction={() => void navigate('/calendar')}
+          description={
+            segment === 'budgets'
+              ? 'Lege euer erstes gemeinsames Budget an.'
+              : segment === 'reminders'
+                ? 'Erstelle eine Erinnerung, damit nichts untergeht.'
+                : 'Erstelle einen neuen Eintrag über den Plus-Button.'
+          }
+          actionLabel={
+            segment === 'budgets'
+              ? 'Budget erstellen'
+              : segment === 'reminders'
+                ? 'Erinnerung erstellen'
+                : 'Kalender anzeigen'
+          }
+          onAction={() => {
+            if (segment === 'budgets') setBudgetOpen(true)
+            else if (segment === 'reminders') setReminderOpen(true)
+            else void navigate('/calendar')
+          }}
         />
       ) : (
         <ul className="flex flex-col gap-3">
@@ -234,14 +260,29 @@ export function PlanningPage() {
         </Button>
       </Modal>
 
-      <Modal open={reminderOpen} onClose={() => setReminderOpen(false)} title="Erinnerung erstellen">
+      <Modal
+        open={reminderOpen}
+        onClose={() => {
+          setReminderOpen(false)
+          setReminderError(null)
+        }}
+        title="Erinnerung erstellen"
+      >
+        {reminderError ? (
+          <p className="mb-3 rounded-lg bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
+            {reminderError}
+          </p>
+        ) : null}
         <ReminderFormFields values={reminderForm} onChange={setReminderForm} />
         <Button
           className="mt-4"
           fullWidth
           loading={createReminderMutation.isPending}
           onClick={() => createReminderMutation.mutate()}
-          disabled={!reminderForm.title.trim()}
+          disabled={
+            !reminderForm.title.trim() ||
+            (reminderForm.mode === 'absolute' && !reminderForm.remindAt)
+          }
         >
           Speichern
         </Button>

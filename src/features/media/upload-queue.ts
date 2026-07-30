@@ -64,35 +64,74 @@ export async function enqueueMediaUpload(input: {
 
   const deviceId = await getOrCreateDeviceId()
 
-  await db.transaction('rw', [db.mediaAssets, db.uploadQueue, db.outbox, db.localMediaBlobs], async () => {
-    await db.mediaAssets.put(parentRow)
-    await enqueueUploadRow(input.spaceId, mediaId, 'app', processed.app.mimeType)
-    await enqueueUploadRow(input.spaceId, mediaId, 'thumb', processed.thumb.mimeType)
-    await enqueueMutation(
-      {
-        mutationId: uuidv4(),
-        deviceId,
-        spaceId: input.spaceId,
-        resourceType: 'media_asset',
-        resourceId: mediaId,
-        operation: 'create',
-        expectedVersion: null,
-        payload: {
-          storage_path: parentRow.storage_path,
-          original_filename: parentRow.original_filename,
-          mime_type: parentRow.mime_type,
-          byte_size: parentRow.byte_size,
-          width: parentRow.width,
-          height: parentRow.height,
-          variant: 'display',
+  await db.transaction(
+    'rw',
+    [db.mediaAssets, db.entityMedia, db.uploadQueue, db.outbox, db.localMediaBlobs],
+    async () => {
+      await db.mediaAssets.put(parentRow)
+      await enqueueUploadRow(input.spaceId, mediaId, 'app', processed.app.mimeType)
+      await enqueueUploadRow(input.spaceId, mediaId, 'thumb', processed.thumb.mimeType)
+
+      if (input.entityId) {
+        const linkId = uuidv4()
+        await db.entityMedia.put({
+          id: linkId,
+          space_id: input.spaceId,
           entity_id: input.entityId,
-          caption: input.caption,
+          media_id: mediaId,
+          role: 'gallery',
+          sort_order: 0,
+          caption: input.caption ?? null,
+          created_at: now,
+        })
+        await enqueueMutation(
+          {
+            mutationId: uuidv4(),
+            deviceId,
+            spaceId: input.spaceId,
+            resourceType: 'entity_media',
+            resourceId: linkId,
+            operation: 'create',
+            expectedVersion: null,
+            payload: {
+              entity_id: input.entityId,
+              media_id: mediaId,
+              role: 'gallery',
+              sort_order: 0,
+              caption: input.caption ?? null,
+            },
+            createdAt: now,
+          },
+          { tx: db },
+        )
+      }
+
+      await enqueueMutation(
+        {
+          mutationId: uuidv4(),
+          deviceId,
+          spaceId: input.spaceId,
+          resourceType: 'media_asset',
+          resourceId: mediaId,
+          operation: 'create',
+          expectedVersion: null,
+          payload: {
+            storage_path: parentRow.storage_path,
+            original_filename: parentRow.original_filename,
+            mime_type: parentRow.mime_type,
+            byte_size: parentRow.byte_size,
+            width: parentRow.width,
+            height: parentRow.height,
+            variant: 'display',
+            entity_id: input.entityId,
+            caption: input.caption,
+          },
+          createdAt: now,
         },
-        createdAt: now,
-      },
-      { tx: db },
-    )
-  })
+        { tx: db },
+      )
+    },
+  )
 
   return { mediaId }
 }

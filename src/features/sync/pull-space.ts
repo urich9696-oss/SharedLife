@@ -7,6 +7,7 @@ import type {
   DetailType,
   EntityDetailRow,
   EntityLinkRow,
+  EntityLocationRow,
   EntityMediaRow,
   EntityRow,
   LocationRow,
@@ -77,6 +78,7 @@ export function detailRowToLocalPayload(
         price: row.price != null ? String(row.price) : '',
         currency: row.currency ?? 'CHF',
         priority: row.priority ?? 'normal',
+        fulfilled: Boolean(row.acquired_at),
       }
     case 'moment':
       return {
@@ -131,6 +133,7 @@ async function replaceSpaceTable<T extends { id: string }>(
     | 'budgets'
     | 'transactions'
     | 'locations'
+    | 'entityLocations'
     | 'mediaAssets'
     | 'timelineEntries'
     | 'reminders'
@@ -166,6 +169,7 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
     budgetsRes,
     transactionsRes,
     locationsRes,
+    entityLocationsRes,
     mediaRes,
     entityMediaRes,
     timelineRes,
@@ -181,6 +185,7 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
     supabase.from('budgets').select('*').eq('space_id', spaceId),
     supabase.from('transactions').select('*').eq('space_id', spaceId),
     supabase.from('locations').select('*').eq('space_id', spaceId),
+    supabase.from('entity_locations').select('*').eq('space_id', spaceId),
     supabase.from('media_assets').select('*').eq('space_id', spaceId),
     supabase.from('entity_media').select('*').eq('space_id', spaceId),
     supabase.from('timeline_entries').select('*').eq('space_id', spaceId),
@@ -198,6 +203,7 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
     budgetsRes,
     transactionsRes,
     locationsRes,
+    entityLocationsRes,
     mediaRes,
     entityMediaRes,
     timelineRes,
@@ -216,16 +222,17 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
   const budgets = (budgetsRes.data ?? []) as BudgetRow[]
   const transactions = (transactionsRes.data ?? []) as TransactionRow[]
   const locations = (locationsRes.data ?? []) as LocationRow[]
+  const entityLocations = (entityLocationsRes.data ?? []) as EntityLocationRow[]
   const mediaAssets = (mediaRes.data ?? []) as MediaAssetRow[]
   const entityMedia = (entityMediaRes.data ?? []) as EntityMediaRow[]
   const timelineEntries = (timelineRes.data ?? []) as TimelineEntryRow[]
-  const reminders = ((remindersRes.data ?? []) as Omit<ReminderRow, 'next_trigger_at'>[]).map(
-    (row) =>
-      ({
-        ...row,
-        next_trigger_at: row.remind_at,
-      }) satisfies ReminderRow,
-  )
+  const reminders = (remindersRes.data ?? []).map((row) => {
+    const r = row as ReminderRow
+    return {
+      ...r,
+      next_trigger_at: r.next_trigger_at ?? r.remind_at,
+    } satisfies ReminderRow
+  })
   const widgetInstances = (widgetsRes.data ?? []) as WidgetInstanceRow[]
   const viewLayouts = (layoutsRes.data ?? []) as ViewLayoutRow[]
   const entityLinks = (linksRes.data ?? []) as EntityLinkRow[]
@@ -260,6 +267,7 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
       db.budgets,
       db.transactions,
       db.locations,
+      db.entityLocations,
       db.mediaAssets,
       db.entityMedia,
       db.timelineEntries,
@@ -277,6 +285,7 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
       await replaceSpaceTable('budgets', spaceId, budgets, protectedIds)
       await replaceSpaceTable('transactions', spaceId, transactions, protectedIds)
       await replaceSpaceTable('locations', spaceId, locations, protectedIds)
+      await replaceSpaceTable('entityLocations', spaceId, entityLocations, protectedIds)
       await replaceSpaceTable('mediaAssets', spaceId, mediaAssets, protectedIds)
       await replaceSpaceTable('entityMedia', spaceId, entityMedia, protectedIds)
       await replaceSpaceTable('timelineEntries', spaceId, timelineEntries, protectedIds)

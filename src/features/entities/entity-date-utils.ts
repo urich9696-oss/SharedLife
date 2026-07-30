@@ -1,14 +1,17 @@
 import {
-  allDayDateToUtcIso,
   formatAllDayDate,
   formatInAppTz,
-  instantToUtcIso,
   utcIsoToAllDayDate,
   utcToZonedDate,
   zonedLocalToUtcIso,
 } from '@/lib/dates/timezone'
 import type { EntityRow } from '@/lib/indexed-db/schema'
 import type { EntityFormValues } from '@/features/entities/entity-form-schema'
+
+function normalizeAllDayValue(value: string): string {
+  // Akzeptiert historische ISO-Werte und kanonische YYYY-MM-DD.
+  return value.includes('T') ? utcIsoToAllDayDate(value) : value
+}
 
 export function entityToFormValues(entity: EntityRow): EntityFormValues {
   const allDay = !!(entity.all_day_start || entity.all_day_end)
@@ -18,8 +21,8 @@ export function entityToFormValues(entity: EntityRow): EntityFormValues {
       description: entity.description ?? '',
       status: entity.status,
       allDay: true,
-      startDate: entity.all_day_start ? utcIsoToAllDayDate(entity.all_day_start) : '',
-      endDate: entity.all_day_end ? utcIsoToAllDayDate(entity.all_day_end) : '',
+      startDate: entity.all_day_start ? normalizeAllDayValue(entity.all_day_start) : '',
+      endDate: entity.all_day_end ? normalizeAllDayValue(entity.all_day_end) : '',
     }
   }
 
@@ -49,11 +52,12 @@ export function formValuesToEntityDates(values: EntityFormValues): {
   all_day_end: string | null
 } {
   if (values.allDay) {
+    // Postgres `date` + Zod `.date()` erwarten YYYY-MM-DD, kein ISO-Timestamp.
     return {
       starts_at: null,
       ends_at: null,
-      all_day_start: values.startDate ? allDayDateToUtcIso(values.startDate) : null,
-      all_day_end: values.endDate ? allDayDateToUtcIso(values.endDate) : null,
+      all_day_start: values.startDate || null,
+      all_day_end: values.endDate || null,
     }
   }
 
@@ -61,14 +65,14 @@ export function formValuesToEntityDates(values: EntityFormValues): {
     values.startDate && values.startTime
       ? zonedLocalToUtcIso(`${values.startDate}T${values.startTime}:00`)
       : values.startDate
-        ? instantToUtcIso(new Date(`${values.startDate}T00:00:00`))
+        ? zonedLocalToUtcIso(`${values.startDate}T00:00:00`)
         : null
 
   const ends_at =
     values.endDate && values.endTime
       ? zonedLocalToUtcIso(`${values.endDate}T${values.endTime}:00`)
       : values.endDate
-        ? instantToUtcIso(new Date(`${values.endDate}T23:59:59`))
+        ? zonedLocalToUtcIso(`${values.endDate}T23:59:59`)
         : null
 
   return { starts_at, ends_at, all_day_start: null, all_day_end: null }
@@ -76,8 +80,8 @@ export function formValuesToEntityDates(values: EntityFormValues): {
 
 export function formatEntityDateRange(entity: EntityRow): string | null {
   if (entity.all_day_start) {
-    const start = utcIsoToAllDayDate(entity.all_day_start)
-    const end = entity.all_day_end ? utcIsoToAllDayDate(entity.all_day_end) : null
+    const start = normalizeAllDayValue(entity.all_day_start)
+    const end = entity.all_day_end ? normalizeAllDayValue(entity.all_day_end) : null
     if (end && end !== start) return `${start} – ${end}`
     return start
   }

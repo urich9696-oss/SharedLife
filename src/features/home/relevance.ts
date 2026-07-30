@@ -118,7 +118,8 @@ export function getTasksThisWeek(entities: EntityRow[], now: Date): EntityRow[] 
     .filter((e) => {
       if (e.entity_type !== 'task' || e.deleted_at || e.status !== 'active') return false
       const start = entityStartDate(e)
-      if (!start) return true
+      // Undatierte Aufgaben gehören nicht automatisch in „diese Woche“.
+      if (!start) return false
       return !isBefore(start, weekStart) && !isAfter(start, weekEnd)
     })
     .slice(0, 5)
