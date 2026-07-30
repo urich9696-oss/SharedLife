@@ -34,12 +34,14 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   const { data: budgets = [] } = useBudgets()
   const [selectedType, setSelectedType] = useState<EntityType | null>(null)
   const [detailValues, setDetailValues] = useState(defaultDetailForType('trip'))
+  const [formError, setFormError] = useState<string | null>(null)
 
   const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
 
   const reset = () => {
     setSelectedType(null)
     setDetailValues(defaultDetailForType('trip'))
+    setFormError(null)
   }
 
   const handleClose = () => {
@@ -48,43 +50,52 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   }
 
   const handleSubmit = async (values: EntityFormValues) => {
-    if (!spaceId || !selectedType) return
+    if (!selectedType) return
+    if (!spaceId) {
+      setFormError('Kein Space geladen. Bitte neu anmelden oder die Seite aktualisieren.')
+      return
+    }
+    setFormError(null)
     const dates = formValuesToEntityDates(values)
     const id = uuidv4()
 
-    await createEntity.mutateAsync({
-      id,
-      space_id: spaceId,
-      entity_type: selectedType,
-      title: values.title,
-      description: values.description || null,
-      status: values.status,
-      ...dates,
-      sort_order: 0,
-      metadata: {},
-    })
-
-    const detailType = detailTypeForEntity(selectedType)
-    if (detailType) {
-      await upsertEntityDetail({
-        entityId: id,
-        spaceId,
-        detailType,
-        payload: detailValues as Record<string, unknown>,
+    try {
+      await createEntity.mutateAsync({
+        id,
+        space_id: spaceId,
+        entity_type: selectedType,
+        title: values.title,
+        description: values.description || null,
+        status: values.status,
+        ...dates,
+        sort_order: 0,
+        metadata: {},
       })
-    }
 
-    if (selectedType === 'list') {
-      await createChecklist({
-        id: uuidv4(),
-        spaceId,
-        entityId: id,
-        title: 'Checkliste',
-      })
-    }
+      const detailType = detailTypeForEntity(selectedType)
+      if (detailType) {
+        await upsertEntityDetail({
+          entityId: id,
+          spaceId,
+          detailType,
+          payload: detailValues as Record<string, unknown>,
+        })
+      }
 
-    handleClose()
-    void navigate(entityDetailPath(selectedType, id))
+      if (selectedType === 'list') {
+        await createChecklist({
+          id: uuidv4(),
+          spaceId,
+          entityId: id,
+          title: 'Checkliste',
+        })
+      }
+
+      handleClose()
+      void navigate(entityDetailPath(selectedType, id))
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Erstellen fehlgeschlagen')
+    }
   }
 
   return (
@@ -118,20 +129,27 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
           })}
         </ul>
       ) : (
-        <EntityForm
-          entityType={selectedType}
-          onSubmit={handleSubmit}
-          onCancel={() => setSelectedType(null)}
-          submitLabel="Erstellen"
-          loading={createEntity.isPending}
-        >
-          <EntityTypeDetailFields
+        <>
+          {formError ? (
+            <p className="mb-3 rounded-lg bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
+              {formError}
+            </p>
+          ) : null}
+          <EntityForm
             entityType={selectedType}
-            values={detailValues}
-            onChange={setDetailValues}
-            budgetOptions={budgetOptions}
-          />
-        </EntityForm>
+            onSubmit={handleSubmit}
+            onCancel={() => setSelectedType(null)}
+            submitLabel="Erstellen"
+            loading={createEntity.isPending}
+          >
+            <EntityTypeDetailFields
+              entityType={selectedType}
+              values={detailValues}
+              onChange={setDetailValues}
+              budgetOptions={budgetOptions}
+            />
+          </EntityForm>
+        </>
       )}
     </BottomSheet>
   )

@@ -23,7 +23,9 @@ import {
   stopSyncTriggers,
 } from '@/features/sync/sync-triggers'
 import { subscribeToSpaceChanges, unsubscribeFromSpaceChanges } from '@/features/sync/realtime'
+import { pullSpaceIntoDexie } from '@/features/sync/pull-space'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { DEMO_MODE } from '@/lib/demo'
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline'
 
@@ -138,10 +140,40 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [spaceId, session, queryClient])
 
   useEffect(() => {
-    if (session && online) {
-      void flushNow()
+    if (!session || !spaceId || !online) return
+
+    let cancelled = false
+
+    void (async () => {
+      setStatus('syncing')
+      setLastError(null)
+      try {
+        if (!DEMO_MODE) {
+          await pullSpaceIntoDexie(spaceId)
+          if (cancelled) return
+          await queryClient.invalidateQueries()
+        }
+        if (cancelled) return
+        await flushNow()
+      } catch (err) {
+        if (cancelled) return
+        if (isAppError(err) && err.code === 'OFFLINE') {
+          setStatus('offline')
+        } else {
+          setStatus('error')
+          setLastError(toUserMessage(err))
+        }
+      } finally {
+        if (!cancelled) {
+          void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
-  }, [session, online]) // eslint-disable-line react-hooks/exhaustive-deps -- initial sync on login/online
+  }, [session, spaceId, online]) // eslint-disable-line react-hooks/exhaustive-deps -- hydrate + flush on login/online
 
   const value = useMemo<SyncContextValue>(
     () => ({

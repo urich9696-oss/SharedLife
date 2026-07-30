@@ -1,53 +1,45 @@
 /**
  * SharedLife V1 — Base styles
  *
- * Fonts: Google Fonts CDN is linked in index.html for development.
+ * Fonts: Google Fonts CDN is linked in index.html (Inter).
  * Self-hosting (recommended for production):
- *   1. Download Instrument Serif + Manrope woff2 from google-webfonts-helper
- *   2. Place files in /public/fonts/{instrument-serif,manrope}/
+ *   1. Download Inter woff2 from google-webfonts-helper
+ *   2. Place files in /public/fonts/inter/
  *   3. Remove or keep CDN as fallback — @font-face below takes precedence when files exist
  */
 
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
   src:
-    url('/fonts/instrument-serif/instrument-serif-v4-latin-regular.woff2') format('woff2'),
-    local('Instrument Serif');
+    url('/fonts/inter/inter-latin-400.woff2') format('woff2'),
+    local('Inter');
 }
 
 @font-face {
-  font-family: 'Manrope';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/manrope/manrope-v20-latin-400.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/manrope/manrope-v20-latin-500.woff2') format('woff2');
+  src: url('/fonts/inter/inter-latin-500.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/manrope/manrope-v20-latin-600.woff2') format('woff2');
+  src: url('/fonts/inter/inter-latin-600.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/manrope/manrope-v20-latin-700.woff2') format('woff2');
+  src: url('/fonts/inter/inter-latin-700.woff2') format('woff2');
 }
 
 *,
@@ -148,18 +140,18 @@ ol {
 }
 
 .text-hero {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-hero);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-normal);
+  font-weight: var(--weight-semibold);
   letter-spacing: -0.02em;
 }
 
 .text-heading {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-normal);
+  font-weight: var(--weight-semibold);
 }
 
 .text-subheading {

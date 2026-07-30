@@ -156,8 +156,40 @@ Deno.serve(async (req) => {
       return await applyChecklistItemMutation(userClient, mutation)
     }
 
+    if (mutation.resourceType === 'checklist') {
+      return await applyGenericTableMutation(userClient, mutation, 'checklists')
+    }
+
+    if (mutation.resourceType === 'reminder') {
+      return await applyReminderMutation(userClient, mutation)
+    }
+
+    if (mutation.resourceType === 'note') {
+      return await applyGenericTableMutation(userClient, mutation, 'notes')
+    }
+
+    if (mutation.resourceType === 'entity_link') {
+      return await applyGenericTableMutation(userClient, mutation, 'entity_links')
+    }
+
+    if (mutation.resourceType === 'entity_detail') {
+      return await applyEntityDetailMutation(userClient, mutation)
+    }
+
     if (mutation.resourceType === 'budget' || mutation.resourceType === 'transaction') {
       return await applyDirectTableMutation(userClient, mutation)
+    }
+
+    if (mutation.resourceType === 'widget_instance') {
+      return await applyGenericTableMutation(userClient, mutation, 'widget_instances')
+    }
+
+    if (mutation.resourceType === 'timeline_entry') {
+      return await applyGenericTableMutation(userClient, mutation, 'timeline_entries')
+    }
+
+    if (mutation.resourceType === 'location') {
+      return await applyGenericTableMutation(userClient, mutation, 'locations')
     }
 
     return jsonResponse({ error: `Unsupported resource type: ${mutation.resourceType}` }, 400)
@@ -381,10 +413,30 @@ async function applyDirectTableMutation(
   mutation: OutboxMutation,
 ): Promise<Response> {
   const table = mutation.resourceType === 'budget' ? 'budgets' : 'transactions'
-  const payload = { id: mutation.resourceId, space_id: mutation.spaceId, ...mutation.payload }
+  return applyGenericTableMutation(client, mutation, table)
+}
 
-  if (mutation.operation === 'create') {
-    const { data, error } = await client.from(table).insert(payload).select('*').single()
+function stripUndefined(row: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(row)) {
+    if (value !== undefined) next[key] = value
+  }
+  return next
+}
+
+async function applyGenericTableMutation(
+  client: ReturnType<typeof createClient>,
+  mutation: OutboxMutation,
+  table: string,
+): Promise<Response> {
+  const payload = stripUndefined({
+    id: mutation.resourceId,
+    space_id: mutation.spaceId,
+    ...mutation.payload,
+  })
+
+  if (mutation.operation === 'create' || mutation.operation === 'upsert_related') {
+    const { data, error } = await client.from(table).upsert(payload).select('*').single()
     if (error) throw new Error(error.message)
 
     return jsonResponse({
@@ -399,9 +451,30 @@ async function applyDirectTableMutation(
   }
 
   if (mutation.operation === 'update') {
+    const { id: _id, space_id: _spaceId, ...patch } = payload
     const { data, error } = await client
       .from(table)
-      .update(mutation.payload)
+      .update(patch)
+      .eq('id', mutation.resourceId)
+      .select('*')
+      .single()
+    if (error) throw new Error(error.message)
+
+    return jsonResponse({
+      ok: true,
+      receipt: {
+        mutationId: mutation.mutationId,
+        resourceType: mutation.resourceType,
+        resourceId: mutation.resourceId,
+        serverRow: data,
+      },
+    })
+  }
+
+  if (mutation.operation === 'soft_delete') {
+    const { data, error } = await client
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', mutation.resourceId)
       .select('*')
       .single()
@@ -419,6 +492,134 @@ async function applyDirectTableMutation(
   }
 
   return jsonResponse({ error: `Unsupported ${table} operation` }, 400)
+}
+
+async function applyReminderMutation(
+  client: ReturnType<typeof createClient>,
+  mutation: OutboxMutation,
+): Promise<Response> {
+  const { next_trigger_at: _next, id: _id, ...rest } = mutation.payload
+  const cleaned: OutboxMutation = {
+    ...mutation,
+    payload: rest,
+  }
+  return applyGenericTableMutation(client, cleaned, 'reminders')
+}
+
+function localPayloadToDetailColumns(
+  detailType: string,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  switch (detailType) {
+    case 'trip':
+      return { destination: (payload.destination as string) || null }
+    case 'date':
+      return {
+        occasion: (payload.occasion as string) || null,
+        venue_name: (payload.venueName as string) || null,
+        dress_code: (payload.dressCode as string) || null,
+        mood: (payload.mood as string) || null,
+        surprise: Boolean(payload.surprise),
+      }
+    case 'goal': {
+      const kind = String(payload.progressKind ?? 'percent')
+      const current = Number(payload.current ?? 0)
+      const target = Number(payload.target ?? 100) || 100
+      const progress = kind === 'percent' ? current : Math.round((current / target) * 100)
+      return {
+        progress_percent: Math.min(100, Math.max(0, progress)),
+        motivation: (payload.milestones as string) || null,
+      }
+    }
+    case 'task': {
+      const priority = String(payload.priority ?? 'medium')
+      return {
+        priority: priority === 'medium' ? 'normal' : priority,
+        assignee_id: (payload.assigneeId as string) || null,
+        due_date: (payload.dueDate as string) || null,
+      }
+    }
+    case 'wish':
+      return {
+        url: (payload.url as string) || null,
+        price: payload.price ? Number(payload.price) : null,
+        currency: (payload.currency as string) || 'CHF',
+        priority: (payload.priority as string) || 'normal',
+      }
+    case 'moment':
+      return {
+        captured_at: (payload.capturedAt as string) || null,
+        mood: (payload.mood as string) || null,
+        weather: (payload.weather as string) || null,
+        highlight: Boolean(payload.highlight),
+      }
+    case 'project':
+      return {
+        category: (payload.category as string) || null,
+        start_date: (payload.startDate as string) || null,
+        target_end_date: (payload.targetEndDate as string) || null,
+        progress_percent: Number(payload.progressPercent ?? 0),
+      }
+    case 'list':
+      return {
+        list_kind: (payload.listKind as string) || 'generic',
+        is_checkable: payload.isCheckable !== false,
+      }
+    case 'event':
+      return {
+        location_name: (payload.locationName as string) || null,
+        recurrence_rule: (payload.recurrenceRule as string) || null,
+        calendar_color: (payload.calendarColor as string) || null,
+      }
+    case 'milestone':
+      return {
+        project_entity_id: (payload.projectEntityId as string) || null,
+        target_date: (payload.targetDate as string) || null,
+        achieved_at: (payload.achievedAt as string) || null,
+        weight: Number(payload.weight ?? 1),
+      }
+    default:
+      return {}
+  }
+}
+
+async function applyEntityDetailMutation(
+  client: ReturnType<typeof createClient>,
+  mutation: OutboxMutation,
+): Promise<Response> {
+  const detailType = String(mutation.payload.detail_type ?? '')
+  const nested = (mutation.payload.payload as Record<string, unknown> | undefined) ?? {}
+  if (!detailType) {
+    return jsonResponse({ error: 'detail_type required' }, 400)
+  }
+
+  const table = `${detailType}_details`
+  const columns = localPayloadToDetailColumns(detailType, nested)
+  const row = {
+    entity_id: mutation.resourceId,
+    space_id: mutation.spaceId,
+    ...columns,
+  }
+
+  const { data, error } = await client.from(table).upsert(row).select('*').single()
+  if (error) throw new Error(error.message)
+
+  return jsonResponse({
+    ok: true,
+    receipt: {
+      mutationId: mutation.mutationId,
+      resourceType: mutation.resourceType,
+      resourceId: mutation.resourceId,
+      serverRow: {
+        entity_id: mutation.resourceId,
+        detail_type: detailType,
+        space_id: mutation.spaceId,
+        payload: nested,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      },
+    },
+  })
 }
 
 async function conflictResponse(

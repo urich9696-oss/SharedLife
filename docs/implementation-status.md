@@ -27,7 +27,7 @@ SharedLife V1 ist als vollständige Codebasis implementiert: Frontend (PWA), Sup
 | React 19 / TS strict / Vite 8 | ✅ |
 | ESLint, Prettier, Vitest, Pfad-Alias `@/*` | ✅ |
 | Router, QueryClient, ErrorBoundary, App-Shell | ✅ |
-| Design-Tokens (Warm Editorial), Manrope + Instrument Serif | ✅ |
+| Design-Tokens (Warm Editorial), Inter | ✅ |
 | PWA Manifest, Icons, Service Worker, Offline-Shell | ✅ |
 | Lade-/Fehler-/Empty-States, OTP-UI | ✅ |
 
