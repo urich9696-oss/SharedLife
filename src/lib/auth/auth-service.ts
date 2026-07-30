@@ -36,6 +36,15 @@ export const stubAuthService: AuthService = {
     return { success: true }
   },
 
+  async signInWithPassword(email, password) {
+    if (!email.includes('@') || password.length < 6) {
+      return { success: false, error: 'E-Mail und Passwort prüfen.' }
+    }
+    const session: AuthSession = { userId: 'stub-user', email }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    return { success: true }
+  },
+
   async signOut() {
     localStorage.removeItem(SESSION_KEY)
   },

@@ -66,8 +66,9 @@ export async function sendOtp(email: string): Promise<AuthResult> {
 }
 
 export async function verifyOtp(email: string, otp: string): Promise<AuthResult> {
-  if (otp.length !== 6) {
-    return { success: false, error: 'Der Code muss 6 Ziffern haben.' }
+  const code = otp.replace(/\D/g, '')
+  if (code.length < 6 || code.length > 8) {
+    return { success: false, error: 'Der Code muss 6–8 Ziffern haben.' }
   }
 
   if (DEMO_MODE) {
@@ -81,16 +82,57 @@ export async function verifyOtp(email: string, otp: string): Promise<AuthResult>
 
   try {
     const supabase = getSupabaseClient()
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: otp,
-      type: 'email',
-    })
-
-    if (error) {
-      return { success: false, error: toUserMessage(toAppError('auth', 'OTP_INVALID', error.message)) }
+    // Magic-Link-OTP kommt als type "email"; Fallback auf magiclink.
+    const attempts = ['email', 'magiclink'] as const
+    let lastError: string | undefined
+    for (const type of attempts) {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code,
+        type,
+      })
+      if (!error) return { success: true }
+      lastError = error.message
     }
 
+    return {
+      success: false,
+      error: toUserMessage(toAppError('auth', 'OTP_INVALID', lastError ?? 'Ungültiger Code')),
+    }
+  } catch (err) {
+    return { success: false, error: toUserMessage(err) }
+  }
+}
+
+export async function signInWithPassword(
+  email: string,
+  password: string,
+): Promise<AuthResult> {
+  if (!email.includes('@') || password.length < 6) {
+    return { success: false, error: 'E-Mail und Passwort prüfen.' }
+  }
+
+  if (DEMO_MODE) {
+    writeDemoSession({
+      userId: DEMO_USER_ID,
+      email: email.trim() || DEMO_EMAIL,
+      accessToken: 'demo-token',
+    })
+    return { success: true }
+  }
+
+  try {
+    const supabase = getSupabaseClient()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+    if (error) {
+      return {
+        success: false,
+        error: toUserMessage(toAppError('auth', 'PASSWORD_LOGIN_FAILED', error.message)),
+      }
+    }
     return { success: true }
   } catch (err) {
     return { success: false, error: toUserMessage(err) }

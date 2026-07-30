@@ -19,6 +19,7 @@ import {
   signOut as authSignOut,
   sendOtp,
   verifyOtp,
+  signInWithPassword,
   type AuthResult,
   type AuthSession,
 } from '@/lib/supabase/auth'
@@ -35,6 +36,7 @@ export interface UserProfile {
 export interface AuthService {
   sendOtp(email: string): Promise<AuthResult>
   verifyOtp(email: string, otp: string): Promise<AuthResult>
+  signInWithPassword(email: string, password: string): Promise<AuthResult>
   signOut(): Promise<void>
   getSession(): Promise<AuthSession | null>
 }
@@ -54,6 +56,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 const authService: AuthService = {
   sendOtp,
   verifyOtp,
+  signInWithPassword,
   signOut: authSignOut,
   getSession,
 }

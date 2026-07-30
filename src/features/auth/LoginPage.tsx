@@ -7,16 +7,35 @@ import { Input } from '@/components/ui/Input'
 import { OtpInput } from '@/components/ui/OtpInput'
 import { DEMO_EMAIL, DEMO_MODE } from '@/lib/demo'
 
-type Step = 'email' | 'otp'
+type Mode = 'password' | 'otp-email' | 'otp-code'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { authService, refreshSession } = useAuth()
-  const [step, setStep] = useState<Step>('email')
-  const [email, setEmail] = useState(DEMO_MODE ? DEMO_EMAIL : '')
+  const [mode, setMode] = useState<Mode>('password')
+  const [email, setEmail] = useState(DEMO_MODE ? DEMO_EMAIL : 'urich9696@gmail.com')
+  const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [error, setError] = useState<string | undefined>()
   const [loading, setLoading] = useState(false)
+
+  const finishLogin = async () => {
+    await refreshSession()
+    void navigate('/')
+  }
+
+  const handlePasswordLogin = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(undefined)
+    setLoading(true)
+    const result = await authService.signInWithPassword(email.trim(), password)
+    setLoading(false)
+    if (!result.success) {
+      setError(result.error)
+      return
+    }
+    await finishLogin()
+  }
 
   const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault()
@@ -28,7 +47,7 @@ export function LoginPage() {
       setError(result.error)
       return
     }
-    setStep('otp')
+    setMode('otp-code')
   }
 
   const handleVerifyOtp = async (code: string) => {
@@ -40,8 +59,7 @@ export function LoginPage() {
       setError(result.error)
       return
     }
-    await refreshSession()
-    void navigate('/')
+    await finishLogin()
   }
 
   return (
@@ -53,23 +71,62 @@ export function LoginPage() {
 
         {DEMO_MODE ? (
           <p className="mb-6 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-center text-sm text-text-muted">
-            Demo-Modus: beliebige E-Mail, danach beliebiger 6-stelliger Code (z. B.{' '}
-            <span className="font-medium text-text">123456</span>).
+            Demo-Modus: beliebige E-Mail / Passwort oder Code{' '}
+            <span className="font-medium text-text">123456</span>.
           </p>
         ) : null}
 
-        {step === 'email' ? (
+        {mode === 'password' ? (
           <>
             <h1 className="text-heading text-center">Willkommen zurück</h1>
+            <p className="mt-2 text-center text-text-muted">Melde dich mit E-Mail und Passwort an.</p>
+            <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handlePasswordLogin(e)}>
+              <Input
+                label="E-Mail"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                label="Passwort"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={error}
+                required
+              />
+              <Button type="submit" fullWidth loading={loading}>
+                Anmelden
+              </Button>
+            </form>
+            <Button
+              variant="ghost"
+              fullWidth
+              className="mt-3"
+              onClick={() => {
+                setError(undefined)
+                setMode('otp-email')
+              }}
+            >
+              Stattdessen Code per E-Mail
+            </Button>
+          </>
+        ) : null}
+
+        {mode === 'otp-email' ? (
+          <>
+            <h1 className="text-heading text-center">Code anfordern</h1>
             <p className="mt-2 text-center text-text-muted">
-              Melde dich mit deiner E-Mail an. Wir senden dir einen Code.
+              Wir senden dir einen 6-stelligen Anmeldecode.
             </p>
             <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handleSendOtp(e)}>
               <Input
                 label="E-Mail"
                 type="email"
                 autoComplete="email"
-                placeholder="du@beispiel.ch"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={error}
@@ -79,19 +136,25 @@ export function LoginPage() {
                 Code senden
               </Button>
             </form>
+            <Button
+              variant="ghost"
+              fullWidth
+              className="mt-3"
+              onClick={() => {
+                setError(undefined)
+                setMode('password')
+              }}
+            >
+              Mit Passwort anmelden
+            </Button>
           </>
-        ) : (
+        ) : null}
+
+        {mode === 'otp-code' ? (
           <>
             <h1 className="text-heading text-center">Code eingeben</h1>
             <p className="mt-2 text-center text-text-muted">
-              {DEMO_MODE ? (
-                <>Gib einen beliebigen 6-stelligen Code ein.</>
-              ) : (
-                <>
-                  Wir haben einen 6-stelligen Code an{' '}
-                  <span className="font-medium text-text">{email}</span> gesendet.
-                </>
-              )}
+              6-stelliger Code an <span className="font-medium text-text">{email}</span>
             </p>
             <div className="mt-8">
               <OtpInput
@@ -112,12 +175,19 @@ export function LoginPage() {
               >
                 Anmelden
               </Button>
-              <Button variant="ghost" fullWidth onClick={() => setStep('email')}>
-                Andere E-Mail verwenden
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setError(undefined)
+                  setMode('password')
+                }}
+              >
+                Mit Passwort anmelden
               </Button>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   )
