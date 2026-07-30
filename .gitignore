@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+dist
+dev-dist
+coverage
+playwright-report
+test-results
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Editor / OS
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Generated local
+*.tsbuildinfo

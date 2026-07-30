@@ -1,0 +1,118 @@
+/**
+ * SharedLife V1 — Design Tokens
+ * Warm Editorial + Photo First
+ */
+
+:root {
+  /* ── Core palette ───────────────────────────────────── */
+  --color-bg: #f6f2ec;
+  --color-surface: #fffdfc;
+  --color-text: #292623;
+  --color-text-muted: #817a73;
+  --color-primary: #8fa18a;
+  --color-accent: #c98f82;
+  --color-sand: #d8c8b5;
+  --color-border: #e7e0d8;
+
+  /* ── Semantic (derived harmoniously) ─────────────────── */
+  --color-success: #6d8f72;
+  --color-success-subtle: #e8f0e9;
+  --color-warning: #b8956a;
+  --color-warning-subtle: #f5ede0;
+  --color-error: #b86b5c;
+  --color-error-subtle: #f9ebe8;
+  --color-focus: #7a9175;
+  --color-focus-ring: color-mix(in srgb, var(--color-focus) 35%, transparent);
+  --color-disabled: #b5aea6;
+  --color-disabled-bg: #f0ebe4;
+  --color-overlay: color-mix(in srgb, var(--color-text) 45%, transparent);
+
+  /* ── Interactive states ──────────────────────────────── */
+  --color-primary-hover: #7d9178;
+  --color-primary-active: #6f836a;
+  --color-accent-hover: #b87f72;
+  --color-accent-active: #a87165;
+  --color-surface-raised: #ffffff;
+
+  /* ── Typography ──────────────────────────────────────── */
+  --font-serif: 'Instrument Serif', 'Georgia', 'Times New Roman', serif;
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-hero: clamp(2rem, 5vw, 3rem);
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ── Spacing scale ───────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-safe-top: env(safe-area-inset-top, 0px);
+  --space-safe-right: env(safe-area-inset-right, 0px);
+  --space-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --space-safe-left: env(safe-area-inset-left, 0px);
+
+  /* ── Radii (20–28px range) ─────────────────────────── */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (warm, subtle) ──────────────────────────── */
+  --shadow-xs: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--color-text) 6%, transparent);
+  --shadow-md: 0 4px 16px color-mix(in srgb, var(--color-text) 8%, transparent);
+  --shadow-lg: 0 8px 32px color-mix(in srgb, var(--color-text) 10%, transparent);
+  --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+
+  /* ── Borders ─────────────────────────────────────────── */
+  --border-width: 1px;
+  --border-color: var(--color-border);
+  --border-color-strong: color-mix(in srgb, var(--color-border) 70%, var(--color-text));
+
+  /* ── Motion ──────────────────────────────────────────── */
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 320ms;
+  --duration-slower: 480ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Layout ──────────────────────────────────────────── */
+  --nav-bottom-height: 4.5rem;
+  --nav-side-width: 16rem;
+  --content-max-width: 72rem;
+  --header-height: 3.5rem;
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}

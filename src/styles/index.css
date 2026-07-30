@@ -1,0 +1,54 @@
+@import './tokens.css';
+@import './base.css';
+@import 'tailwindcss';
+
+@theme {
+  /* Colors */
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
+  --color-sand: var(--color-sand);
+  --color-border: var(--color-border);
+  --color-success: var(--color-success);
+  --color-success-subtle: var(--color-success-subtle);
+  --color-warning: var(--color-warning);
+  --color-warning-subtle: var(--color-warning-subtle);
+  --color-error: var(--color-error);
+  --color-error-subtle: var(--color-error-subtle);
+  --color-focus: var(--color-focus);
+  --color-disabled: var(--color-disabled);
+  --color-disabled-bg: var(--color-disabled-bg);
+  --color-overlay: var(--color-overlay);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-active: var(--color-primary-active);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-active: var(--color-accent-active);
+  --color-surface-raised: var(--color-surface-raised);
+
+  /* Typography */
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+
+  /* Radii */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  /* Shadows */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-focus: var(--shadow-focus);
+
+  /* Spacing */
+  --spacing-safe-top: var(--space-safe-top);
+  --spacing-safe-bottom: var(--space-safe-bottom);
+  --spacing-nav-bottom: var(--nav-bottom-height);
+  --spacing-nav-side: var(--nav-side-width);
+}
