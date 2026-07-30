@@ -53,7 +53,7 @@ export function LoginPage() {
 
         {DEMO_MODE ? (
           <p className="mb-6 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-center text-sm text-text-muted">
-            Demo-Modus: beliebige E-Mail, danach beliebiger 6-stelliger Code (z. B.{' '}
+            Demo-Modus: beliebige E-Mail, danach beliebiger 6-stelliger Code (z. B.{' '}
             <span className="font-medium text-text">123456</span>).
           </p>
         ) : null}
