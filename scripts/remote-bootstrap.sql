@@ -1,6 +1,5 @@
--- SharedLife remote bootstrap – einmal im Supabase SQL Editor ausführen
+-- SharedLife remote bootstrap
 -- Project: uoqlusgimvinjmajtesz
-begin;
 
 -- >>> 20260101000001_extensions_and_helpers.sql
 -- SharedLife: Extensions und Hilfsfunktionen
@@ -50,17 +49,20 @@ comment on function public.current_user_id() is
 -- ---------------------------------------------------------------------------
 create or replace function public.is_space_member(p_space_id uuid)
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  -- plpgsql: Relation wird erst zur Laufzeit geprüft (Tabelle folgt in Migration 2)
+  return exists (
     select 1
     from public.space_members sm
     where sm.space_id = p_space_id
       and sm.user_id = auth.uid()
   );
+end;
 $$;
 
 comment on function public.is_space_member(uuid) is
@@ -84,7 +86,6 @@ $$;
 
 comment on function public.is_service_role() is
   'True wenn der aktuelle JWT die service_role trägt (Edge Functions, Cron).';
-
 
 -- >>> 20260101000002_core_tables.sql
 -- SharedLife: Kern-Tabellen (spaces, profiles, space_members, devices)
@@ -205,7 +206,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
-
 -- >>> 20260101000003_entities.sql
 -- SharedLife: Kanonische Entity-Tabelle (polymorph, versioniert, soft delete)
 
@@ -302,7 +302,6 @@ comment on column public.entities.deleted_at is
 
 -- cover_media_id FK wird nach media_assets angelegt (Migration 5)
 
-
 -- >>> 20260101000004_entity_details.sql
 -- SharedLife: Typspezifische Erweiterungstabellen (1:1 mit entities)
 
@@ -322,13 +321,8 @@ create table public.trip_details (
   packing_list_entity_id uuid references public.entities (id) on delete set null,
   notes text,
   created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now()),
-  constraint trip_details_entity_type check (
-    exists (
-      select 1 from public.entities e
-      where e.id = entity_id and e.entity_type = 'trip'
-    )
-  )
+  updated_at timestamptz not null default timezone('utc', now())
+  -- Entity-Typ-Validierung erfolgt über Trigger enforce_entity_type_for_detail
 );
 
 create index idx_trip_details_space on public.trip_details (space_id);
@@ -627,7 +621,6 @@ create trigger trg_project_details_type before insert or update on public.projec
   for each row execute function public.enforce_entity_type_for_detail('project');
 create trigger trg_milestone_details_type before insert or update on public.milestone_details
   for each row execute function public.enforce_entity_type_for_detail('milestone');
-
 
 -- >>> 20260101000005_related_tables.sql
 -- SharedLife: Verknüpfungen, Inhalte, Finanzen, Medien, Timeline, Sync-Metadaten
@@ -1056,7 +1049,6 @@ create trigger trg_entity_media_space before insert or update on public.entity_m
 create trigger trg_timeline_entry_media_space before insert or update on public.timeline_entry_media
   for each row execute function public.enforce_child_space_id('timeline_entry_id');
 
-
 -- >>> 20260101000006_widgets_reminders.sql
 -- SharedLife: Widgets, Views, Erinnerungen, Push-Subscriptions
 
@@ -1219,7 +1211,6 @@ create index idx_reminder_deliveries_reminder
 
 comment on table public.reminder_deliveries is
   'Cron/Edge Function schreibt Versandstatus; Clients lesen nur.';
-
 
 -- >>> 20260101000007_rls_policies.sql
 -- SharedLife: Row Level Security auf allen privaten Tabellen
@@ -1586,7 +1577,6 @@ grant select, insert, update on all tables in schema public to authenticated;
 grant all on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to authenticated, service_role;
 
-
 -- >>> 20260101000008_storage.sql
 -- SharedLife: Storage – privater media-Bucket mit Space-Membership-Policies
 
@@ -1657,7 +1647,6 @@ create policy media_update_member
 create policy media_delete_deny
   on storage.objects for delete to authenticated
   using (false);
-
 
 -- >>> 20260101000009_sync_functions.sql
 -- SharedLife: Sync-RPCs – Mutationen, Versionierung, Idempotenz
@@ -2270,7 +2259,6 @@ comment on function public.soft_delete_entity is
 comment on function public.restore_entity is
   'Stellt gelöschte Entity wieder her (Papierkorb).';
 
-
 -- >>> 20260101000010_push_dispatch.sql
 -- SharedLife: Push-Dispatch-Hilfen (next_trigger_at, eindeutige Deliveries)
 
@@ -2291,7 +2279,7 @@ create unique index if not exists idx_reminder_deliveries_unique
 comment on column public.reminders.next_trigger_at is
   'Nächster geplanter Versandzeitpunkt; bei Wiederholung nach Versand aktualisiert.';
 
--- >>> production seed (space only; users linked after auth create)
+-- >>> seed.sql
 -- SharedLife Seed – lokaler Dev-Space
 -- Auth-Benutzer müssen über Supabase Auth angelegt werden (OTP, kein Auto-Signup).
 --
@@ -2380,4 +2368,3 @@ begin
   )
   on conflict (entity_id) do nothing;
 end $$;
-commit;

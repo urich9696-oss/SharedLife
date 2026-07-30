@@ -45,17 +45,20 @@ comment on function public.current_user_id() is
 -- ---------------------------------------------------------------------------
 create or replace function public.is_space_member(p_space_id uuid)
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (
+begin
+  -- plpgsql: Relation wird erst zur Laufzeit geprüft (Tabelle folgt in Migration 2)
+  return exists (
     select 1
     from public.space_members sm
     where sm.space_id = p_space_id
       and sm.user_id = auth.uid()
   );
+end;
 $$;
 
 comment on function public.is_space_member(uuid) is

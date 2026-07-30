@@ -16,13 +16,8 @@ create table public.trip_details (
   packing_list_entity_id uuid references public.entities (id) on delete set null,
   notes text,
   created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now()),
-  constraint trip_details_entity_type check (
-    exists (
-      select 1 from public.entities e
-      where e.id = entity_id and e.entity_type = 'trip'
-    )
-  )
+  updated_at timestamptz not null default timezone('utc', now())
+  -- Entity-Typ-Validierung erfolgt über Trigger enforce_entity_type_for_detail
 );
 
 create index idx_trip_details_space on public.trip_details (space_id);

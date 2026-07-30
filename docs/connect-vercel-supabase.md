@@ -1,44 +1,23 @@
-# Vercel + Supabase einbinden – Status
+# Vercel + Supabase – Status
 
-## Erledigt
+## Erledigt ✅
 
 | Schritt | Status |
 |---------|--------|
-| Vercel-Projekt `shared-life` am Repo | ✅ |
-| Supabase-Projekt `uoqlusgimvinjmajtesz` | ✅ Keys vorhanden |
-| Publishable Key funktioniert mit Client | ✅ |
-| Auth-User Dennis (`urich9696@gmail.com`) | ✅ `ee77d528-db9b-4480-9501-81e044593038` |
-| OTP-Versand getestet | ✅ |
-| Bootstrap-SQL | ✅ `scripts/remote-bootstrap.sql` |
-| Apply-Skript | ✅ `scripts/apply-supabase-remote.mjs` |
+| Supabase-Schema (alle Migrationen) | ✅ live auf `uoqlusgimvinjmajtesz` |
+| Space `SharedLife` | ✅ |
+| Auth-User Dennis `urich9696@gmail.com` | ✅ `ee77d528-db9b-4480-9501-81e044593038` |
+| Profile + Space-Mitgliedschaft (owner) | ✅ |
+| Storage-Bucket `media` + RLS | ✅ |
+| Publishable Key im Client nutzbar | ✅ |
 
-## Blocker: Datenbank-Passwort
+## Noch von dir (kurz)
 
-Der `sb_secret_…`-Key ist **nicht** das Postgres-Passwort. Für Migrationen braucht das Skript:
+### 1) Vercel Environment Variables
 
-**Supabase Dashboard → Project Settings → Database → Database password**  
-(falls unbekannt: „Reset database password“)
+https://vercel.com/urich9696-1938s-projects/shared-life/settings/environment-variables  
 
-Dann im Agent-Chat nur das Passwort schicken, oder lokal:
-
-```bash
-export SUPABASE_DB_PASSWORD='...'
-export SUPABASE_SECRET_KEY='sb_secret_...'
-export DENNIS_EMAIL='urich9696@gmail.com'
-# optional:
-export LEA_EMAIL='lea@example.com'
-node scripts/apply-supabase-remote.mjs
-```
-
-### Alternative ohne Passwort (1 Klick)
-
-1. Supabase → **SQL Editor** → New query  
-2. Inhalt von `scripts/remote-bootstrap.sql` einfügen → Run  
-3. Agent Bescheid geben → dann Memberships/Profile per Secret-Key fertigstellen
-
-## Vercel Env Vars (manuell, 2 Minuten)
-
-Vercel → `shared-life` → Settings → Environment Variables → Preview **und** Production:
+Für **Production** und **Preview**:
 
 | Name | Wert |
 |------|------|
@@ -48,15 +27,22 @@ Vercel → `shared-life` → Settings → Environment Variables → Preview **un
 | `VITE_APP_NAME` | `SharedLife` |
 | `VITE_DEMO_MODE` | `false` |
 
-Danach Redeploy. **Niemals** `sb_secret_…` in Vercel Frontend-Env legen.
+Danach **Redeploy**. Niemals `sb_secret_…` in Vercel-Frontend-Vars.
 
-## Auth Redirects
+### 2) Auth Redirect URLs
 
-Supabase → Authentication → URL Configuration:
+https://supabase.com/dashboard/project/uoqlusgimvinjmajtesz/auth/url-configuration  
 
-- Site URL: Production-Domain von Vercel
-- Additional Redirect URLs: Preview-URL + `http://localhost:5173/**`
+- Site URL: deine Vercel Production-URL  
+- Redirects: Preview-URL + `http://localhost:5173/**`
+
+### 3) Optional: Edge Functions + Lea
+
+Für Sync/Push/Export braucht der Agent noch einen **Supabase Access Token**:  
+https://supabase.com/dashboard/account/tokens  
+
+Lea-Account: E-Mail schicken, dann wird sie als Space-Mitglied angelegt.
 
 ## Sicherheit
 
-Der Secret-Key wurde im Chat geteilt. Nach dem Setup unter **API Keys** rotieren/neu erzeugen und alten löschen.
+DB-Passwort und Secret-Key wurden im Chat geteilt → nach dem Go-Live unter API Keys / Database password rotieren.
