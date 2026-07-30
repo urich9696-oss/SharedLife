@@ -1,46 +1,8 @@
 /**
  * SharedLife V1 — Base styles
  *
- * Fonts: Google Fonts CDN is linked in index.html (Inter).
- * Self-hosting (recommended for production):
- *   1. Download Inter woff2 from google-webfonts-helper
- *   2. Place files in /public/fonts/inter/
- *   3. Remove or keep CDN as fallback — @font-face below takes precedence when files exist
+ * Fonts: Inter via Google Fonts CDN in index.html.
  */
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src:
-    url('/fonts/inter/inter-latin-400.woff2') format('woff2'),
-    local('Inter');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/inter/inter-latin-500.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/inter/inter-latin-600.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/inter/inter-latin-700.woff2') format('woff2');
-}
 
 *,
 *::before,
