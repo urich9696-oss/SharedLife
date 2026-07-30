@@ -11,6 +11,7 @@ export interface AuthResult {
 export interface AuthService {
   sendOtp(email: string): Promise<AuthResult>
   verifyOtp(email: string, otp: string): Promise<AuthResult>
+  signInWithPassword(email: string, password: string): Promise<AuthResult>
   signOut(): Promise<void>
   getSession(): Promise<AuthSession | null>
 }
