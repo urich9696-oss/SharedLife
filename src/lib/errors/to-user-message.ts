@@ -15,12 +15,23 @@ const CODE_MESSAGES: Record<string, string> = {
   SYNC_CONFLICT: 'Es gibt einen Versionskonflikt. Bitte in den Konflikten auflösen.',
   OTP_INVALID: 'Der Code ist ungültig oder abgelaufen.',
   OTP_SEND_FAILED: 'Der Code konnte nicht gesendet werden.',
+  PASSWORD_LOGIN_FAILED: 'E-Mail oder Passwort ist falsch.',
+  EMAIL_NOT_CONFIRMED: 'Bitte bestätige zuerst deine E-Mail-Adresse.',
   NOT_MEMBER: 'Du bist kein Mitglied dieses Spaces.',
   STORAGE_QUOTA: 'Der lokale Speicher ist voll.',
 }
 
 export function toUserMessage(error: unknown): string {
   if (isAppError(error)) {
+    // Konkrete Auth-Meldungen von Supabase nicht hinter generischem Text verstecken
+    if (
+      error.category === 'auth' &&
+      error.message &&
+      !CODE_MESSAGES[error.code] &&
+      error.code !== 'AUTH_GENERIC'
+    ) {
+      return error.message
+    }
     return CODE_MESSAGES[error.code] ?? CATEGORY_MESSAGES[error.category] ?? error.message
   }
 

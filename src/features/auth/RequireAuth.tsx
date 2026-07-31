@@ -9,10 +9,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
  * exists in local storage (Supabase persists session); new login always needs network.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { session, spaceId, isLoading, signOut } = useAuth()
+  const { session, spaceId, isLoading, isContextLoading, signOut } = useAuth()
   const location = useLocation()
 
-  if (isLoading) {
+  if (isLoading || (session && isContextLoading)) {
     return <LoadingState label="Sitzung wird geladen…" />
   }
 

@@ -128,6 +128,23 @@ export async function signInWithPassword(
       password,
     })
     if (error) {
+      const msg = error.message.toLowerCase()
+      if (msg.includes('email not confirmed')) {
+        return {
+          success: false,
+          error: toUserMessage(
+            toAppError('auth', 'EMAIL_NOT_CONFIRMED', 'Bitte bestätige zuerst deine E-Mail-Adresse.'),
+          ),
+        }
+      }
+      if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+        return {
+          success: false,
+          error: toUserMessage(
+            toAppError('auth', 'PASSWORD_LOGIN_FAILED', 'E-Mail oder Passwort ist falsch.'),
+          ),
+        }
+      }
       return {
         success: false,
         error: toUserMessage(toAppError('auth', 'PASSWORD_LOGIN_FAILED', error.message)),

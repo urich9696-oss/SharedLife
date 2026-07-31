@@ -47,6 +47,8 @@ interface AuthContextValue {
   profile: UserProfile | null
   spaceId: string | null
   isLoading: boolean
+  /** true, während Profil/Space nach Session-Wechsel nachgeladen werden */
+  isContextLoading: boolean
   authService: AuthService
   signOut: () => Promise<void>
   refreshSession: () => Promise<void>
@@ -112,21 +114,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [spaceId, setSpaceId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isContextLoading, setIsContextLoading] = useState(false)
 
   const loadUserContext = useCallback(async (nextSession: AuthSession | null) => {
-    setSession(nextSession)
     if (!nextSession) {
+      setSession(null)
       setProfile(null)
       setSpaceId(null)
+      setIsContextLoading(false)
       return
     }
 
-    const [nextProfile, nextSpaceId] = await Promise.all([
-      fetchProfile(nextSession.userId),
-      fetchSpaceId(nextSession.userId),
-    ])
-    setProfile(nextProfile)
-    setSpaceId(nextSpaceId)
+    setIsContextLoading(true)
+    setSession(nextSession)
+    try {
+      const [nextProfile, nextSpaceId] = await Promise.all([
+        fetchProfile(nextSession.userId),
+        fetchSpaceId(nextSession.userId),
+      ])
+      setProfile(nextProfile)
+      setSpaceId(nextSpaceId)
+    } finally {
+      setIsContextLoading(false)
+    }
   }, [])
 
   const refreshSession = useCallback(async () => {
@@ -155,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setProfile(null)
     setSpaceId(null)
+    setIsContextLoading(false)
     queryClient.clear()
   }, [queryClient])
 
@@ -164,11 +175,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       spaceId,
       isLoading,
+      isContextLoading,
       authService,
       signOut,
       refreshSession,
     }),
-    [session, profile, spaceId, isLoading, signOut, refreshSession],
+    [session, profile, spaceId, isLoading, isContextLoading, signOut, refreshSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
