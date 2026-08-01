@@ -46,8 +46,8 @@ export function WishFormFields({ values, onChange }: WishFormFieldsProps) {
     <>
       <Input
         label="Preis"
-        type="number"
-        step="0.01"
+        type="text"
+        inputMode="decimal"
         value={values.price}
         onChange={(e) => onChange({ ...values, price: e.target.value })}
         placeholder="Optional"

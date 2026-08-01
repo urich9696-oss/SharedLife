@@ -42,10 +42,11 @@ export function BudgetFormFields({ values, onChange }: BudgetFormProps) {
         />
         <Input
           label="Limit"
-          type="number"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           value={values.amountLimit}
           onChange={(e) => onChange({ ...values, amountLimit: e.target.value })}
+          placeholder="z. B. 3500"
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

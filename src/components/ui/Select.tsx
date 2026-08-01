@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react'
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utilities/cn'
 
@@ -31,8 +31,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     },
     ref,
   ) => {
-    const selectId =
-      id ?? (label ? `select-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
+    const generatedId = useId()
+    const selectId = id ?? generatedId
 
     return (
       <div className="flex flex-col">

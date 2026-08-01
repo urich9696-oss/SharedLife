@@ -43,10 +43,11 @@ export function ExpenseFormFields({ values, onChange }: ExpenseFormFieldsProps) 
     <>
       <Input
         label="Betrag"
-        type="number"
-        step="0.01"
+        type="text"
+        inputMode="decimal"
         value={values.amount}
         onChange={(e) => onChange({ ...values, amount: e.target.value })}
+        placeholder="z. B. 24.90"
         required
       />
       <Select

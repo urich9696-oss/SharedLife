@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -16,9 +16,13 @@ export function PairProfilePage() {
   const [coupleBlurb, setCoupleBlurb] = useState('')
   const [name, setName] = useState('')
   const [message, setMessage] = useState<string | null>(null)
+  const hydratedSpaceId = useRef<string | null>(null)
 
+  // Nur beim ersten Laden / Space-Wechsel hydratisieren — Avatar-Saves dürfen Tippen nicht überschreiben
   useEffect(() => {
     if (!pair) return
+    if (hydratedSpaceId.current === pair.spaceId) return
+    hydratedSpaceId.current = pair.spaceId
     setPartnerAName(pair.partnerAName)
     setPartnerBName(pair.partnerBName)
     setTogetherSince(pair.togetherSince ?? '')

@@ -41,6 +41,7 @@ export function TripFormFields({ values, onChange }: TripFormFieldsProps) {
       />
       <Input
         label="Budget"
+        type="text"
         value={values.budgetAmount}
         onChange={(e) => onChange({ ...values, budgetAmount: e.target.value })}
         placeholder="z. B. 1200"

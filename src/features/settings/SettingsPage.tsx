@@ -178,8 +178,11 @@ function SettingsProfile() {
 
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '')
+  }, [profile?.displayName])
+
+  useEffect(() => {
     setAvatarPath(profile?.avatarUrl ?? null)
-  }, [profile?.displayName, profile?.avatarUrl])
+  }, [profile?.avatarUrl])
 
   const saveProfileFields = async (fields: {
     display_name?: string
