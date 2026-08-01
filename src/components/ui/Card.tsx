@@ -9,7 +9,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const paddingStyles = {
   none: '',
   sm: 'p-4', /* 16px */
-  md: 'p-5', /* 20px — ruhiger als 16, nicht leer */
+  md: 'p-6',
   lg: 'p-8',
 }
 
