@@ -48,6 +48,10 @@ export function detailRowToLocalPayload(
       return {
         destination: String(row.destination ?? ''),
         budgetId: '',
+        budgetAmount: row.budget_amount != null ? String(row.budget_amount) : '',
+        accommodation: String(row.accommodation ?? ''),
+        packingListText: '',
+        placesText: '',
       }
     case 'date':
       return {
@@ -59,14 +63,16 @@ export function detailRowToLocalPayload(
         surprise: Boolean(row.surprise),
         estimatedCost: row.estimated_cost != null ? String(row.estimated_cost) : '',
         reservationReference: row.reservation_reference ?? '',
-        note: '',
+        reservationStatus: row.reservation_reference ? 'confirmed' : 'none',
+        assigneeRole: 'gemeinsam',
       }
     case 'goal':
       return {
-        progressKind: 'percent',
+        progressKind: 'amount',
         current: Number(row.progress_percent ?? 0),
         target: 100,
         milestones: String(row.motivation ?? ''),
+        goalStatus: 'active',
       }
     case 'task': {
       const priority = String(row.priority ?? 'normal')
@@ -75,8 +81,12 @@ export function detailRowToLocalPayload(
         assigneeId: row.assignee_id ? String(row.assignee_id) : '',
         assigneeRole: '',
         dueDate: row.due_date ? String(row.due_date) : '',
+        dueTime: '',
         category: '',
+        assignment: '',
+        recurrenceRule: 'none',
         note: '',
+        subtasksText: '',
       }
     }
     case 'wish':
@@ -86,9 +96,14 @@ export function detailRowToLocalPayload(
         currency: row.currency ?? 'CHF',
         priority: row.priority ?? 'normal',
         fulfilled: Boolean(row.acquired_at),
+        occasion: '',
+        wishStatus: row.acquired_at ? 'bought' : 'open',
       }
     case 'moment':
       return {
+        place: '',
+        category: row.mood ?? '',
+        belonging: '',
         capturedAt: row.captured_at ?? '',
         mood: row.mood ?? '',
         weather: row.weather ?? '',
@@ -109,8 +124,10 @@ export function detailRowToLocalPayload(
     case 'event':
       return {
         locationName: row.location_name ?? '',
-        recurrenceRule: row.recurrence_rule ?? '',
+        recurrenceRule: row.recurrence_rule ?? 'none',
         calendarColor: row.calendar_color ?? '',
+        assignment: 'termin',
+        assigneeRole: 'gemeinsam',
       }
     case 'milestone':
       return {

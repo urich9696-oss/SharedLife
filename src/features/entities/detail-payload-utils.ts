@@ -3,9 +3,21 @@ import {
   type DateDetailValues,
 } from '@/features/dates/DateForm'
 import {
+  defaultEventDetail,
+  type EventDetailValues,
+} from '@/features/calendar/EventForm'
+import {
+  defaultExpenseDetail,
+  type ExpenseDetailValues,
+} from '@/features/finances/ExpenseForm'
+import {
   defaultGoalDetail,
   type GoalDetailValues,
 } from '@/features/goals/GoalForm'
+import {
+  defaultLeisureDetail,
+  type LeisureDetailValues,
+} from '@/features/ideas/LeisureForm'
 import {
   defaultMomentDetail,
   type MomentDetailValues,
@@ -14,6 +26,10 @@ import {
   defaultProjectDetail,
   type ProjectDetailValues,
 } from '@/features/projects/ProjectForm'
+import {
+  defaultRecipeDetail,
+  type RecipeDetailValues,
+} from '@/features/recipes/RecipeForm'
 import {
   defaultTaskDetail,
   type TaskDetailValues,
@@ -36,6 +52,10 @@ export type DetailValues =
   | WishDetailValues
   | MomentDetailValues
   | ProjectDetailValues
+  | EventDetailValues
+  | LeisureDetailValues
+  | RecipeDetailValues
+  | ExpenseDetailValues
   | Record<string, unknown>
 
 export function defaultDetailForType(type: EntityType): DetailValues {
@@ -49,11 +69,20 @@ export function defaultDetailForType(type: EntityType): DetailValues {
     case 'task':
       return { ...defaultTaskDetail }
     case 'wish':
+    case 'gift':
       return { ...defaultWishDetail }
     case 'moment':
       return { ...defaultMomentDetail }
     case 'project':
       return { ...defaultProjectDetail }
+    case 'event':
+      return { ...defaultEventDetail }
+    case 'leisure':
+      return { ...defaultLeisureDetail }
+    case 'recipe':
+      return { ...defaultRecipeDetail }
+    case 'expense':
+      return { ...defaultExpenseDetail }
     default:
       return {}
   }

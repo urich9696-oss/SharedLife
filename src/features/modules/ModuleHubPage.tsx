@@ -4,7 +4,6 @@ import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { FinanceDashboardPage } from '@/features/finances/FinanceDashboardPage'
-import { HomeRoomsPage } from '@/features/home-spaces/HomeRoomsPage'
 import { IdeasPage } from '@/features/ideas/IdeasPage'
 import { RecipesPage } from '@/features/recipes/RecipesPage'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
@@ -30,10 +29,6 @@ export function ModuleHubPage() {
 
   if (moduleKey === 'finanzen') {
     return <FinanceDashboardPage />
-  }
-
-  if (moduleKey === 'zuhause') {
-    return <HomeRoomsPage />
   }
 
   if (moduleKey === 'freizeit') {

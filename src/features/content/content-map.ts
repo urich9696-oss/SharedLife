@@ -107,7 +107,7 @@ export const CONTENT_PLACEMENT: Record<EntityType, ContentPlacement> = {
   },
   leisure: {
     entityType: 'leisure',
-    userLabel: 'Idee',
+    userLabel: 'Date Idee',
     primaryHome: 'mehr-inspiration',
     isVorhaben: true,
   },
@@ -118,8 +118,8 @@ export const CONTENT_PLACEMENT: Record<EntityType, ContentPlacement> = {
   },
   household: {
     entityType: 'household',
-    userLabel: 'Zuhause',
-    primaryHome: 'mehr-alltag',
+    userLabel: 'Legacy',
+    primaryHome: 'einkauf',
   },
   expense: {
     entityType: 'expense',
@@ -171,7 +171,7 @@ export function primaryPathForEntityType(type: EntityType): string {
     case 'einkauf':
       return '/einkauf'
     case 'mehr-alltag':
-      return type === 'recipe' ? '/module/rezepte' : '/module/zuhause'
+      return type === 'recipe' ? '/module/rezepte' : '/einkauf'
     case 'mehr-inspiration':
       return type === 'gift' || type === 'wish' ? '/module/geschenke' : '/module/freizeit'
     case 'mehr-finanzen':

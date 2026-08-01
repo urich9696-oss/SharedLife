@@ -1,10 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { FormProvider, useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
-import { Switch } from '@/components/ui/Switch'
-import { Textarea } from '@/components/ui/Textarea'
 import { entityFormSchema, type EntityFormValues } from '@/features/entities/entity-form-schema'
 import { entityToFormValues } from '@/features/entities/entity-date-utils'
 import { getEntityTypeMeta } from '@/features/entities/entity-types'
@@ -18,6 +15,8 @@ export interface EntityFormProps {
   submitLabel?: string
   loading?: boolean
   children?: React.ReactNode
+  /** Wenn false: Titel ausblenden (typ-spezifische Maske hat eigenes Titelfeld) */
+  showTitle?: boolean
 }
 
 export function EntityForm({
@@ -28,14 +27,10 @@ export function EntityForm({
   submitLabel = 'Speichern',
   loading = false,
   children,
+  showTitle = true,
 }: EntityFormProps) {
   const meta = getEntityTypeMeta(entityType)
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<EntityFormValues>({
+  const methods = useForm<EntityFormValues>({
     resolver: zodResolver(entityFormSchema),
     defaultValues: {
       title: '',
@@ -50,71 +45,41 @@ export function EntityForm({
     },
   })
 
-  const allDay = watch('allDay')
-  const showDates = ['event', 'trip', 'date', 'task', 'moment', 'project', 'gift', 'leisure'].includes(
-    entityType,
-  )
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = methods
 
   return (
-    <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-4">
-      <Input
-        label="Titel"
-        {...register('title')}
-        error={errors.title?.message}
-        placeholder={`${meta.label} benennen…`}
-      />
+    <FormProvider {...methods}>
+      <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-3.5">
+        {showTitle ? (
+          <Input
+            label="Titel"
+            {...register('title')}
+            error={errors.title?.message}
+            placeholder={`${meta.label} benennen…`}
+            autoComplete="off"
+          />
+        ) : (
+          <input type="hidden" {...register('title')} />
+        )}
 
-      <Textarea
-        label="Beschreibung"
-        {...register('description')}
-        error={errors.description?.message}
-        placeholder="Optional"
-        rows={3}
-      />
+        {children}
 
-      <Select
-        label="Status"
-        options={meta.statuses.map((s) => ({
-          value: s,
-          label: meta.statusLabels[s],
-        }))}
-        {...register('status')}
-        error={errors.status?.message}
-      />
-
-      {showDates ? (
-        <>
-          <Switch label="Ganztägig" {...register('allDay')} />
-
-          {allDay ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Startdatum" type="date" {...register('startDate')} />
-              <Input label="Enddatum" type="date" {...register('endDate')} />
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Startdatum" type="date" {...register('startDate')} />
-              <Input label="Startzeit" type="time" {...register('startTime')} />
-              <Input label="Enddatum" type="date" {...register('endDate')} />
-              <Input label="Endzeit" type="time" {...register('endTime')} />
-            </div>
-          )}
-        </>
-      ) : null}
-
-      {children}
-
-      <div className="flex gap-3 pt-2">
-        {onCancel ? (
-          <Button type="button" variant="secondary" onClick={onCancel} fullWidth>
-            Abbrechen
+        <div className="flex gap-3 pt-1">
+          {onCancel ? (
+            <Button type="button" variant="secondary" onClick={onCancel} fullWidth>
+              Abbrechen
+            </Button>
+          ) : null}
+          <Button type="submit" loading={loading} fullWidth>
+            {submitLabel}
           </Button>
-        ) : null}
-        <Button type="submit" loading={loading} fullWidth>
-          {submitLabel}
-        </Button>
-      </div>
-    </form>
+        </div>
+      </form>
+    </FormProvider>
   )
 }
 

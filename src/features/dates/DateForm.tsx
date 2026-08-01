@@ -1,22 +1,24 @@
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
+import { ASSIGNEE_OPTIONS, EntityDateFields, EntityNoteField } from '@/features/entities/SharedFormFields'
 
 export type DatePhase = 'idea' | 'planned' | 'done'
+export type ReservationStatus = 'none' | 'requested' | 'confirmed'
 
 export interface DateDetailValues {
   phase: DatePhase
-  occasion: string
   venueName: string
   estimatedCost: string
+  reservationStatus: ReservationStatus
   reservationReference: string
-  note: string
+  assigneeRole: string
+  occasion: string
 }
 
-const phaseOptions = [
-  { value: 'idea', label: 'Idee' },
-  { value: 'planned', label: 'Geplant' },
-  { value: 'done', label: 'Durchgeführt' },
+const reservationOptions = [
+  { value: 'none', label: 'Keine Reservierung' },
+  { value: 'requested', label: 'Angefragt' },
+  { value: 'confirmed', label: 'Bestätigt' },
 ]
 
 interface DateFormFieldsProps {
@@ -27,18 +29,7 @@ interface DateFormFieldsProps {
 export function DateFormFields({ values, onChange }: DateFormFieldsProps) {
   return (
     <>
-      <Select
-        label="Phase"
-        options={phaseOptions}
-        value={values.phase}
-        onChange={(e) => onChange({ ...values, phase: e.target.value as DatePhase })}
-      />
-      <Input
-        label="Anlass"
-        value={values.occasion}
-        onChange={(e) => onChange({ ...values, occasion: e.target.value })}
-        placeholder="z. B. Abendessen"
-      />
+      <EntityDateFields showEnd={false} showAllDay={false} showTime startLabel="Datum" />
       <Input
         label="Ort"
         value={values.venueName}
@@ -52,27 +43,45 @@ export function DateFormFields({ values, onChange }: DateFormFieldsProps) {
         placeholder="z. B. 80"
         inputMode="decimal"
       />
-      <Input
-        label="Reservierung"
-        value={values.reservationReference}
-        onChange={(e) => onChange({ ...values, reservationReference: e.target.value })}
-        placeholder="Optional"
+      <Select
+        label="Reservierungsstatus"
+        options={reservationOptions}
+        value={values.reservationStatus}
+        onChange={(e) =>
+          onChange({
+            ...values,
+            reservationStatus: e.target.value as ReservationStatus,
+          })
+        }
       />
-      <Textarea
-        label="Notiz"
-        value={values.note}
-        onChange={(e) => onChange({ ...values, note: e.target.value })}
-        rows={3}
+      {values.reservationStatus !== 'none' ? (
+        <Input
+          label="Reservierungsreferenz"
+          value={values.reservationReference}
+          onChange={(e) => onChange({ ...values, reservationReference: e.target.value })}
+          placeholder="Optional"
+        />
+      ) : null}
+      <Select
+        label="Zuständigkeit"
+        options={[...ASSIGNEE_OPTIONS]}
+        value={values.assigneeRole}
+        onChange={(e) => onChange({ ...values, assigneeRole: e.target.value })}
       />
+      <EntityNoteField />
+      <p className="text-xs text-text-muted">
+        Hero-Bild nach dem Speichern unter Fotos hinzufügen. Nach dem Date: „Als Moment speichern“.
+      </p>
     </>
   )
 }
 
 export const defaultDateDetail: DateDetailValues = {
-  phase: 'idea',
-  occasion: '',
+  phase: 'planned',
   venueName: '',
   estimatedCost: '',
+  reservationStatus: 'none',
   reservationReference: '',
-  note: '',
+  assigneeRole: 'gemeinsam',
+  occasion: '',
 }

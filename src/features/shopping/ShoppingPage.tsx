@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid'
-import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -21,11 +20,15 @@ import type { ChecklistItemRow } from '@/lib/indexed-db/schema'
 import { cn } from '@/lib/utilities/cn'
 
 const UNDO_MS = 5000
-const EXIT_MS = 380
+const EXIT_MS = 320
 
 interface ExitingItem {
   id: string
   title: string
+}
+
+function isRecipeItem(item: ChecklistItemRow) {
+  return (item.category ?? '').toLowerCase() === 'rezept'
 }
 
 export function ShoppingPage() {
@@ -34,9 +37,6 @@ export function ShoppingPage() {
   const [params] = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState('')
-  const [draftQuantity, setDraftQuantity] = useState('')
-  const [draftUnit, setDraftUnit] = useState('')
-  const [showDetails, setShowDetails] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -58,9 +58,7 @@ export function ShoppingPage() {
   })
 
   useEffect(() => {
-    if (params.get('focus') === '1') {
-      inputRef.current?.focus()
-    }
+    if (params.get('focus') === '1') inputRef.current?.focus()
   }, [params])
 
   useEffect(() => {
@@ -71,29 +69,22 @@ export function ShoppingPage() {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey })
-    void queryClient.invalidateQueries({ queryKey: ['shopping-preview', spaceId] })
   }
 
   const addItem = useMutation({
     mutationFn: async (title: string) => {
       if (!spaceId) throw new Error('Kein Space')
       const { checklistId } = await ensureShoppingList(spaceId, session?.userId ?? null)
-      const activeCount = data?.active.length ?? 0
       await createChecklistItem({
         id: uuidv4(),
         spaceId,
         checklistId,
         title,
-        sortOrder: activeCount,
-        quantity: draftQuantity.trim() || null,
-        unit: draftUnit.trim() || null,
+        sortOrder: data?.active.length ?? 0,
       })
     },
     onSuccess: () => {
       setDraft('')
-      setDraftQuantity('')
-      setDraftUnit('')
-      setShowDetails(false)
       setError(null)
       invalidate()
       requestAnimationFrame(() => inputRef.current?.focus())
@@ -121,7 +112,6 @@ export function ShoppingPage() {
           return next
         })
       }, EXIT_MS)
-
       setUndo({ id: item.id, title: item.title })
       if (undoTimer.current) window.clearTimeout(undoTimer.current)
       undoTimer.current = window.setTimeout(() => setUndo(null), UNDO_MS)
@@ -161,9 +151,6 @@ export function ShoppingPage() {
       setEditTitle('')
       invalidate()
     },
-    onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen')
-    },
   })
 
   const removeItem = useMutation({
@@ -173,20 +160,6 @@ export function ShoppingPage() {
     },
     onSuccess: () => invalidate(),
   })
-
-  const grouped = useMemo(() => {
-    const active = (data?.active ?? []).filter((i) => !exiting[i.id] || exiting[i.id])
-    const map = new Map<string, ChecklistItemRow[]>()
-    for (const item of active) {
-      const key = item.category?.trim() || 'Ohne Kategorie'
-      const list = map.get(key) ?? []
-      list.push(item)
-      map.set(key, list)
-    }
-    return [...map.entries()]
-  }, [data?.active, exiting])
-
-  const hasCategories = grouped.length > 1 || (grouped[0] && grouped[0][0] !== 'Ohne Kategorie')
 
   if (isLoading) return <LoadingState label="Einkaufsliste wird geladen…" />
   if (isError) {
@@ -199,73 +172,37 @@ export function ShoppingPage() {
     )
   }
 
-  const openCount = data?.active.length ?? 0
+  const active = (data?.active ?? []).filter((i) => !exiting[i.id] || exiting[i.id])
+  const openCount = active.length
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6 lg:py-8">
       <header className="mb-5">
-        <p className="text-sm font-medium text-primary">Unser Alltag</p>
         <h1 className="font-serif text-3xl text-text">Einkauf</h1>
         <p className="mt-1 text-sm text-text-muted">
-          {openCount === 0
-            ? 'Keine offenen Artikel'
-            : `${openCount} offene${openCount === 1 ? 'r Artikel' : ' Artikel'}`}
+          {openCount === 0 ? 'Liste ist leer' : `${openCount} offen`}
         </p>
       </header>
 
       <form
-        className="mb-5 space-y-2"
+        className="mb-5"
         onSubmit={(e) => {
           e.preventDefault()
           const title = draft.trim()
-          if (!title) {
-            setError('Bitte einen Artikel eingeben')
-            return
-          }
+          if (!title) return
           addItem.mutate(title)
         }}
       >
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Artikel hinzufügen…"
-            enterKeyHint="done"
-            autoComplete="off"
-            className="min-h-12 flex-1 rounded-[16px] border border-border bg-surface px-4 text-base text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus"
-            aria-label="Neuen Einkaufsartikel eingeben"
-          />
-          <Button type="submit" className="min-h-12 px-4" loading={addItem.isPending}>
-            Hinzufügen
-          </Button>
-        </div>
-        <button
-          type="button"
-          className="text-xs font-medium text-primary"
-          onClick={() => setShowDetails((v) => !v)}
-        >
-          {showDetails ? 'Menge ausblenden' : 'Menge und Einheit (optional)'}
-        </button>
-        {showDetails ? (
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={draftQuantity}
-              onChange={(e) => setDraftQuantity(e.target.value)}
-              placeholder="Menge"
-              inputMode="decimal"
-              className="min-h-11 rounded-[14px] border border-border bg-surface px-3 text-base text-text"
-              aria-label="Menge optional"
-            />
-            <input
-              value={draftUnit}
-              onChange={(e) => setDraftUnit(e.target.value)}
-              placeholder="Einheit"
-              className="min-h-11 rounded-[14px] border border-border bg-surface px-3 text-base text-text"
-              aria-label="Einheit optional"
-            />
-          </div>
-        ) : null}
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Artikel hinzufügen…"
+          enterKeyHint="done"
+          autoComplete="off"
+          className="min-h-12 w-full rounded-[20px] border border-border/80 bg-surface px-4 text-base text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus"
+          aria-label="Neuen Einkaufsartikel eingeben"
+        />
       </form>
 
       {error ? (
@@ -276,114 +213,78 @@ export function ShoppingPage() {
 
       {openCount === 0 ? (
         <EmptyState
-          title="Liste ist leer"
-          description="Tippe oben einen Artikel ein und drücke Enter — fertig."
+          title="Noch nichts auf der Liste"
+          description="Artikel tippen und Enter — fertig."
           actionLabel="Artikel hinzufügen"
           onAction={() => inputRef.current?.focus()}
         />
       ) : (
-        <div className="space-y-5">
-          {grouped.map(([category, items]) => (
-            <section key={category}>
-              {hasCategories ? (
-                <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-muted">
-                  {category}
-                </h2>
-              ) : null}
-              <ul className="overflow-hidden rounded-[20px] border border-border bg-surface shadow-xs">
-                {items.map((item) => {
-                  const isExiting = Boolean(exiting[item.id])
-                  return (
-                    <li
-                      key={item.id}
-                      className={cn(
-                        'flex items-center gap-3 border-b border-border/70 px-4 py-3 last:border-b-0',
-                        'transition-[opacity,transform,max-height,padding,margin] duration-300 ease-out',
-                        isExiting && 'max-h-0 opacity-0 py-0 -translate-x-4 overflow-hidden border-b-0',
-                      )}
-                      style={{ maxHeight: isExiting ? 0 : 72 }}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`${item.title} erledigen`}
-                        className="flex size-11 shrink-0 items-center justify-center rounded-full"
-                        onClick={() => completeItem.mutate(item)}
-                        disabled={isExiting || completeItem.isPending}
-                      >
-                        <span
-                          className={cn(
-                            'flex size-6 items-center justify-center rounded-full border-2 border-primary/50 transition',
-                            isExiting && 'scale-110 border-primary bg-primary text-surface',
-                          )}
-                        >
-                          {isExiting ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          ) : null}
-                        </span>
-                      </button>
+        <ul className="overflow-hidden rounded-[24px] border border-border/80 bg-surface shadow-xs">
+          {active.map((item) => {
+            const isExiting = Boolean(exiting[item.id])
+            return (
+              <li
+                key={item.id}
+                className={cn(
+                  'flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0',
+                  'transition-[opacity,transform] duration-300 ease-out',
+                  isExiting && 'opacity-0 -translate-x-3',
+                )}
+              >
+                <button
+                  type="button"
+                  aria-label={`${item.title} erledigen`}
+                  className="flex size-11 shrink-0 items-center justify-center"
+                  onClick={() => completeItem.mutate(item)}
+                  disabled={isExiting}
+                >
+                  <span className="flex size-6 items-center justify-center rounded-[8px] border-2 border-primary/40" />
+                </button>
 
-                      {editingId === item.id ? (
-                        <form
-                          className="flex min-w-0 flex-1 gap-2"
-                          onSubmit={(e) => {
-                            e.preventDefault()
-                            saveEdit.mutate()
-                          }}
-                        >
-                          <input
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            className="min-h-11 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-text"
-                            autoFocus
-                            enterKeyHint="done"
-                          />
-                          <Button type="submit" size="sm">
-                            OK
-                          </Button>
-                        </form>
-                      ) : (
-                        <button
-                          type="button"
-                          className={cn(
-                            'min-w-0 flex-1 text-left text-base text-text',
-                            isExiting && 'line-through text-text-muted',
-                          )}
-                          onClick={() => {
-                            setEditingId(item.id)
-                            setEditTitle(item.title)
-                          }}
-                        >
-                          {item.title}
-                          {item.quantity ? (
-                            <span className="ml-2 text-sm text-text-muted">
-                              {item.quantity}
-                              {item.unit ? ` ${item.unit}` : ''}
-                            </span>
-                          ) : null}
-                        </button>
-                      )}
+                {editingId === item.id ? (
+                  <form
+                    className="flex min-w-0 flex-1"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      saveEdit.mutate()
+                    }}
+                  >
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="min-h-11 w-full rounded-[14px] border border-border bg-bg px-3 text-base"
+                      autoFocus
+                      enterKeyHint="done"
+                    />
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left text-base text-text"
+                    onClick={() => {
+                      setEditingId(item.id)
+                      setEditTitle(item.title)
+                    }}
+                  >
+                    {isRecipeItem(item) ? <span className="mr-1.5" aria-hidden>🍽️</span> : null}
+                    {item.title}
+                  </button>
+                )}
 
-                      <button
-                        type="button"
-                        className="min-h-11 min-w-11 text-sm text-text-muted"
-                        aria-label={`${item.title} löschen`}
-                        onClick={() => {
-                          if (window.confirm(`„${item.title}“ wirklich entfernen?`)) {
-                            removeItem.mutate(item.id)
-                          }
-                        }}
-                      >
-                        ×
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
+                <button
+                  type="button"
+                  className="min-h-11 min-w-11 text-text-muted"
+                  aria-label={`${item.title} löschen`}
+                  onClick={() => {
+                    if (window.confirm(`„${item.title}“ entfernen?`)) removeItem.mutate(item.id)
+                  }}
+                >
+                  ×
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       )}
 
       {(data?.completed.length ?? 0) > 0 ? (
@@ -393,16 +294,19 @@ export function ShoppingPage() {
             className="text-sm font-medium text-text-muted"
             onClick={() => setShowCompleted((v) => !v)}
           >
-            {showCompleted ? 'Zuletzt erledigt ausblenden' : 'Zuletzt erledigt anzeigen'}
+            {showCompleted ? 'Erledigte ausblenden' : 'Erledigte anzeigen'}
           </button>
           {showCompleted ? (
             <ul className="mt-3 space-y-2">
-              {data!.completed.slice(0, 12).map((item) => (
+              {data!.completed.slice(0, 20).map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center justify-between rounded-[14px] border border-border/70 bg-surface-soft/50 px-3 py-2 text-sm text-text-muted"
+                  className="flex items-center justify-between rounded-[16px] bg-surface-soft/60 px-3 py-2 text-sm text-text-muted"
                 >
-                  <span className="line-through">{item.title}</span>
+                  <span className="line-through">
+                    {isRecipeItem(item) ? '🍽️ ' : ''}
+                    {item.title}
+                  </span>
                   <button
                     type="button"
                     className="min-h-10 text-primary"
@@ -419,15 +323,11 @@ export function ShoppingPage() {
 
       {undo ? (
         <div
-          className="fixed inset-x-4 bottom-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+0.75rem)] z-[var(--z-toast)] mx-auto flex max-w-md items-center justify-between gap-3 rounded-[16px] border border-border bg-text px-4 py-3 text-sm text-surface shadow-md lg:bottom-6"
+          className="fixed inset-x-4 bottom-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+0.75rem)] z-[var(--z-toast)] mx-auto flex max-w-md items-center justify-between gap-3 rounded-[16px] bg-text px-4 py-3 text-sm text-surface shadow-md lg:bottom-6"
           role="status"
         >
-          <span>Erledigt – {undo.title}</span>
-          <button
-            type="button"
-            className="font-medium underline"
-            onClick={() => undoComplete.mutate(undo.id)}
-          >
+          <span>Erledigt</span>
+          <button type="button" className="font-medium underline" onClick={() => undoComplete.mutate(undo.id)}>
             Rückgängig
           </button>
         </div>

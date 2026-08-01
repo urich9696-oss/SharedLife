@@ -19,12 +19,14 @@ import {
   defaultDetailForType,
   detailTypeForEntity,
 } from '@/features/entities/detail-payload-utils'
+import { metadataFromDetail } from '@/features/entities/detail-metadata'
 import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import type { EntityType } from '@/lib/indexed-db/schema'
-import { createChecklist } from '@/lib/indexed-db/repositories/checklists'
+import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
+import type { TripDetailValues } from '@/features/trips/TripForm'
 
 interface CreateEntitySheetProps {
   open: boolean
@@ -95,12 +97,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     const id = uuidv4()
 
     try {
-      const metadata: Record<string, unknown> = {}
-      if (selectedType === 'task') {
-        const task = detailValues as TaskDetailValues
-        metadata.assigneeRole = task.assigneeRole || ''
-        metadata.taskCategory = task.category || ''
-      }
+      const metadata = metadataFromDetail(selectedType, detailValues)
 
       await createEntity.mutateAsync({
         id,
@@ -140,6 +137,54 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
           entityId: id,
           title: 'Zutaten',
         })
+      }
+
+      if (selectedType === 'task') {
+        const subtasks = String((detailValues as TaskDetailValues).subtasksText || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        if (subtasks.length > 0) {
+          const checklist = await createChecklist({
+            id: uuidv4(),
+            spaceId,
+            entityId: id,
+            title: 'Unteraufgaben',
+          })
+          for (const [index, title] of subtasks.entries()) {
+            await createChecklistItem({
+              id: uuidv4(),
+              spaceId,
+              checklistId: checklist.id,
+              title,
+              sortOrder: index,
+            })
+          }
+        }
+      }
+
+      if (selectedType === 'trip') {
+        const packing = String((detailValues as TripDetailValues).packingListText || '')
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        if (packing.length > 0) {
+          const checklist = await createChecklist({
+            id: uuidv4(),
+            spaceId,
+            entityId: id,
+            title: 'Packliste',
+          })
+          for (const [index, title] of packing.entries()) {
+            await createChecklistItem({
+              id: uuidv4(),
+              spaceId,
+              checklistId: checklist.id,
+              title,
+              sortOrder: index,
+            })
+          }
+        }
       }
 
       handleClose()

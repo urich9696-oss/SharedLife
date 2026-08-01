@@ -49,16 +49,6 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     group: 'alltag',
   },
   {
-    key: 'zuhause',
-    label: 'Zuhause',
-    description: 'Haushalt und gemeinsame Aufgaben zu Hause',
-    path: '/module/zuhause',
-    entityTypes: ['household', 'task'],
-    accent: 'bg-primary/15 text-primary',
-    imageHint: 'Zuhause',
-    group: 'alltag',
-  },
-  {
     key: 'rezepte',
     label: 'Rezepte',
     description: 'Lieblingsgerichte zu zweit',
@@ -80,14 +70,15 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     key: 'freizeit',
-    label: 'Ideen',
-    description: 'Gemeinsame Ideensammlungen',
+    label: 'Date Ideen',
+    description: 'Ideen für gemeinsame Dates',
     path: '/module/freizeit',
     entityTypes: ['leisure'],
     accent: 'bg-blue/15 text-blue',
-    imageHint: 'Ideen',
+    imageHint: 'Date Ideen',
     group: 'inspiration',
   },
+
   {
     key: 'finanzen',
     label: 'Finanzen',
@@ -141,6 +132,8 @@ export const LEGACY_MODULE_REDIRECTS: Record<string, string> = {
   reisen: '/planen?tab=vorhaben&filter=trip',
   ziele: '/planen?tab=vorhaben&filter=goal',
   beziehung: '/erinnerungen',
+  /** Zuhause-Modul entfernt – Deep Links landen im Alltag (Einkauf) */
+  zuhause: '/einkauf',
 }
 
 const GROUP_ORDER: { key: ModuleGroupKey; label: string }[] = [

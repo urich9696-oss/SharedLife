@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { EntityDateFields, EntityNoteField, EntityStatusSelect } from '@/features/entities/SharedFormFields'
 import type { GoalProgressKind } from '@/lib/validation/goal-progress'
 
 export interface GoalDetailValues {
@@ -7,13 +7,13 @@ export interface GoalDetailValues {
   current: number
   target: number
   milestones: string
+  goalStatus: 'planned' | 'active' | 'achieved'
 }
 
-const kindOptions = [
-  { value: 'percent', label: 'Prozent' },
-  { value: 'amount', label: 'Betrag' },
-  { value: 'count', label: 'Anzahl' },
-  { value: 'manual', label: 'Manuell' },
+const statusOptions = [
+  { value: 'draft', label: 'Geplant' },
+  { value: 'active', label: 'Aktiv' },
+  { value: 'completed', label: 'Erreicht' },
 ]
 
 interface GoalFormFieldsProps {
@@ -24,53 +24,62 @@ interface GoalFormFieldsProps {
 export function GoalFormFields({ values, onChange }: GoalFormFieldsProps) {
   return (
     <>
-      <Select
-        label="Fortschrittsart"
-        options={kindOptions}
-        value={values.progressKind}
-        onChange={(e) =>
-          onChange({ ...values, progressKind: e.target.value as GoalProgressKind })
-        }
-      />
-      {values.progressKind !== 'manual' ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Aktuell"
-            type="number"
-            value={values.current}
-            onChange={(e) => onChange({ ...values, current: Number(e.target.value) })}
-          />
-          <Input
-            label="Ziel"
-            type="number"
-            value={values.target}
-            onChange={(e) => onChange({ ...values, target: Number(e.target.value) })}
-          />
-        </div>
-      ) : (
+      <EntityNoteField label="Beschreibung" placeholder="Was wollt ihr erreichen?" rows={3} />
+      <div className="grid gap-3 sm:grid-cols-2">
         <Input
-          label="Fortschritt (%)"
+          label="Zielbetrag"
           type="number"
-          min={0}
-          max={100}
-          value={values.current}
-          onChange={(e) => onChange({ ...values, current: Number(e.target.value) })}
+          step="0.01"
+          value={values.target}
+          onChange={(e) =>
+            onChange({
+              ...values,
+              progressKind: 'amount',
+              target: Number(e.target.value),
+            })
+          }
         />
-      )}
-      <Input
-        label="Meilensteine"
-        value={values.milestones}
-        onChange={(e) => onChange({ ...values, milestones: e.target.value })}
-        hint="Kommagetrennt"
-        placeholder="z. B. Anzahlung, Buchung, Abreise"
+        <Input
+          label="Aktueller Betrag"
+          type="number"
+          step="0.01"
+          value={values.current}
+          onChange={(e) =>
+            onChange({
+              ...values,
+              progressKind: 'amount',
+              current: Number(e.target.value),
+            })
+          }
+        />
+      </div>
+      <EntityDateFields
+        showEnd
+        showAllDay={false}
+        showTime={false}
+        startLabel="Startdatum"
+        endLabel="Zieldatum"
       />
+      <p className="rounded-[16px] bg-bg px-3 py-2.5 text-sm text-text-muted">
+        Fortschritt:{' '}
+        <span className="font-medium text-text">
+          {values.target > 0
+            ? `${Math.min(100, Math.round((values.current / values.target) * 100))}%`
+            : '0%'}
+        </span>
+      </p>
+      <EntityStatusSelect options={statusOptions} />
+      <p className="text-xs text-text-muted">
+        Hero-Bild, zugehörige Aufgaben und Momente nach dem Speichern in der Detailansicht.
+      </p>
     </>
   )
 }
 
 export const defaultGoalDetail: GoalDetailValues = {
-  progressKind: 'percent',
+  progressKind: 'amount',
   current: 0,
-  target: 100,
+  target: 0,
   milestones: '',
+  goalStatus: 'planned',
 }

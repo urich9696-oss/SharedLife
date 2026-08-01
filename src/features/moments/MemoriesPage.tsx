@@ -11,7 +11,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { Gallery } from '@/features/media/Gallery'
 import { MediaImage } from '@/features/media/MediaImage'
 import { humanizeMediaTitle } from '@/features/media/media-url'
-import { MomentSwipeDeck } from '@/features/moments/MomentSwipeDeck'
+import { MomentSwipeDeck, type MomentDeckCard } from '@/features/moments/MomentSwipeDeck'
 import { TimelineBrowser } from '@/features/timeline/TimelineBrowser'
 import { deriveTimelineItems, type TimelineItem } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
@@ -109,6 +109,33 @@ export function MemoriesPage() {
     [data],
   )
 
+  /** Jedes Bild = eigene Swipe-Card; Tap öffnet immer dieselbe Moment-Detailseite */
+  const deckCards = useMemo(() => {
+    const entitiesById = new Map((data?.entities ?? []).map((e) => [e.id, e]))
+    const fromGallery: MomentDeckCard[] = (data?.gallery ?? []).map((g) => {
+      const entity = g.entityId ? entitiesById.get(g.entityId) : undefined
+      return {
+        id: `media-${g.id}`,
+        title: entity?.title || humanizeMediaTitle(g.caption, g.originalFilename),
+        occurredAt: g.occurredAt,
+        location: entity ? String(entity.metadata?.place ?? '') || null : null,
+        storagePath: g.src,
+        entityId: g.entityId,
+        entityType: entity?.entity_type ?? 'moment',
+      }
+    })
+    if (fromGallery.length > 0) return fromGallery
+    return (data?.items ?? []).map((item) => ({
+      id: item.id,
+      title: item.title,
+      occurredAt: item.occurredAt,
+      location: item.location,
+      storagePath: item.storagePath,
+      entityId: item.entityId,
+      entityType: item.entityType,
+    }))
+  }, [data])
+
   const yearItems = useMemo(() => {
     return (data?.items ?? []).filter((item) => getYear(parseISO(item.occurredAt)) === viewYear)
   }, [data, viewYear])
@@ -177,9 +204,13 @@ export function MemoriesPage() {
       {hasContent && tab === 'deck' && spaceId ? (
         <section className="pb-2">
           <MomentSwipeDeck
-            items={timelineItems}
+            items={deckCards}
             spaceId={spaceId}
             onOpen={(item) => {
+              if (item.entityId && item.entityType) {
+                void navigate(`/entities/${item.entityType}/${item.entityId}`)
+                return
+              }
               const idx = timelineItems.findIndex((t) => t.id === item.id)
               setBrowserIndex(idx >= 0 ? idx : 0)
             }}

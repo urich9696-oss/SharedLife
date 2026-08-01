@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { v4 as uuidv4 } from 'uuid'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
 import { useAuth } from '@/features/auth/AuthProvider'
 import {
   defaultDetailForType,
   detailTypeForEntity,
 } from '@/features/entities/detail-payload-utils'
+import { metadataFromDetail } from '@/features/entities/detail-metadata'
+import { EntityForm } from '@/features/entities/EntityForm'
+import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFields'
+import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
+import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
-import { useCreateEntity } from '@/features/entities/useEntities'
-import { ENTITY_TYPES, type EntityType } from '@/lib/indexed-db/schema'
-import { createChecklist } from '@/lib/indexed-db/repositories/checklists'
+import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
+import type { TaskDetailValues } from '@/features/tasks/TaskForm'
+import type { TripDetailValues } from '@/features/trips/TripForm'
+import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
+import { ENTITY_TYPES, type EntityType } from '@/lib/indexed-db/schema'
 
 function resolveType(raw: string | null): EntityType {
   if (raw && (ENTITY_TYPES as readonly string[]).includes(raw)) return raw as EntityType
@@ -26,49 +30,44 @@ export function CreatePlanningPage() {
   const entityType = useMemo(() => resolveType(params.get('type')), [params])
   const meta = getEntityTypeMeta(entityType)
   const { spaceId } = useAuth()
+  const createEntity = useCreateEntity()
+  const { data: budgets = [] } = useBudgets()
+  const [detailValues, setDetailValues] = useState(() => defaultDetailForType(entityType))
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (entityType === 'list') {
       void navigate('/einkauf?focus=1', { replace: true })
     }
   }, [entityType, navigate])
-  const createEntity = useCreateEntity()
-  const [title, setTitle] = useState('')
-  const [date, setDate] = useState('')
-  const [notes, setNotes] = useState('')
-  const [error, setError] = useState<string | null>(null)
 
-  const needsDate = ['event', 'trip', 'date', 'gift', 'task'].includes(entityType)
+  useEffect(() => {
+    setDetailValues(defaultDetailForType(entityType))
+  }, [entityType])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
+
+  const handleSubmit = async (values: EntityFormValues) => {
     if (!spaceId) {
       setError('Kein Space geladen.')
       return
     }
-    if (!title.trim()) {
-      setError('Titel ist erforderlich.')
-      return
-    }
-    if (needsDate && !date) {
-      setError('Datum ist erforderlich.')
-      return
-    }
-
     setError(null)
     const id = uuidv4()
+    const dates = formValuesToEntityDates(values)
+    const metadata = metadataFromDetail(entityType, detailValues)
+
     try {
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
         entity_type: entityType,
-        title: title.trim(),
-        description: notes.trim() || null,
-        status: entityType === 'date' || entityType === 'trip' || entityType === 'gift' ? 'draft' : 'active',
-        all_day_start: date || null,
-        all_day_end: date || null,
+        title: values.title.trim(),
+        description: values.description?.trim() || null,
+        status: values.status,
+        ...dates,
         sort_order: 0,
-        metadata: {},
+        metadata,
       })
 
       const detailType = detailTypeForEntity(entityType)
@@ -77,17 +76,65 @@ export function CreatePlanningPage() {
           entityId: id,
           spaceId,
           detailType,
-          payload: defaultDetailForType(entityType) as Record<string, unknown>,
+          payload: detailValues as Record<string, unknown>,
         })
       }
 
-      if (entityType === 'list') {
+      if (entityType === 'recipe') {
         await createChecklist({
           id: uuidv4(),
           spaceId,
           entityId: id,
-          title: 'Einkaufsliste',
+          title: 'Zutaten',
         })
+      }
+
+      if (entityType === 'task') {
+        const subtasks = String((detailValues as TaskDetailValues).subtasksText || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        if (subtasks.length > 0) {
+          const checklist = await createChecklist({
+            id: uuidv4(),
+            spaceId,
+            entityId: id,
+            title: 'Unteraufgaben',
+          })
+          for (const [index, title] of subtasks.entries()) {
+            await createChecklistItem({
+              id: uuidv4(),
+              spaceId,
+              checklistId: checklist.id,
+              title,
+              sortOrder: index,
+            })
+          }
+        }
+      }
+
+      if (entityType === 'trip') {
+        const packing = String((detailValues as TripDetailValues).packingListText || '')
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        if (packing.length > 0) {
+          const checklist = await createChecklist({
+            id: uuidv4(),
+            spaceId,
+            entityId: id,
+            title: 'Packliste',
+          })
+          for (const [index, title] of packing.entries()) {
+            await createChecklistItem({
+              id: uuidv4(),
+              spaceId,
+              checklistId: checklist.id,
+              title,
+              sortOrder: index,
+            })
+          }
+        }
       }
 
       void navigate(entityDetailPath(entityType, id))
@@ -96,11 +143,14 @@ export function CreatePlanningPage() {
     }
   }
 
+  if (entityType === 'list') return null
+
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
-      <header className="mb-8">
-        <h1 className="font-serif text-3xl text-text">{meta.label} erstellen</h1>
-        <p className="mt-2 text-text-muted">{meta.description}</p>
+    <div className="mx-auto max-w-lg px-4 py-6 lg:py-8">
+      <header className="mb-6">
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Neu</p>
+        <h1 className="mt-1 font-serif text-3xl text-text">{meta.label}</h1>
+        <p className="mt-2 text-sm text-text-muted">{meta.description}</p>
       </header>
 
       {error ? (
@@ -109,46 +159,20 @@ export function CreatePlanningPage() {
         </p>
       ) : null}
 
-      <form className="flex flex-col gap-5" onSubmit={(e) => void handleSubmit(e)}>
-        <Input
-          label="Titel"
-          placeholder={`z. B. ${meta.label}`}
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          autoComplete="off"
+      <EntityForm
+        entityType={entityType}
+        onSubmit={handleSubmit}
+        onCancel={() => void navigate(-1)}
+        submitLabel="Speichern"
+        loading={createEntity.isPending}
+      >
+        <EntityTypeDetailFields
+          entityType={entityType}
+          values={detailValues}
+          onChange={setDetailValues}
+          budgetOptions={budgetOptions}
         />
-        {needsDate ? (
-          <Input
-            label="Datum"
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        ) : null}
-        <Textarea
-          label="Notizen"
-          placeholder="Optional…"
-          rows={3}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-        {entityType === 'trip' || entityType === 'date' || entityType === 'moment' ? (
-          <p className="text-sm text-text-muted">
-            Nach dem Speichern kannst du Fotos direkt am Eintrag hinzufügen — auch im Status
-            „Geplant“.
-          </p>
-        ) : null}
-        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-          <Button type="submit" fullWidth loading={createEntity.isPending}>
-            Speichern
-          </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => void navigate(-1)}>
-            Abbrechen
-          </Button>
-        </div>
-      </form>
+      </EntityForm>
     </div>
   )
 }

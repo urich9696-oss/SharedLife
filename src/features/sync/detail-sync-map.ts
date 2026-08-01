@@ -9,6 +9,9 @@ export function localPayloadToDetailColumns(
     case 'trip':
       return {
         destination: (payload.destination as string) || null,
+        accommodation: (payload.accommodation as string) || null,
+        budget_amount: payload.budgetAmount ? Number(payload.budgetAmount) : null,
+        notes: (payload.note as string) || null,
       }
     case 'date':
       return {
@@ -17,17 +20,20 @@ export function localPayloadToDetailColumns(
         dress_code: (payload.dressCode as string) || null,
         mood: (payload.mood as string) || null,
         surprise: Boolean(payload.surprise),
-        reservation_reference: (payload.reservationReference as string) || null,
+        reservation_reference:
+          (payload.reservationReference as string) ||
+          (payload.reservationStatus as string) ||
+          null,
         estimated_cost: payload.estimatedCost ? Number(payload.estimatedCost) : null,
       }
     case 'goal': {
-      const kind = String(payload.progressKind ?? 'percent')
+      const kind = String(payload.progressKind ?? 'amount')
       const current = Number(payload.current ?? 0)
       const target = Number(payload.target ?? 100) || 100
       const progress =
         kind === 'percent' ? current : Math.round((current / target) * 100)
       return {
-        progress_percent: Math.min(100, Math.max(0, progress)),
+        progress_percent: Math.min(100, Math.max(0, progress || 0)),
         motivation: (payload.milestones as string) || null,
       }
     }
@@ -40,7 +46,6 @@ export function localPayloadToDetailColumns(
         )
       return {
         priority: priority === 'medium' ? 'normal' : priority,
-        // Pair-Rollen (dennis/lea/gemeinsam) bleiben lokal im Payload; nur echte UUIDs syncen
         assignee_id: looksLikeUuid ? assigneeId : null,
         due_date: (payload.dueDate as string) || null,
       }
@@ -60,7 +65,7 @@ export function localPayloadToDetailColumns(
     case 'moment':
       return {
         captured_at: (payload.capturedAt as string) || null,
-        mood: (payload.mood as string) || null,
+        mood: (payload.mood as string) || (payload.category as string) || null,
         weather: (payload.weather as string) || null,
         highlight: Boolean(payload.highlight),
       }
@@ -79,7 +84,10 @@ export function localPayloadToDetailColumns(
     case 'event':
       return {
         location_name: (payload.locationName as string) || null,
-        recurrence_rule: (payload.recurrenceRule as string) || null,
+        recurrence_rule:
+          payload.recurrenceRule && payload.recurrenceRule !== 'none'
+            ? String(payload.recurrenceRule)
+            : null,
         calendar_color: (payload.calendarColor as string) || null,
       }
     case 'milestone':

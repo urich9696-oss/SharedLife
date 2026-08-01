@@ -16,6 +16,7 @@ import {
   detailTypeForEntity,
   parseDetailPayload,
 } from '@/features/entities/detail-payload-utils'
+import { metadataFromDetail } from '@/features/entities/detail-metadata'
 import {
   getEntityTypeMeta,
   getStatusLabel,
@@ -110,29 +111,77 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
 
   const handleEditOpen = () => {
     const parsed = parseDetailPayload(type, detailPayload as Record<string, unknown> | null)
-    if (type === 'task') {
-      const role = String(entity.metadata?.assigneeRole ?? '')
-      setDetailValues({
-        ...(parsed as TaskDetailValues),
-        assigneeRole:
-          role === 'dennis' || role === 'lea' || role === 'gemeinsam'
-            ? role
-            : (parsed as TaskDetailValues).assigneeRole,
-      })
-    } else {
-      setDetailValues(parsed)
-    }
+    setDetailValues({
+      ...parsed,
+      ...Object.fromEntries(
+        Object.entries(entity.metadata ?? {}).filter(([key]) =>
+          [
+            'assigneeRole',
+            'taskCategory',
+            'taskAssignment',
+            'recurrenceRule',
+            'subtasksText',
+            'eventAssignment',
+            'reservationStatus',
+            'place',
+            'momentCategory',
+            'belonging',
+            'packingListText',
+            'placesText',
+            'budgetAmount',
+            'occasion',
+            'wishStatus',
+            'link',
+            'amount',
+            'category',
+            'paidBy',
+            'financeKind',
+            'recurrence',
+          ].includes(key),
+        ),
+      ),
+      ...(type === 'event'
+        ? { assignment: entity.metadata?.eventAssignment ?? (parsed as { assignment?: string }).assignment }
+        : {}),
+      ...(type === 'moment'
+        ? {
+            place: entity.metadata?.place ?? (parsed as { place?: string }).place,
+            category: entity.metadata?.momentCategory ?? (parsed as { category?: string }).category,
+            belonging: entity.metadata?.belonging ?? '',
+          }
+        : {}),
+      ...(type === 'leisure'
+        ? {
+            place: entity.metadata?.place ?? '',
+            link: entity.metadata?.link ?? '',
+          }
+        : {}),
+      ...(type === 'expense'
+        ? {
+            amount: entity.metadata?.amount ?? '',
+            category: entity.metadata?.category ?? '',
+            paidBy: entity.metadata?.paidBy ?? 'gemeinsam',
+            kind: entity.metadata?.financeKind ?? 'expense',
+            recurrence: entity.metadata?.recurrence ?? 'once',
+          }
+        : {}),
+      ...(type === 'task'
+        ? {
+            assigneeRole: entity.metadata?.assigneeRole ?? (parsed as TaskDetailValues).assigneeRole,
+            assignment: entity.metadata?.taskAssignment ?? '',
+            recurrenceRule: entity.metadata?.recurrenceRule ?? 'none',
+            subtasksText: entity.metadata?.subtasksText ?? '',
+            category: entity.metadata?.taskCategory ?? '',
+          }
+        : {}),
+    })
     setEditing(true)
   }
 
   const handleSave = async (values: EntityFormValues) => {
     if (!spaceId) return
     const dates = formValuesToEntityDates(values)
-    const metadata = { ...entity.metadata }
-    if (type === 'task') {
-      metadata.assigneeRole = (detailValues as TaskDetailValues).assigneeRole || ''
-      metadata.taskCategory = (detailValues as TaskDetailValues).category || ''
-    }
+    const metadata = metadataFromDetail(type, detailValues, entity.metadata)
     await updateEntity.mutateAsync({
       id,
       patch: {

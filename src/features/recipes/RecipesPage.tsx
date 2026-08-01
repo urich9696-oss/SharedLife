@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath } from '@/features/entities/entity-types'
@@ -23,9 +22,7 @@ export function RecipesPage() {
   const { spaceId, session } = useAuth()
   const { data: entities = [], isLoading } = useEntities()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [ingredientName, setIngredientName] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('')
+  const [draft, setDraft] = useState('')
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
 
   const recipes = useMemo(
@@ -56,32 +53,22 @@ export function RecipesPage() {
   })
 
   const activeId = selectedId ?? recipes[0]?.id ?? null
+  const active = recipes.find((r) => r.id === activeId) ?? null
 
   const { data: ingredients = [], refetch } = useQuery({
     queryKey: ['recipe-ingredients', activeId],
     enabled: Boolean(activeId),
-    queryFn: async () => {
-      const result = await getRecipeIngredients(activeId!)
-      return result.ingredients
-    },
+    queryFn: async () => (await getRecipeIngredients(activeId!)).ingredients,
   })
 
-  const active = recipes.find((r) => r.id === activeId) ?? null
-
   const handleAddIngredient = async () => {
-    if (!spaceId || !activeId || !ingredientName.trim()) return
+    if (!spaceId || !activeId || !draft.trim()) return
     await addIngredient({
       spaceId,
       entityId: activeId,
-      ingredient: {
-        name: ingredientName,
-        quantity: quantity || null,
-        unit: unit || null,
-      },
+      ingredient: { name: draft.trim() },
     })
-    setIngredientName('')
-    setQuantity('')
-    setUnit('')
+    setDraft('')
     await refetch()
   }
 
@@ -94,8 +81,8 @@ export function RecipesPage() {
     })
     setStatusMsg(
       result.added > 0
-        ? `${result.added} Zutat${result.added === 1 ? '' : 'en'} zur Einkaufsliste${result.skipped ? ` · ${result.skipped} schon vorhanden` : ''}`
-        : 'Alle Zutaten waren bereits auf der Einkaufsliste',
+        ? `${result.added} Zutat${result.added === 1 ? '' : 'en'} zur Einkaufsliste`
+        : 'Alle Zutaten waren bereits vorhanden',
     )
     await queryClient.invalidateQueries({ queryKey: ['shopping'] })
   }
@@ -106,9 +93,8 @@ export function RecipesPage() {
     <div className="mx-auto max-w-5xl px-4 py-6 lg:py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Alltag</p>
-          <h1 className="mt-1 font-serif text-3xl text-text">Rezepte</h1>
-          <p className="mt-2 text-sm text-text-muted">Euer gemeinsames Kochbuch.</p>
+          <h1 className="font-serif text-3xl text-text">Rezepte</h1>
+          <p className="mt-2 text-sm text-text-muted">Kochbuch mit Zutaten und Notiz.</p>
         </div>
         <Button type="button" size="sm" onClick={() => void navigate('/planen/neu?type=recipe')}>
           Neu
@@ -118,26 +104,24 @@ export function RecipesPage() {
       {recipes.length === 0 ? (
         <EmptyState
           title="Noch kein Rezept"
-          description="Legt euer erstes Lieblingsgericht an — mit Foto, Zutaten und Schritten."
+          description="Legt euer erstes Gericht an — Hero-Bild, Zutaten, Notiz."
           actionLabel="Rezept erstellen"
           onAction={() => void navigate('/planen/neu?type=recipe')}
         />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <ul className="space-y-3">
             {recipes.map((recipe) => (
               <li key={recipe.id}>
                 <button
                   type="button"
                   onClick={() => setSelectedId(recipe.id)}
                   className={cn(
-                    'flex w-full overflow-hidden rounded-[28px] border bg-surface text-left shadow-xs transition duration-280',
-                    activeId === recipe.id
-                      ? 'border-primary/40 shadow-sm'
-                      : 'border-border/80 hover:-translate-y-0.5',
+                    'flex w-full overflow-hidden rounded-[28px] border bg-surface text-left shadow-xs transition',
+                    activeId === recipe.id ? 'border-primary/40' : 'border-border/80',
                   )}
                 >
-                  <div className="w-28 shrink-0">
+                  <div className="w-24 shrink-0">
                     {covers[recipe.id] && spaceId ? (
                       <MediaImage
                         storagePath={covers[recipe.id]}
@@ -147,14 +131,11 @@ export function RecipesPage() {
                         className="rounded-none"
                       />
                     ) : (
-                      <div className="aspect-square bg-[linear-gradient(145deg,var(--color-pastel-2),var(--color-pastel-1))]" />
+                      <div className="aspect-square bg-pastel-2" />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1 p-4">
+                  <div className="p-4">
                     <p className="font-serif text-xl text-text">{recipe.title}</p>
-                    <p className="mt-1 line-clamp-2 text-sm text-text-muted">
-                      {recipe.description || recipe.subtitle || 'Rezept öffnen'}
-                    </p>
                   </div>
                 </button>
               </li>
@@ -173,80 +154,56 @@ export function RecipesPage() {
                   />
                 </div>
               ) : (
-                <div className="mb-4 aspect-[16/10] rounded-[24px] bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))]" />
+                <div className="mb-4 aspect-[16/10] rounded-[24px] bg-pastel-1" />
               )}
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-serif text-3xl text-text">{active.title}</h2>
-                  {active.description ? (
-                    <p className="mt-2 text-sm text-text-muted whitespace-pre-wrap">
-                      {active.description}
-                    </p>
-                  ) : null}
-                </div>
-                <Link
-                  to={entityDetailPath('recipe', active.id)}
-                  className="shrink-0 text-sm font-medium text-primary"
-                >
-                  Details
+                <h2 className="font-serif text-3xl text-text">{active.title}</h2>
+                <Link to={entityDetailPath('recipe', active.id)} className="text-sm font-medium text-primary">
+                  Bearbeiten
                 </Link>
               </div>
 
               <div className="mt-6">
                 <h3 className="font-serif text-xl text-text">Zutaten</h3>
+                <form
+                  className="mt-3"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    void handleAddIngredient()
+                  }}
+                >
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder="Zutat hinzufügen…"
+                    enterKeyHint="done"
+                    className="min-h-12 w-full rounded-[18px] border border-border/80 bg-bg px-4 text-base outline-none focus:border-primary"
+                  />
+                </form>
                 <ul className="mt-3 space-y-2">
                   {ingredients.map((item) => (
                     <li
                       key={item.id}
-                      className="flex min-h-11 items-center justify-between rounded-[18px] bg-bg px-3 py-2 text-sm"
+                      className="flex min-h-11 items-center rounded-[16px] bg-bg px-3 text-sm"
                     >
-                      <span>{item.name}</span>
-                      <span className="text-text-muted">
-                        {[item.quantity, item.unit].filter(Boolean).join(' ')}
-                      </span>
+                      {item.name}
                     </li>
                   ))}
-                  {ingredients.length === 0 ? (
-                    <li className="text-sm text-text-muted">Noch keine Zutaten.</li>
-                  ) : null}
                 </ul>
-
-                <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_5rem_5rem_auto]">
-                  <Input
-                    label="Zutat"
-                    value={ingredientName}
-                    onChange={(e) => setIngredientName(e.target.value)}
-                    placeholder="z. B. Milch"
-                  />
-                  <Input
-                    label="Menge"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="2"
-                  />
-                  <Input
-                    label="Einheit"
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    placeholder="EL"
-                  />
-                  <div className="flex items-end">
-                    <Button type="button" onClick={() => void handleAddIngredient()}>
-                      Hinzufügen
-                    </Button>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  className="mt-4"
-                  fullWidth
-                  onClick={() => void handleAddToShopping()}
-                >
+                <Button type="button" className="mt-4" fullWidth onClick={() => void handleAddToShopping()}>
                   Zutaten zur Einkaufsliste hinzufügen
                 </Button>
                 {statusMsg ? <p className="mt-2 text-sm text-text-muted">{statusMsg}</p> : null}
               </div>
+
+              {active.description ? (
+                <div className="mt-6">
+                  <h3 className="font-serif text-xl text-text">Notiz</h3>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-text-muted">
+                    {active.description}
+                  </p>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </div>

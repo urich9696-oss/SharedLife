@@ -36,7 +36,7 @@ describe('V3 content architecture', () => {
   it('uses user-facing labels instead of technical terms', () => {
     expect(getUserFacingLabel('moment')).toBe('Moment')
     expect(getUserFacingLabel('date')).toBe('Date')
-    expect(getUserFacingLabel('leisure')).toBe('Idee')
+    expect(getUserFacingLabel('leisure')).toBe('Date Idee')
     expect(getUserFacingLabel('milestone')).toBe('Meilenstein')
   })
 

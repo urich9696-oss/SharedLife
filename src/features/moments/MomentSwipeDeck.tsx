@@ -4,13 +4,22 @@ import { format, parseISO } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
 import { MediaImage } from '@/features/media/MediaImage'
-import type { TimelineItem } from '@/features/timeline/derive-timeline'
 import { cn } from '@/lib/utilities/cn'
 
+export interface MomentDeckCard {
+  id: string
+  title: string
+  occurredAt: string
+  location?: string | null
+  storagePath?: string | null
+  entityId?: string | null
+  entityType?: string | null
+}
+
 interface MomentSwipeDeckProps {
-  items: TimelineItem[]
+  items: MomentDeckCard[]
   spaceId: string
-  onOpen?: (item: TimelineItem) => void
+  onOpen?: (item: MomentDeckCard) => void
 }
 
 const SWIPE_THRESHOLD = 110
@@ -31,6 +40,9 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
   const goNext = useCallback(
     (dir: 'left' | 'right') => {
       if (lock.current || !current) return
+      if (index >= items.length - 1 && dir) {
+        // wrap soft stop
+      }
       lock.current = true
       setExitDir(dir)
       window.setTimeout(() => {
@@ -40,7 +52,7 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
         lock.current = false
       }, 280)
     },
-    [current, items.length, x],
+    [current, index, items.length, x],
   )
 
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -50,7 +62,6 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
     }
     if (info.offset.x < -SWIPE_THRESHOLD) {
       goNext('left')
-      return
     }
   }
 
@@ -65,10 +76,10 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
       void navigate(`/entities/${current.entityType}/${current.entityId}`)
       return
     }
-    void navigate('/timeline')
+    void navigate('/erinnerungen')
   }
 
-  const stack = [after, next, current].filter(Boolean) as TimelineItem[]
+  const stack = [after, next, current].filter(Boolean) as MomentDeckCard[]
 
   return (
     <div className="relative mx-auto w-full max-w-md">
@@ -131,7 +142,7 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
       <div className="mt-4 flex items-center justify-between gap-3 px-1">
         <button
           type="button"
-          className="min-h-11 rounded-[16px] px-4 text-sm font-medium text-text-muted transition hover:bg-surface-soft hover:text-text"
+          className="min-h-11 rounded-[16px] px-4 text-sm font-medium text-text-muted"
           onClick={() => goNext('left')}
           disabled={index >= items.length - 1}
         >
@@ -142,14 +153,14 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
         </p>
         <button
           type="button"
-          className="min-h-11 rounded-[16px] px-4 text-sm font-medium text-text-muted transition hover:bg-surface-soft hover:text-text"
+          className="min-h-11 rounded-[16px] px-4 text-sm font-medium text-text-muted"
           onClick={() => goNext('right')}
           disabled={index >= items.length - 1}
         >
           Weiter
         </button>
       </div>
-      <p className="mt-2 text-center text-xs text-text-muted">Wischen für den nächsten Moment</p>
+      <p className="mt-2 text-center text-xs text-text-muted">Wischen — jedes Bild ist eine Karte</p>
     </div>
   )
 }

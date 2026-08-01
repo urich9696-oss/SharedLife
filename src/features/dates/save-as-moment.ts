@@ -32,6 +32,7 @@ export async function saveDateAsMoment(input: {
       metadata: {
         fromDateId: input.dateEntity.id,
         source: 'date-to-moment',
+        place: input.dateEntity.metadata?.place ?? '',
       },
       cover_media_id: input.dateEntity.cover_media_id,
     },

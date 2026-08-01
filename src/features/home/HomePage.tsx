@@ -55,14 +55,14 @@ function isTodayRelevant(entity: EntityRow, now: Date): boolean {
 }
 
 const QUICK_ACTIONS = [
-  { key: 'einkauf', label: 'Einkauf', path: '/einkauf?focus=1', hint: 'Liste' },
-  { key: 'date', label: 'Date', path: '/planen/neu?type=date', hint: 'Planen' },
-  { key: 'ziel', label: 'Aktives Ziel', path: '/planen?tab=vorhaben&filter=goal', hint: 'Fortschritt' },
-  { key: 'reise', label: 'Reise', path: '/planen/neu?type=trip', hint: 'Vorhaben' },
+  { key: 'einkauf', label: 'Einkauf', path: '/einkauf?focus=1' },
+  { key: 'date', label: 'Date', path: '/planen/neu?type=date' },
+  { key: 'aufgabe', label: 'Aufgabe', path: '/planen/neu?type=task' },
+  { key: 'moment', label: 'Moment', path: '/erinnerungen/neu' },
 ] as const
 
 const fadeUp = {
-  initial: { opacity: 0, y: 12, scale: 0.985 },
+  initial: { opacity: 0, y: 10, scale: 0.99 },
   animate: { opacity: 1, y: 0, scale: 1 },
 }
 
@@ -107,7 +107,11 @@ export function HomePage() {
             d.detail_type === 'goal'
               ? Number(payload.current ?? payload.progressPercent ?? 0)
               : Number(payload.progressPercent ?? 0)
-          map[d.entity_id] = Math.min(100, Math.max(0, percent))
+          const target = Number(payload.target ?? 100) || 100
+          map[d.entity_id] =
+            d.detail_type === 'goal' && payload.progressKind === 'amount'
+              ? Math.min(100, Math.round((Number(payload.current ?? 0) / target) * 100))
+              : Math.min(100, Math.max(0, percent))
         }
       }
       return map
@@ -154,31 +158,33 @@ export function HomePage() {
     return [...todayEntities, ...todayReminders].slice(0, 4)
   }, [entities, reminders, now, hero.entityId])
 
-  const progressCards = useMemo(() => {
-    const tones = ['sage', 'sand', 'rose', 'sky'] as const
-    return entities
-      .filter(
-        (e) =>
-          !e.deleted_at &&
-          e.status === 'active' &&
-          ['goal', 'project', 'trip', 'household'].includes(e.entity_type),
-      )
-      .map((e, i) => ({
-        id: e.id,
-        title: e.title,
-        subtitle: getEntityTypeMeta(e.entity_type).label,
-        href: entityDetailPath(e.entity_type, e.id),
-        progress:
-          detailProgress[e.id] ??
-          (typeof e.metadata?.progressPercent === 'number'
-            ? Number(e.metadata.progressPercent)
-            : e.entity_type === 'trip'
-              ? 35
-              : 20),
-        tone: tones[i % tones.length],
-      }))
-      .slice(0, 6)
-  }, [entities, detailProgress])
+  const activeGoals = useMemo(
+    () =>
+      entities
+        .filter((e) => e.entity_type === 'goal' && !e.deleted_at && e.status === 'active')
+        .slice(0, 6)
+        .map((e) => ({
+          id: e.id,
+          title: e.title,
+          href: entityDetailPath('goal', e.id),
+          progress: detailProgress[e.id] ?? 0,
+        })),
+    [entities, detailProgress],
+  )
+
+  const activeTrips = useMemo(
+    () =>
+      entities
+        .filter(
+          (e) =>
+            e.entity_type === 'trip' &&
+            !e.deleted_at &&
+            (e.status === 'active' || e.status === 'draft'),
+        )
+        .sort((a, b) => (entityStart(a)?.getTime() ?? 0) - (entityStart(b)?.getTime() ?? 0))
+        .slice(0, 4),
+    [entities],
+  )
 
   const { data: recentMoments = [] } = useQuery({
     queryKey: ['home-recent-moments', spaceId],
@@ -206,11 +212,7 @@ export function HomePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4 lg:py-8">
-      <motion.section
-        className="mb-6"
-        {...fadeUp}
-        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <motion.section className="mb-6" {...fadeUp} transition={{ duration: 0.4 }}>
         <HeroCard
           title={hero.title}
           subtitle={hero.subtitle}
@@ -233,11 +235,7 @@ export function HomePage() {
       ) : (
         <>
           {todayItems.length > 0 ? (
-            <motion.section
-              className="mb-7"
-              {...fadeUp}
-              transition={{ duration: 0.42, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <section className="mb-7">
               <div className="mb-3 flex items-end justify-between">
                 <h2 className="font-serif text-2xl text-text">Heute</h2>
                 <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
@@ -250,13 +248,13 @@ export function HomePage() {
                     {item.href ? (
                       <Link
                         to={item.href}
-                        className="flex min-h-13 items-center justify-between gap-3 px-4 py-3.5"
+                        className="flex min-h-12 items-center justify-between gap-3 px-4 py-3.5"
                       >
                         <span className="text-sm text-text">{item.label}</span>
                         <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
                       </Link>
                     ) : (
-                      <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3.5">
+                      <div className="flex min-h-12 items-center justify-between gap-3 px-4 py-3.5">
                         <span className="text-sm text-text">{item.label}</span>
                         <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
                       </div>
@@ -264,14 +262,10 @@ export function HomePage() {
                   </li>
                 ))}
               </ul>
-            </motion.section>
+            </section>
           ) : null}
 
-          <motion.section
-            className="mb-7"
-            {...fadeUp}
-            transition={{ duration: 0.42, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          >
+          <section className="mb-7">
             <h2 className="mb-3 font-serif text-2xl text-text">Schnellzugriffe</h2>
             <div className="grid grid-cols-2 gap-3">
               {QUICK_ACTIONS.map((action) => (
@@ -279,50 +273,84 @@ export function HomePage() {
                   key={action.key}
                   to={action.path}
                   className={cn(
-                    'flex min-h-[6.5rem] flex-col justify-between rounded-[24px] border border-border/80 bg-surface p-4',
-                    'shadow-xs transition duration-280 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:-translate-y-0.5',
+                    'flex min-h-[5.75rem] flex-col justify-end rounded-[24px] border border-border/80 bg-surface p-4',
+                    'shadow-xs transition duration-280 active:scale-[0.98]',
                   )}
                 >
                   <span className="font-serif text-xl text-text">{action.label}</span>
-                  <span className="text-xs text-text-muted">{action.hint}</span>
                 </Link>
               ))}
             </div>
-          </motion.section>
+          </section>
 
-          {progressCards.length > 0 ? (
-            <motion.section
-              className="mb-7"
-              {...fadeUp}
-              transition={{ duration: 0.42, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            >
+          {activeGoals.length > 0 ? (
+            <section className="mb-7">
               <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-2xl text-text">Gemeinsamer Fortschritt</h2>
-                <Link to="/planen?tab=vorhaben" className="text-sm font-medium text-primary">
-                  Vorhaben
+                <h2 className="font-serif text-2xl text-text">Aktive Ziele</h2>
+                <Link to="/planen?tab=vorhaben&filter=goal" className="text-sm font-medium text-primary">
+                  Alle
                 </Link>
               </div>
               <div className="flex snap-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {progressCards.map((card) => (
+                {activeGoals.map((goal, i) => (
                   <ProgressCard
-                    key={card.id}
-                    title={card.title}
-                    subtitle={card.subtitle}
-                    progress={card.progress}
-                    href={card.href}
-                    tone={card.tone}
+                    key={goal.id}
+                    title={goal.title}
+                    subtitle="Ziel"
+                    progress={goal.progress}
+                    href={goal.href}
+                    tone={(['sage', 'sand', 'rose', 'sky'] as const)[i % 4]}
                   />
                 ))}
               </div>
-            </motion.section>
+            </section>
+          ) : null}
+
+          {activeTrips.length > 0 ? (
+            <section className="mb-7">
+              <div className="mb-3 flex items-end justify-between">
+                <h2 className="font-serif text-2xl text-text">Aktuelle Reisen</h2>
+                <Link to="/planen?tab=vorhaben&filter=trip" className="text-sm font-medium text-primary">
+                  Alle
+                </Link>
+              </div>
+              <ul className="space-y-2">
+                {activeTrips.map((trip) => (
+                  <li key={trip.id}>
+                    <Link
+                      to={entityDetailPath('trip', trip.id)}
+                      className="flex overflow-hidden rounded-[24px] border border-border/80 bg-surface shadow-xs"
+                    >
+                      <div className="w-24 shrink-0">
+                        {mediaByEntityId[trip.id] && spaceId ? (
+                          <MediaImage
+                            storagePath={mediaByEntityId[trip.id]}
+                            spaceId={spaceId}
+                            alt={trip.title}
+                            aspectRatio={1}
+                            className="rounded-none"
+                          />
+                        ) : (
+                          <div className="aspect-square bg-pastel-1" />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <p className="font-serif text-lg text-text">{trip.title}</p>
+                        <p className="mt-1 text-xs text-text-muted">
+                          {entityStart(trip)
+                            ? format(entityStart(trip)!, 'd. MMM yyyy', { locale: de })
+                            : 'Reise'}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
 
           {recentMoments.length > 0 && spaceId ? (
-            <motion.section
-              className="mb-2"
-              {...fadeUp}
-              transition={{ duration: 0.42, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <section className="mb-2">
               <div className="mb-3 flex items-end justify-between">
                 <h2 className="font-serif text-2xl text-text">Letzte Momente</h2>
                 <Link to="/erinnerungen" className="text-sm font-medium text-primary">
@@ -338,7 +366,7 @@ export function HomePage() {
                         ? `/entities/${moment.entityType}/${moment.entityId}`
                         : '/erinnerungen'
                     }
-                    className="min-w-[14rem] snap-start overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-xs transition duration-280 hover:-translate-y-0.5"
+                    className="min-w-[14rem] snap-start overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-xs"
                   >
                     {moment.storagePath ? (
                       <MediaImage
@@ -348,7 +376,7 @@ export function HomePage() {
                         aspectRatio={4 / 5}
                       />
                     ) : (
-                      <div className="aspect-[4/5] bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))]" />
+                      <div className="aspect-[4/5] bg-pastel-2" />
                     )}
                     <div className="p-3.5">
                       <p className="font-serif text-lg leading-tight text-text">{moment.title}</p>
@@ -359,7 +387,7 @@ export function HomePage() {
                   </Link>
                 ))}
               </div>
-            </motion.section>
+            </section>
           ) : null}
         </>
       )}
