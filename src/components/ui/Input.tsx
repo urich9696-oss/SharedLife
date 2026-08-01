@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from 'react'
+import { forwardRef, useId, type InputHTMLAttributes } from 'react'
 import { cn } from '@/lib/utilities/cn'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -10,7 +10,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 /** Einstellungszeile — kein klassisches Formularfeld */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, hint, error, id, disabled, ...props }, ref) => {
-    const inputId = id ?? (label ? `input-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
+    const generatedId = useId()
+    const inputId = id ?? generatedId
 
     return (
       <div className="flex flex-col">

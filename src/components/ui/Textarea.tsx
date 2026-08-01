@@ -1,4 +1,4 @@
-import { forwardRef, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useId, type TextareaHTMLAttributes } from 'react'
 import { cn } from '@/lib/utilities/cn'
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -9,8 +9,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, hint, error, id, disabled, rows = 3, ...props }, ref) => {
-    const textareaId =
-      id ?? (label ? `textarea-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
+    const generatedId = useId()
+    const textareaId = id ?? generatedId
 
     return (
       <div className="flex flex-col">

@@ -11,7 +11,8 @@ export interface ReminderFormValues {
   mode: ReminderMode
   remindAt: string
   remindTime: string
-  relativeMinutes: number
+  /** String während der Eingabe */
+  relativeMinutes: string
   isActive: boolean
 }
 
@@ -61,10 +62,10 @@ export function ReminderFormFields({ values, onChange }: ReminderFormFieldsProps
       ) : (
         <Input
           label="Minuten ab jetzt"
-          type="number"
-          min={1}
+          type="text"
+          inputMode="numeric"
           value={values.relativeMinutes}
-          onChange={(e) => onChange({ ...values, relativeMinutes: Number(e.target.value) })}
+          onChange={(e) => onChange({ ...values, relativeMinutes: e.target.value })}
         />
       )}
       <Switch
@@ -82,6 +83,6 @@ export const defaultReminderForm: ReminderFormValues = {
   mode: 'absolute',
   remindAt: '',
   remindTime: '09:00',
-  relativeMinutes: 60,
+  relativeMinutes: '60',
   isActive: true,
 }
