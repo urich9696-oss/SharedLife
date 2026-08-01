@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { WidgetRenderer } from '@/features/widgets/WidgetRenderer'
+import { sectionLabelForWidget } from '@/features/content/section-defaults'
 import {
   WIDGET_REGISTRY,
   WIDGET_SIZE_GRID,
@@ -104,23 +105,23 @@ export function WidgetBoard({ spaceId, entityId, entityType, editable = true }: 
   }
 
   if (loading) {
-    return <p className="text-sm text-text-muted">Widgets werden geladen…</p>
+    return <p className="text-sm text-text-muted">Abschnitte werden geladen…</p>
   }
 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-serif text-xl text-text">Widgets</h2>
+        <h2 className="font-serif text-xl text-text">Abschnitte</h2>
         {editable ? (
           <Button type="button" variant="secondary" size="sm" onClick={() => setAddOpen(true)}>
-            Widget hinzufügen
+            Abschnitt hinzufügen
           </Button>
         ) : null}
       </div>
 
       {instances.length === 0 ? (
         <Card padding="md" className="text-center text-sm text-text-muted">
-          Noch keine Widgets. Füge welche hinzu, um diese Ansicht anzupassen.
+          Noch keine zusätzlichen Abschnitte. Bestehende Notizen und Fotos bleiben sichtbar.
         </Card>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
@@ -137,7 +138,7 @@ export function WidgetBoard({ spaceId, entityId, entityType, editable = true }: 
                   <Select
                     value={gridSizeFromInstance(instance)}
                     onChange={(e) => void handleResize(instance.id, e.target.value as WidgetSize)}
-                    aria-label="Widget-Grösse"
+                    aria-label="Abschnittsgrösse"
                     className="h-9 text-xs"
                     options={[...SIZE_OPTIONS]}
                   />
@@ -176,16 +177,16 @@ export function WidgetBoard({ spaceId, entityId, entityType, editable = true }: 
         </ul>
       )}
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Widget hinzufügen">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Abschnitt hinzufügen">
         <div className="space-y-4">
           <Select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as WidgetType)}
-            aria-label="Widget-Typ"
-            placeholder="Typ wählen…"
+            aria-label="Abschnittstyp"
+            placeholder="Abschnitt wählen…"
             options={availableWidgets.map((w) => ({
               value: w.type,
-              label: `${w.label} — ${w.description}`,
+              label: `${sectionLabelForWidget(entityType, w.type)} — ${w.description}`,
             }))}
           />
           {selectedType ? (

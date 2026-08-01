@@ -131,7 +131,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
 
       {spaceId ? (
         <section className="mb-6">
-          <h2 className="mb-1 font-medium text-text">Medien</h2>
+          <h2 className="mb-1 font-serif text-xl text-text">Fotos</h2>
           <p className="mb-3 text-sm text-text-muted">
             Fotos jederzeit hinzufügen — auch wenn der Eintrag noch geplant ist.
           </p>
@@ -147,7 +147,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
 
       {type === 'list' ? <ListDetail entityId={id} /> : null}
 
-      {['trip', 'date', 'moment'].includes(type) ? (
+      {['trip', 'date', 'moment', 'event'].includes(type) ? (
         <div className="mt-6">
           <LocationAttach entityId={id} />
         </div>

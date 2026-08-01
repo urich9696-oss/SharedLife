@@ -205,7 +205,7 @@ export const WIDGET_REGISTRY: { [K in WidgetType]: WidgetDefinition<K> } = {
   photo_gallery: {
     type: 'photo_gallery',
     label: 'Fotogalerie',
-    description: 'Bilder einer Entity als Galerie',
+    description: 'Bilder dieses Inhalts als Galerie',
     component: PhotoGalleryWidget,
     configSchema: photoGalleryConfigSchema,
     allowedEntityTypes: ['moment', 'trip', 'date', 'milestone'],

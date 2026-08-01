@@ -93,8 +93,8 @@ export function TimelineBrowser({
         <button type="button" className="min-h-11 min-w-11 text-sm" onClick={onClose} aria-label="Schliessen">
           Schliessen
         </button>
-        <p className="text-sm opacity-80">
-          {index + 1} / {items.length}
+        <p className="text-sm opacity-80" aria-live="polite">
+          {index + 1} von {items.length}
         </p>
         <div className="w-11" />
       </div>

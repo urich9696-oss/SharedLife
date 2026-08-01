@@ -42,6 +42,8 @@ Details: [docs/setup.md](docs/setup.md)
 
 ## Dokumentation
 
+- [V3 Product Cleanup](docs/v3-product-cleanup.md)
+- [V3 manuelle QA](docs/qa-checklist-v3.md)
 - [Umsetzungsstatus](docs/implementation-status.md)
 - [Architektur](docs/architecture.md)
 - [Datenmodell](docs/data-model.md)

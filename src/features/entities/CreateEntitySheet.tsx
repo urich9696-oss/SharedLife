@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { v4 as uuidv4 } from 'uuid'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -8,10 +8,12 @@ import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFiel
 import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
 import {
   ENTITY_TYPE_META,
-  QUICK_CREATE_ACTIONS,
-  QUICK_CREATE_TYPES,
+  MORE_CREATE_TYPES,
+  PRIMARY_CREATE_ACTIONS,
   entityDetailPath,
   getEntityTypeMeta,
+  resolveCreateContext,
+  type CreateContext,
 } from '@/features/entities/entity-types'
 import {
   defaultDetailForType,
@@ -28,19 +30,44 @@ interface CreateEntitySheetProps {
   onClose: () => void
 }
 
+type SheetView = 'menu' | 'more' | 'chooser' | 'form'
+
+function orderPrimaryActions(context: CreateContext) {
+  const preferred = PRIMARY_CREATE_ACTIONS.filter((action) =>
+    (action.contexts as readonly string[]).includes(context),
+  )
+  const rest = PRIMARY_CREATE_ACTIONS.filter(
+    (action) => !(action.contexts as readonly string[]).includes(context),
+  )
+  // Context-first, then remaining unique actions
+  const seen = new Set<string>()
+  return [...preferred, ...rest].filter((action) => {
+    if (seen.has(action.key)) return false
+    seen.add(action.key)
+    return true
+  })
+}
+
 export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
   const { data: budgets = [] } = useBudgets()
+  const [view, setView] = useState<SheetView>('menu')
   const [selectedType, setSelectedType] = useState<EntityType | null>(null)
+  const [chooserTypes, setChooserTypes] = useState<EntityType[]>([])
   const [detailValues, setDetailValues] = useState(defaultDetailForType('trip'))
   const [formError, setFormError] = useState<string | null>(null)
 
+  const context = resolveCreateContext(location.pathname, location.search)
+  const primaryActions = useMemo(() => orderPrimaryActions(context), [context])
   const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
 
   const reset = () => {
+    setView('menu')
     setSelectedType(null)
+    setChooserTypes([])
     setDetailValues(defaultDetailForType('trip'))
     setFormError(null)
   }
@@ -48,6 +75,12 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   const handleClose = () => {
     reset()
     onClose()
+  }
+
+  const openForm = (type: EntityType) => {
+    setSelectedType(type)
+    setDetailValues(defaultDetailForType(type))
+    setView('form')
   }
 
   const handleSubmit = async (values: EntityFormValues) => {
@@ -99,28 +132,46 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     }
   }
 
+  const title =
+    view === 'form' && selectedType
+      ? `${getEntityTypeMeta(selectedType).label} erstellen`
+      : view === 'more'
+        ? 'Mehr erstellen'
+        : view === 'chooser'
+          ? 'Reise oder Date'
+          : 'Neu'
+
   return (
-    <BottomSheet
-      open={open}
-      onClose={handleClose}
-      title={selectedType ? `${getEntityTypeMeta(selectedType).label} erstellen` : 'Was möchtest du erstellen?'}
-    >
-      {!selectedType ? (
+    <BottomSheet open={open} onClose={handleClose} title={title}>
+      {view === 'menu' ? (
         <ul className="flex flex-col gap-2 pb-4">
-          {QUICK_CREATE_ACTIONS.map((action) => (
+          {primaryActions.map((action) => (
             <li key={action.key}>
               <button
                 type="button"
                 className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left transition duration-200 hover:border-sand hover:bg-surface active:scale-[0.99]"
                 onClick={() => {
-                  handleClose()
-                  void navigate(action.path)
+                  if (action.kind === 'route') {
+                    handleClose()
+                    void navigate(action.path)
+                    return
+                  }
+                  if (action.kind === 'entity') {
+                    openForm(action.entityType)
+                    return
+                  }
+                  setChooserTypes([...action.chooserTypes])
+                  setView('chooser')
                 }}
               >
                 <span className="text-primary">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-                  </svg>
+                  {action.kind === 'entity'
+                    ? ENTITY_TYPE_META[action.entityType].icon
+                    : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                        <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                      </svg>
+                    )}
                 </span>
                 <span>
                   <span className="block font-medium text-text">{action.label}</span>
@@ -129,17 +180,33 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
               </button>
             </li>
           ))}
-          {QUICK_CREATE_TYPES.map((type) => {
+          <li>
+            <button
+              type="button"
+              className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-dashed border-border bg-transparent px-4 py-4 text-left transition hover:bg-surface"
+              onClick={() => setView('more')}
+            >
+              <span>
+                <span className="block font-medium text-text">Mehr erstellen</span>
+                <span className="mt-0.5 block text-sm text-text-muted">
+                  Ziel, Wunsch, Rezept und weitere Inhalte
+                </span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      ) : null}
+
+      {view === 'chooser' ? (
+        <ul className="flex flex-col gap-2 pb-4">
+          {chooserTypes.map((type) => {
             const meta = ENTITY_TYPE_META[type]
             return (
               <li key={type}>
                 <button
                   type="button"
-                  className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left transition duration-200 hover:border-sand hover:bg-surface active:scale-[0.99]"
-                  onClick={() => {
-                    setSelectedType(type)
-                    setDetailValues(defaultDetailForType(type))
-                  }}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left"
+                  onClick={() => openForm(type)}
                 >
                   <span className="text-primary">{meta.icon}</span>
                   <span>
@@ -150,8 +217,51 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
               </li>
             )
           })}
+          <li>
+            <button
+              type="button"
+              className="min-h-11 text-sm font-medium text-primary"
+              onClick={() => setView('menu')}
+            >
+              Zurück
+            </button>
+          </li>
         </ul>
-      ) : (
+      ) : null}
+
+      {view === 'more' ? (
+        <ul className="flex flex-col gap-2 pb-4">
+          {MORE_CREATE_TYPES.map((type) => {
+            const meta = ENTITY_TYPE_META[type]
+            return (
+              <li key={type}>
+                <button
+                  type="button"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left"
+                  onClick={() => openForm(type)}
+                >
+                  <span className="text-primary">{meta.icon}</span>
+                  <span>
+                    <span className="block font-medium text-text">{meta.label}</span>
+                    <span className="mt-0.5 block text-sm text-text-muted">{meta.description}</span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+          <li>
+            <button
+              type="button"
+              className="min-h-11 text-sm font-medium text-primary"
+              onClick={() => setView('menu')}
+            >
+              Zurück
+            </button>
+          </li>
+        </ul>
+      ) : null}
+
+      {view === 'form' && selectedType ? (
         <>
           {formError ? (
             <p className="mb-3 rounded-lg bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
@@ -161,7 +271,10 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
           <EntityForm
             entityType={selectedType}
             onSubmit={handleSubmit}
-            onCancel={() => setSelectedType(null)}
+            onCancel={() => {
+              setSelectedType(null)
+              setView('menu')
+            }}
             submitLabel="Erstellen"
             loading={createEntity.isPending}
           >
@@ -173,7 +286,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
             />
           </EntityForm>
         </>
-      )}
+      ) : null}
     </BottomSheet>
   )
 }

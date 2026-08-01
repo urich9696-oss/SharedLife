@@ -27,9 +27,6 @@ const LoginPage = lazyWithRetry(() =>
 const EntityPage = lazyWithRetry(() =>
   import('@/features/entities/EntityPage').then((m) => ({ default: m.EntityPage })),
 )
-const CalendarPage = lazyWithRetry(() =>
-  import('@/features/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })),
-)
 const ConflictsPage = lazyWithRetry(() =>
   import('@/features/conflicts/ConflictsPage').then((m) => ({ default: m.ConflictsPage })),
 )
@@ -91,7 +88,12 @@ export const router = createBrowserRouter([
       { path: 'einkauf', element: withSuspense(<ShoppingPage />) },
       { path: 'module/:moduleKey', element: withSuspense(<ModuleHubPage />) },
       { path: 'entities/:type/:id', element: withSuspense(<EntityPage />) },
-      { path: 'calendar', element: withSuspense(<CalendarPage />) },
+      { path: 'calendar', element: <Navigate to="/planen?tab=kalender" replace /> },
+      { path: 'momente', element: <Navigate to="/erinnerungen" replace /> },
+      {
+        path: 'momente/*',
+        element: <Navigate to="/erinnerungen" replace />,
+      },
       { path: 'conflicts', element: withSuspense(<ConflictsPage />) },
       { path: 'trash', element: withSuspense(<TrashPage />) },
       { path: 'settings/*', element: withSuspense(<SettingsPage />) },

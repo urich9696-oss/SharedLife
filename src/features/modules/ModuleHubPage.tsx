@@ -6,7 +6,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { useEntities } from '@/features/entities/useEntities'
-import { MODULE_REGISTRY } from '@/features/modules/module-registry'
+import { LEGACY_MODULE_REDIRECTS, MODULE_REGISTRY } from '@/features/modules/module-registry'
 import type { EntityType } from '@/lib/indexed-db/schema'
 
 export function ModuleHubPage() {
@@ -18,6 +18,10 @@ export function ModuleHubPage() {
 
   if (moduleKey === 'einkauf') {
     return <Navigate to="/einkauf" replace />
+  }
+
+  if (moduleKey && LEGACY_MODULE_REDIRECTS[moduleKey]) {
+    return <Navigate to={LEGACY_MODULE_REDIRECTS[moduleKey]} replace />
   }
 
   if (!module) {

@@ -34,6 +34,9 @@ export function ShoppingPage() {
   const [params] = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState('')
+  const [draftQuantity, setDraftQuantity] = useState('')
+  const [draftUnit, setDraftUnit] = useState('')
+  const [showDetails, setShowDetails] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -82,10 +85,15 @@ export function ShoppingPage() {
         checklistId,
         title,
         sortOrder: activeCount,
+        quantity: draftQuantity.trim() || null,
+        unit: draftUnit.trim() || null,
       })
     },
     onSuccess: () => {
       setDraft('')
+      setDraftQuantity('')
+      setDraftUnit('')
+      setShowDetails(false)
       setError(null)
       invalidate()
       requestAnimationFrame(() => inputRef.current?.focus())
@@ -206,7 +214,7 @@ export function ShoppingPage() {
       </header>
 
       <form
-        className="mb-5 flex gap-2"
+        className="mb-5 space-y-2"
         onSubmit={(e) => {
           e.preventDefault()
           const title = draft.trim()
@@ -217,19 +225,47 @@ export function ShoppingPage() {
           addItem.mutate(title)
         }}
       >
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Artikel hinzufügen…"
-          enterKeyHint="done"
-          autoComplete="off"
-          className="min-h-12 flex-1 rounded-[16px] border border-border bg-surface px-4 text-base text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus"
-          aria-label="Neuen Einkaufsartikel eingeben"
-        />
-        <Button type="submit" className="min-h-12 px-4" loading={addItem.isPending}>
-          Hinzufügen
-        </Button>
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Artikel hinzufügen…"
+            enterKeyHint="done"
+            autoComplete="off"
+            className="min-h-12 flex-1 rounded-[16px] border border-border bg-surface px-4 text-base text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus"
+            aria-label="Neuen Einkaufsartikel eingeben"
+          />
+          <Button type="submit" className="min-h-12 px-4" loading={addItem.isPending}>
+            Hinzufügen
+          </Button>
+        </div>
+        <button
+          type="button"
+          className="text-xs font-medium text-primary"
+          onClick={() => setShowDetails((v) => !v)}
+        >
+          {showDetails ? 'Menge ausblenden' : 'Menge und Einheit (optional)'}
+        </button>
+        {showDetails ? (
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              value={draftQuantity}
+              onChange={(e) => setDraftQuantity(e.target.value)}
+              placeholder="Menge"
+              inputMode="decimal"
+              className="min-h-11 rounded-[14px] border border-border bg-surface px-3 text-base text-text"
+              aria-label="Menge optional"
+            />
+            <input
+              value={draftUnit}
+              onChange={(e) => setDraftUnit(e.target.value)}
+              placeholder="Einheit"
+              className="min-h-11 rounded-[14px] border border-border bg-surface px-3 text-base text-text"
+              aria-label="Einheit optional"
+            />
+          </div>
+        ) : null}
       </form>
 
       {error ? (

@@ -45,8 +45,8 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
   },
   date: {
     type: 'date',
-    label: 'Date-Idee',
-    labelPlural: 'Date-Ideen',
+    label: 'Date',
+    labelPlural: 'Dates',
     description: 'Gemeinsame Zeit zu zweit',
     creatable: true,
     planningSegment: true,
@@ -89,11 +89,11 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
   },
   list: {
     type: 'list',
-    label: 'Einkaufsartikel',
+    label: 'Einkauf',
     labelPlural: 'Einkauf',
-    description: 'Gemeinsame Einkaufs- oder Checkliste',
+    description: 'Gemeinsame Einkaufsliste',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['active', 'completed', 'archived'],
     statusLabels: statusLabelsDe,
     icon: iconPath('M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'),
@@ -104,15 +104,15 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
     labelPlural: 'Wünsche',
     description: 'Gemeinsamer Wunsch',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['active', 'completed', 'archived'],
     statusLabels: { ...statusLabelsDe, completed: 'Erfüllt' },
     icon: iconPath('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'),
   },
   moment: {
     type: 'moment',
-    label: 'Erinnerung',
-    labelPlural: 'Erinnerungen',
+    label: 'Moment',
+    labelPlural: 'Momente',
     description: 'Besonderen Moment festhalten',
     creatable: true,
     statuses: ['active', 'archived'],
@@ -121,9 +121,9 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
   },
   project: {
     type: 'project',
-    label: 'Projekt',
-    labelPlural: 'Projekte',
-    description: 'Grösseres Vorhaben',
+    label: 'Vorhaben',
+    labelPlural: 'Vorhaben',
+    description: 'Gemeinsames Vorhaben',
     creatable: true,
     planningSegment: true,
     statuses: ['draft', 'active', 'completed', 'archived', 'cancelled'],
@@ -162,11 +162,11 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
   },
   gift: {
     type: 'gift',
-    label: 'Geschenkidee',
-    labelPlural: 'Geschenke',
-    description: 'Geschenk für einen Anlass merken',
+    label: 'Wunsch',
+    labelPlural: 'Wünsche',
+    description: 'Geschenkidee oder Wunsch merken',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['draft', 'active', 'completed', 'archived'],
     statusLabels: { ...statusLabelsDe, draft: 'Idee', completed: 'Übergeben' },
     icon: iconPath('M20 12v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z'),
@@ -177,26 +177,26 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
     labelPlural: 'Zuhause',
     description: 'Haushaltsaufgabe, Inventar oder Wartung',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['active', 'completed', 'archived'],
     statusLabels: statusLabelsDe,
     icon: iconPath('M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z'),
   },
   leisure: {
     type: 'leisure',
-    label: 'Freizeit',
-    labelPlural: 'Freizeit',
+    label: 'Idee',
+    labelPlural: 'Ideen',
     description: 'Film, Restaurant, Buch oder Aktivität',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['draft', 'active', 'completed', 'archived'],
     statusLabels: { ...statusLabelsDe, draft: 'Idee', completed: 'Erledigt' },
     icon: iconPath('M5 5h14v14H5zM9 9h6v6H9z'),
   },
   journal: {
     type: 'journal',
-    label: 'Journal-Eintrag',
-    labelPlural: 'Couple Journal',
+    label: 'Moment',
+    labelPlural: 'Momente',
     description: 'Gemeinsamen Moment in Worte fassen',
     creatable: true,
     statuses: ['active', 'archived'],
@@ -209,40 +209,87 @@ export const ENTITY_TYPE_META: Record<EntityType, EntityTypeMeta> = {
     labelPlural: 'Ausgaben',
     description: 'Gemeinsame Ausgabe erfassen',
     creatable: true,
-    planningSegment: true,
+    planningSegment: false,
     statuses: ['active', 'archived'],
     statusLabels: statusLabelsDe,
     icon: iconPath('M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'),
   },
 }
 
-/** Plus-Aktion: fokussierte Create-Typen in gewünschter Reihenfolge */
-export const QUICK_CREATE_TYPES: EntityType[] = [
-  'event',
-  'task',
-  'moment',
-  'trip',
+/** Primäre Plus-Aktionen (nutzerseitig verständlich) */
+export const PRIMARY_CREATE_ACTIONS = [
+  {
+    key: 'moment',
+    label: 'Moment festhalten',
+    description: 'Foto oder Erinnerung speichern',
+    kind: 'route' as const,
+    path: '/erinnerungen/neu',
+    contexts: ['momente', 'default'] as const,
+  },
+  {
+    key: 'shopping-item',
+    label: 'Einkaufsartikel hinzufügen',
+    description: 'Schnell zur gemeinsamen Liste',
+    kind: 'route' as const,
+    path: '/einkauf?focus=1',
+    contexts: ['einkauf', 'default'] as const,
+  },
+  {
+    key: 'task',
+    label: 'Aufgabe erstellen',
+    description: 'Etwas gemeinsam erledigen',
+    kind: 'entity' as const,
+    entityType: 'task' as EntityType,
+    contexts: ['aufgaben', 'default'] as const,
+  },
+  {
+    key: 'event',
+    label: 'Termin erstellen',
+    description: 'Datum im Kalender festhalten',
+    kind: 'entity' as const,
+    entityType: 'event' as EntityType,
+    contexts: ['kalender', 'default'] as const,
+  },
+  {
+    key: 'trip-or-date',
+    label: 'Reise oder Date planen',
+    description: 'Gemeinsames Vorhaben starten',
+    kind: 'chooser' as const,
+    chooserTypes: ['trip', 'date'] as EntityType[],
+    contexts: ['vorhaben', 'default'] as const,
+  },
+] as const
+
+/** Sekundäre Create-Typen hinter „Mehr erstellen“ */
+export const MORE_CREATE_TYPES: EntityType[] = [
   'goal',
-  'expense',
-  'recipe',
-  'date',
-  'journal',
+  'project',
+  'wish',
   'gift',
+  'recipe',
+  'note',
+  'leisure',
+  'household',
+  'journal',
 ]
 
-/** Spezielle Plus-Aktionen ohne eigenes Entity-Formular */
+/** @deprecated Nutze PRIMARY_CREATE_ACTIONS / MORE_CREATE_TYPES */
+export const QUICK_CREATE_TYPES: EntityType[] = [
+  'moment',
+  'task',
+  'event',
+  'trip',
+  'date',
+  ...MORE_CREATE_TYPES,
+]
+
+/** @deprecated Nutze PRIMARY_CREATE_ACTIONS */
 export const QUICK_CREATE_ACTIONS = [
   {
     key: 'shopping-item',
-    label: 'Einkaufsartikel',
+    label: 'Einkaufsartikel hinzufügen',
     description: 'Schnell zur gemeinsamen Einkaufsliste',
     path: '/einkauf?focus=1',
-  },
-  {
-    key: 'timeline-entry',
-    label: 'Timeline-Ereignis',
-    description: 'Manuellen Moment in der Geschichte festhalten',
-    path: '/timeline?compose=1',
   },
 ] as const
 
@@ -250,23 +297,48 @@ export const CREATABLE_ENTITY_TYPES = (Object.values(ENTITY_TYPE_META) as Entity
   .filter((m) => m.creatable)
   .map((m) => m.type)
 
-export const PLANNING_SEGMENTS = [
-  { key: 'trips', label: 'Reisen', entityType: 'trip' as const },
-  { key: 'dates', label: 'Dates', entityType: 'date' as const },
-  { key: 'goals', label: 'Ziele', entityType: 'goal' as const },
-  { key: 'events', label: 'Termine', entityType: 'event' as const },
-  { key: 'tasks', label: 'Aufgaben', entityType: 'task' as const },
-  { key: 'lists', label: 'Einkauf', entityType: 'list' as const },
-  { key: 'wishes', label: 'Wünsche', entityType: 'wish' as const },
-  { key: 'projects', label: 'Projekte', entityType: 'project' as const },
-  { key: 'household', label: 'Zuhause', entityType: 'household' as const },
-  { key: 'recipes', label: 'Rezepte', entityType: 'recipe' as const },
-  { key: 'leisure', label: 'Freizeit', entityType: 'leisure' as const },
-  { key: 'gifts', label: 'Geschenke', entityType: 'gift' as const },
-  { key: 'expenses', label: 'Finanzen', entityType: 'expense' as const },
-  { key: 'budgets', label: 'Budgets', entityType: null },
-  { key: 'reminders', label: 'Erinnerungen', entityType: null },
+/** V3: drei verständliche Hauptbereiche unter Planen */
+export const PLANNING_TABS = [
+  { key: 'kalender', label: 'Kalender' },
+  { key: 'vorhaben', label: 'Vorhaben' },
+  { key: 'aufgaben', label: 'Aufgaben' },
 ] as const
+
+export type PlanningTabKey = (typeof PLANNING_TABS)[number]['key']
+
+/** Legacy-Segmente bleiben für Deep-Link-Kompatibilität gemappt */
+export const PLANNING_SEGMENTS = [
+  { key: 'trips', label: 'Reisen', entityType: 'trip' as const, tab: 'vorhaben' as const },
+  { key: 'dates', label: 'Dates', entityType: 'date' as const, tab: 'vorhaben' as const },
+  { key: 'goals', label: 'Ziele', entityType: 'goal' as const, tab: 'vorhaben' as const },
+  { key: 'projects', label: 'Vorhaben', entityType: 'project' as const, tab: 'vorhaben' as const },
+  { key: 'events', label: 'Termine', entityType: 'event' as const, tab: 'kalender' as const },
+  { key: 'tasks', label: 'Aufgaben', entityType: 'task' as const, tab: 'aufgaben' as const },
+] as const
+
+export type CreateContext =
+  | 'default'
+  | 'momente'
+  | 'einkauf'
+  | 'kalender'
+  | 'aufgaben'
+  | 'vorhaben'
+
+export function resolveCreateContext(pathname: string, search = ''): CreateContext {
+  const params = new URLSearchParams(search)
+  const tab = params.get('tab')
+  if (pathname.startsWith('/einkauf')) return 'einkauf'
+  if (pathname.startsWith('/erinnerungen') || pathname.startsWith('/timeline') || pathname.startsWith('/momente')) {
+    return 'momente'
+  }
+  if (pathname.startsWith('/calendar')) return 'kalender'
+  if (pathname.startsWith('/planen')) {
+    if (tab === 'aufgaben') return 'aufgaben'
+    if (tab === 'vorhaben') return 'vorhaben'
+    return 'kalender'
+  }
+  return 'default'
+}
 
 export function getEntityTypeMeta(type: EntityType): EntityTypeMeta {
   return ENTITY_TYPE_META[type]
