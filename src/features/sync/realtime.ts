@@ -61,6 +61,27 @@ export function subscribeToSpaceChanges(
           await db.checklists.put(payload.new as never)
         }
         void queryClient.invalidateQueries({ queryKey: ['checklists', spaceId] })
+        void queryClient.invalidateQueries({ queryKey: ['shopping', spaceId] })
+      },
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'checklist_items', filter: `space_id=eq.${spaceId}` },
+      async (payload) => {
+        const row = payload.new as { id: string; checklist_id?: string }
+        if (!row?.id) return
+        if (await hasPendingOutboxForResource('checklist_item', row.id)) return
+        if (payload.eventType === 'DELETE') {
+          await db.checklistItems.delete(row.id)
+        } else {
+          await db.checklistItems.put(payload.new as never)
+        }
+        void queryClient.invalidateQueries({ queryKey: ['checklist-items'] })
+        void queryClient.invalidateQueries({ queryKey: ['shopping', spaceId] })
+        void queryClient.invalidateQueries({ queryKey: ['shopping-preview', spaceId] })
+        if (row.checklist_id) {
+          void queryClient.invalidateQueries({ queryKey: ['checklist-items', row.checklist_id] })
+        }
       },
     )
     .on(

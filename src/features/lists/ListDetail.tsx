@@ -92,7 +92,7 @@ export function ListDetail({ entityId }: ListDetailProps) {
     <section className="rounded-xl border border-border bg-surface p-4">
       <h3 className="mb-3 font-medium text-text">Checkliste</h3>
       <ul className="flex flex-col gap-2">
-        {items.map((item, index) => (
+        {items.filter((item) => !item.is_checked).map((item, index) => (
           <li key={item.id} className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -100,9 +100,7 @@ export function ListDetail({ entityId }: ListDetailProps) {
               onChange={(e) => toggle.mutate({ id: item.id, checked: e.target.checked })}
               className="size-4 rounded border-border text-primary"
             />
-            <span
-              className={`flex-1 text-sm ${item.is_checked ? 'text-text-muted line-through' : 'text-text'}`}
-            >
+            <span className="flex-1 text-sm text-text">
               {item.title}
             </span>
             <IconButton

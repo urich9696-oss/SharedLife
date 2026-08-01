@@ -8,43 +8,30 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { CreateEntitySheet } from '@/features/entities/CreateEntitySheet'
 import { getGreeting } from '@/features/home/relevance'
 import { MoreSheet } from '@/features/modules/MoreSheet'
-import { MODULE_REGISTRY } from '@/features/modules/module-registry'
+import { getGroupedModules, PRIMARY_NAV } from '@/features/modules/module-registry'
 import { MediaImage } from '@/features/media/MediaImage'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { cn } from '@/lib/utilities/cn'
 
-const mobileNav = [
-  {
-    to: '/',
-    label: 'Home',
-    end: true,
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    to: '/planen',
-    label: 'Planen',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    to: '/erinnerungen',
-    label: 'Erinnerungen',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-        <path d="M4 19.5A2.5 2.5 0 016.5 17H20" strokeLinecap="round" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-      </svg>
-    ),
-  },
-] as const
+const mobileIcons: Record<string, ReactNode> = {
+  home: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
+    </svg>
+  ),
+  planen: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+    </svg>
+  ),
+  erinnerungen: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" strokeLinecap="round" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+    </svg>
+  ),
+}
 
 function NavItem({
   to,
@@ -83,17 +70,16 @@ export function AppShell() {
   const [createOpen, setCreateOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
-  const { profile } = useAuth()
+  const { profile, signOut } = useAuth()
   const { data: pair } = usePairProfile()
   const greeting = useMemo(() => getGreeting(new Date(), profile?.displayName), [profile?.displayName])
   const togetherDays = daysTogether(pair?.togetherSince ?? null)
   const isAuthRoute = location.pathname.startsWith('/login')
+  const groups = getGroupedModules({ includeSystem: false })
 
   if (isAuthRoute) {
     return <Outlet />
   }
-
-  const sidebarModules = MODULE_REGISTRY.filter((m) => m.key !== 'settings')
 
   return (
     <div className="flex min-h-dvh bg-bg">
@@ -111,16 +97,30 @@ export function AppShell() {
           <p className="mt-2 text-xs text-text-muted">Unser gemeinsames Leben</p>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3" aria-label="Hauptnavigation">
-          {sidebarModules.map((mod) => (
-            <NavItem
-              key={mod.key}
-              to={mod.path}
-              label={mod.label}
-              end={mod.path === '/'}
-            />
+        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3" aria-label="Hauptnavigation">
+          <div className="flex flex-col gap-0.5">
+            {PRIMARY_NAV.map((item) => (
+              <NavItem
+                key={item.key}
+                to={item.path}
+                label={item.label}
+                end={'end' in item ? item.end : false}
+              />
+            ))}
+          </div>
+
+          {groups.map((group) => (
+            <div key={group.key}>
+              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                {group.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.modules.map((mod) => (
+                  <NavItem key={mod.key} to={mod.path} label={mod.label} />
+                ))}
+              </div>
+            </div>
           ))}
-          <NavItem to="/settings" label="Einstellungen" />
         </nav>
 
         <div className="space-y-3 border-t border-border px-4 py-4">
@@ -141,32 +141,14 @@ export function AppShell() {
           >
             <div className="flex -space-x-2">
               <div className="size-9 overflow-hidden rounded-full border-2 border-surface bg-sand/40">
-                {pair?.partnerAAvatarPath ? (
-                  <MediaImage
-                    storagePath={pair.partnerAAvatarPath}
-                    alt={pair.partnerAName}
-                    aspectRatio={1}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
-                    {(pair?.partnerAName ?? 'D').slice(0, 1)}
-                  </div>
-                )}
+                <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
+                  {(pair?.partnerAName ?? 'D').slice(0, 1)}
+                </div>
               </div>
               <div className="size-9 overflow-hidden rounded-full border-2 border-surface bg-primary/20">
-                {pair?.partnerBAvatarPath ? (
-                  <MediaImage
-                    storagePath={pair.partnerBAvatarPath}
-                    alt={pair.partnerBName}
-                    aspectRatio={1}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
-                    {(pair?.partnerBName ?? 'L').slice(0, 1)}
-                  </div>
-                )}
+                <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
+                  {(pair?.partnerBName ?? 'L').slice(0, 1)}
+                </div>
               </div>
             </div>
             <div className="min-w-0">
@@ -178,6 +160,15 @@ export function AppShell() {
               </p>
             </div>
           </NavLink>
+
+          <NavItem to="/settings" label="Einstellungen" />
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="min-h-11 rounded-[16px] px-3 py-2.5 text-left text-sm font-medium text-text-muted hover:bg-surface-soft hover:text-text"
+          >
+            Abmelden
+          </button>
           <div className="flex justify-end">
             <SyncStatusIndicator compact />
           </div>
@@ -195,6 +186,7 @@ export function AppShell() {
             <p className="truncate text-sm font-medium text-text">{greeting}</p>
             <p className="truncate text-xs text-text-muted">
               {pair ? `${pair.partnerAName} & ${pair.partnerBName}` : 'SharedLife'}
+              {togetherDays !== null ? ` · ${togetherDays} Tage` : ''}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -236,12 +228,12 @@ export function AppShell() {
           aria-label="Hauptnavigation"
         >
           <div className="relative mx-auto grid h-[var(--nav-bottom-height)] max-w-lg grid-cols-5 items-end px-1">
-            {mobileNav.slice(0, 2).map((item) => (
+            {PRIMARY_NAV.slice(0, 2).map((item) => (
               <NavItem
-                key={item.to}
-                to={item.to}
+                key={item.key}
+                to={item.path}
                 label={item.label}
-                icon={item.icon}
+                icon={mobileIcons[item.key]}
                 end={'end' in item ? item.end : false}
                 dense
               />
@@ -263,9 +255,9 @@ export function AppShell() {
             </div>
 
             <NavItem
-              to={mobileNav[2].to}
-              label={mobileNav[2].label}
-              icon={mobileNav[2].icon}
+              to={PRIMARY_NAV[2].path}
+              label={PRIMARY_NAV[2].label}
+              icon={mobileIcons.erinnerungen}
               dense
             />
 
@@ -274,7 +266,12 @@ export function AppShell() {
               onClick={() => setMoreOpen(true)}
               className={cn(
                 'flex min-h-11 flex-col items-center justify-center gap-1 rounded-[16px] px-2 py-2 text-[11px] font-medium transition duration-200',
-                moreOpen || location.pathname.startsWith('/module') || location.pathname.startsWith('/settings') || location.pathname === '/wir'
+                moreOpen ||
+                  location.pathname.startsWith('/module') ||
+                  location.pathname.startsWith('/settings') ||
+                  location.pathname.startsWith('/einkauf') ||
+                  location.pathname === '/timeline' ||
+                  location.pathname === '/wir'
                   ? 'text-primary'
                   : 'text-text-muted',
               )}

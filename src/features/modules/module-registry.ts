@@ -8,35 +8,44 @@ export interface ModuleDefinition {
   entityTypes?: EntityType[]
   accent: string
   imageHint: string
+  group?: ModuleGroupKey
+}
+
+export type ModuleGroupKey = 'alltag' | 'plaene' | 'zeit' | 'geschichte' | 'system'
+
+export interface ModuleGroup {
+  key: ModuleGroupKey
+  label: string
+  modules: ModuleDefinition[]
 }
 
 /** Desktop sidebar + mobile „Mehr“ overview */
 export const MODULE_REGISTRY: ModuleDefinition[] = [
   {
     key: 'dashboard',
-    label: 'Dashboard',
+    label: 'Home',
     description: 'Heute und euer gemeinsames Leben',
     path: '/',
     accent: 'bg-primary/15 text-primary',
     imageHint: 'Zuhause',
   },
   {
-    key: 'beziehung',
-    label: 'Beziehung',
-    description: 'Dates, Wünsche und Journal',
-    path: '/module/beziehung',
-    entityTypes: ['date', 'wish', 'journal', 'moment'],
-    accent: 'bg-emotional/15 text-emotional',
-    imageHint: 'Beziehung',
+    key: 'planen',
+    label: 'Planen',
+    description: 'Termine, Aufgaben und Countdowns',
+    path: '/planen',
+    accent: 'bg-primary/15 text-primary',
+    imageHint: 'Planen',
   },
   {
-    key: 'reisen',
-    label: 'Reisen',
-    description: 'Trips, Packlisten und Erinnerungen',
-    path: '/module/reisen',
-    entityTypes: ['trip'],
-    accent: 'bg-blue/15 text-blue',
-    imageHint: 'Reisen',
+    key: 'einkauf',
+    label: 'Einkauf',
+    description: 'Gemeinsame Einkaufsliste',
+    path: '/einkauf',
+    entityTypes: ['list'],
+    accent: 'bg-orange/15 text-orange',
+    imageHint: 'Einkauf',
+    group: 'alltag',
   },
   {
     key: 'zuhause',
@@ -46,6 +55,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     entityTypes: ['household', 'task'],
     accent: 'bg-primary/15 text-primary',
     imageHint: 'Zuhause',
+    group: 'alltag',
   },
   {
     key: 'finanzen',
@@ -55,24 +65,17 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     entityTypes: ['expense', 'goal'],
     accent: 'bg-green/15 text-green',
     imageHint: 'Finanzen',
+    group: 'alltag',
   },
   {
-    key: 'einkauf',
-    label: 'Einkauf',
-    description: 'Gemeinsame Einkaufslisten',
-    path: '/module/einkauf',
-    entityTypes: ['list'],
-    accent: 'bg-orange/15 text-orange',
-    imageHint: 'Einkauf',
-  },
-  {
-    key: 'rezepte',
-    label: 'Rezepte',
-    description: 'Lieblingsgerichte zu zweit',
-    path: '/module/rezepte',
-    entityTypes: ['recipe'],
-    accent: 'bg-coral/15 text-coral',
-    imageHint: 'Rezepte',
+    key: 'reisen',
+    label: 'Reisen',
+    description: 'Trips, Packlisten und Erinnerungen',
+    path: '/module/reisen',
+    entityTypes: ['trip'],
+    accent: 'bg-blue/15 text-blue',
+    imageHint: 'Reisen',
+    group: 'plaene',
   },
   {
     key: 'ziele',
@@ -82,15 +85,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     entityTypes: ['goal', 'milestone'],
     accent: 'bg-purple/15 text-purple',
     imageHint: 'Ziele',
-  },
-  {
-    key: 'freizeit',
-    label: 'Freizeit',
-    description: 'Filme, Restaurants und Ideen',
-    path: '/module/freizeit',
-    entityTypes: ['leisure', 'date'],
-    accent: 'bg-blue/15 text-blue',
-    imageHint: 'Freizeit',
+    group: 'plaene',
   },
   {
     key: 'geschenke',
@@ -100,6 +95,37 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     entityTypes: ['gift', 'wish'],
     accent: 'bg-emotional/15 text-emotional',
     imageHint: 'Geschenke',
+    group: 'plaene',
+  },
+  {
+    key: 'beziehung',
+    label: 'Beziehung',
+    description: 'Dates, Journal und besondere Momente',
+    path: '/module/beziehung',
+    entityTypes: ['date', 'wish', 'journal', 'moment'],
+    accent: 'bg-emotional/15 text-emotional',
+    imageHint: 'Beziehung',
+    group: 'zeit',
+  },
+  {
+    key: 'freizeit',
+    label: 'Freizeit',
+    description: 'Filme, Restaurants und Ideen',
+    path: '/module/freizeit',
+    entityTypes: ['leisure', 'date'],
+    accent: 'bg-blue/15 text-blue',
+    imageHint: 'Freizeit',
+    group: 'zeit',
+  },
+  {
+    key: 'rezepte',
+    label: 'Rezepte',
+    description: 'Lieblingsgerichte zu zweit',
+    path: '/module/rezepte',
+    entityTypes: ['recipe'],
+    accent: 'bg-coral/15 text-coral',
+    imageHint: 'Rezepte',
+    group: 'zeit',
   },
   {
     key: 'erinnerungen',
@@ -109,6 +135,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     entityTypes: ['moment'],
     accent: 'bg-sand/40 text-text',
     imageHint: 'Erinnerungen',
+    group: 'geschichte',
   },
   {
     key: 'timeline',
@@ -117,19 +144,47 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     path: '/timeline',
     accent: 'bg-surface-soft text-text',
     imageHint: 'Timeline',
+    group: 'geschichte',
+  },
+  {
+    key: 'pair',
+    label: 'Paarprofil',
+    description: 'Namen, Startdatum und Text',
+    path: '/settings/pair',
+    accent: 'bg-surface-soft text-text',
+    imageHint: 'Paar',
+    group: 'system',
   },
   {
     key: 'settings',
     label: 'Einstellungen',
-    description: 'Profil, Sync und Benachrichtigungen',
+    description: 'Benachrichtigungen und Sync',
     path: '/settings',
     accent: 'bg-surface-soft text-text-muted',
     imageHint: 'Settings',
+    group: 'system',
   },
 ]
 
-export const DASHBOARD_MODULE_CARDS = MODULE_REGISTRY.filter((m) =>
-  ['beziehung', 'reisen', 'zuhause', 'finanzen', 'einkauf', 'rezepte', 'ziele', 'freizeit'].includes(
-    m.key,
-  ),
-)
+const GROUP_ORDER: { key: ModuleGroupKey; label: string }[] = [
+  { key: 'alltag', label: 'Unser Alltag' },
+  { key: 'plaene', label: 'Unsere Pläne' },
+  { key: 'zeit', label: 'Unsere Zeit' },
+  { key: 'geschichte', label: 'Unsere Geschichte' },
+  { key: 'system', label: 'Konto' },
+]
+
+export function getGroupedModules(options?: { includeSystem?: boolean }): ModuleGroup[] {
+  const includeSystem = options?.includeSystem ?? true
+  return GROUP_ORDER.filter((g) => includeSystem || g.key !== 'system').map((g) => ({
+    key: g.key,
+    label: g.label,
+    modules: MODULE_REGISTRY.filter((m) => m.group === g.key),
+  }))
+}
+
+export const PRIMARY_NAV = [
+  { key: 'home', label: 'Home', path: '/', end: true },
+  { key: 'planen', label: 'Planen', path: '/planen' },
+  { key: 'erinnerungen', label: 'Erinnerungen', path: '/erinnerungen' },
+] as const

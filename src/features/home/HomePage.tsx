@@ -16,70 +16,47 @@ import {
   getGoalProgressFromPayload,
   getNextDate,
   getNextEvent,
-  getRecentWishes,
   getTasksThisWeek,
 } from '@/features/home/relevance'
 import { Gallery } from '@/features/media/Gallery'
 import { MediaImage } from '@/features/media/MediaImage'
-import { DASHBOARD_MODULE_CARDS } from '@/features/modules/module-registry'
+import { getActiveShoppingItems } from '@/features/shopping/shopping-service'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
-import { deriveTimelineItems } from '@/features/timeline/derive-timeline'
+import { deriveTimelineItems, timelineKindLabel } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
-import { cn } from '@/lib/utilities/cn'
 
 function RingProgress({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value))
-  const radius = 36
+  const radius = 28
   const circ = 2 * Math.PI * radius
   const offset = circ - (clamped / 100) * circ
   return (
-    <div className="relative size-24">
-      <svg viewBox="0 0 96 96" className="size-full -rotate-90">
-        <circle cx="48" cy="48" r={radius} fill="none" stroke="var(--color-border)" strokeWidth="8" />
+    <div className="relative size-16">
+      <svg viewBox="0 0 72 72" className="size-full -rotate-90">
+        <circle cx="36" cy="36" r={radius} fill="none" stroke="var(--color-border)" strokeWidth="7" />
         <circle
-          cx="48"
-          cy="48"
+          cx="36"
+          cy="36"
           r={radius}
           fill="none"
           stroke="var(--color-primary)"
-          strokeWidth="8"
+          strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-serif text-xl text-text">
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-text">
         {Math.round(clamped)}%
       </span>
     </div>
   )
 }
 
-function GoalProgressCard({ goalId }: { goalId: string }) {
+function GoalMini({ goalId }: { goalId: string }) {
   const { data: payload } = useEntityDetailPayload(goalId, 'goal')
   const percent = getGoalProgressFromPayload(payload as Record<string, unknown> | null) ?? 0
-  const current = Number((payload as Record<string, unknown> | null)?.current ?? 0)
-  const target = Number((payload as Record<string, unknown> | null)?.target ?? 100)
-  return (
-    <div className="mt-3 flex items-center gap-4">
-      <RingProgress value={percent} />
-      <div>
-        <p className="text-sm text-text-muted">
-          {current} / {target}
-        </p>
-        <p className="text-xs text-text-muted">Nächster Schritt wartet</p>
-      </div>
-    </div>
-  )
-}
-
-function tripNights(starts: string | null, ends: string | null): number | null {
-  if (!starts || !ends) return null
-  try {
-    return Math.max(0, differenceInCalendarDays(parseISO(ends), parseISO(starts)))
-  } catch {
-    return null
-  }
+  return <RingProgress value={percent} />
 }
 
 export function HomePage() {
@@ -97,17 +74,31 @@ export function HomePage() {
   const activeGoal = getActiveGoal(entities)
   const tasksThisWeek = getTasksThisWeek(entities, now)
   const nextDate = getNextDate(entities, now)
-  const recentWishes = getRecentWishes(entities)
-  const journals = entities
-    .filter((e) => e.entity_type === 'journal' && !e.deleted_at)
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 2)
-  const gifts = entities
-    .filter((e) => e.entity_type === 'gift' && !e.deleted_at && e.status !== 'completed')
+  const todayReminders = reminders.filter((r) => !r.deleted_at && r.is_active).slice(0, 3)
+
+  const todayItems = [
+    nextEvent
+      ? { id: nextEvent.id, label: nextEvent.title, meta: formatEntityDateRange(nextEvent) }
+      : null,
+    ...tasksThisWeek.slice(0, 2).map((t) => ({
+      id: t.id,
+      label: t.title,
+      meta: 'Aufgabe',
+    })),
+    ...todayReminders.slice(0, 1).map((r) => ({
+      id: r.id,
+      label: r.title,
+      meta: 'Erinnerung',
+    })),
+  ]
+    .filter((x): x is NonNullable<typeof x> => x !== null)
     .slice(0, 3)
-  const todayReminders = reminders
-    .filter((r) => !r.deleted_at && r.is_active)
-    .slice(0, 3)
+
+  const { data: shopping } = useQuery({
+    queryKey: ['shopping-preview', spaceId],
+    enabled: Boolean(spaceId),
+    queryFn: () => getActiveShoppingItems(spaceId!),
+  })
 
   const { data: memoryItems = [] } = useQuery({
     queryKey: ['home-memories', spaceId],
@@ -131,7 +122,7 @@ export function HomePage() {
           }
         })
         .filter((x): x is NonNullable<typeof x> => x !== null)
-        .slice(0, 8)
+        .slice(0, 5)
     },
   })
 
@@ -150,124 +141,167 @@ export function HomePage() {
         timelineEntries: entries.filter((e) => !e.deleted_at),
         entityMedia: mediaLinks,
         mediaAssets: mediaAssets.filter((m) => !m.deleted_at),
-      }).slice(0, 5)
+      }).slice(0, 1)
     },
   })
 
   if (isLoading) return <LoadingState />
 
-  const hasAny =
-    nextEvent ||
-    activeTrip ||
-    activeGoal ||
-    nextDate ||
-    tasksThisWeek.length > 0 ||
-    memoryItems.length > 0 ||
-    entities.length > 0
-
-  const tripStart = activeTrip?.starts_at ?? activeTrip?.all_day_start
+  const heroTrip = activeTrip
+  const tripStart = heroTrip?.starts_at ?? heroTrip?.all_day_start
   const tripCountdown =
     tripStart != null ? Math.max(0, differenceInCalendarDays(parseISO(tripStart), now)) : null
-  const nights = tripNights(
-    activeTrip?.starts_at ?? activeTrip?.all_day_start ?? null,
-    activeTrip?.ends_at ?? activeTrip?.all_day_end ?? null,
-  )
+  const latestTimeline = timelinePreview[0]
+  const highlight =
+    entities.find((e) => e.entity_type === 'moment' && !e.deleted_at) ??
+    entities.find((e) => e.entity_type === 'goal' && e.status === 'completed' && !e.deleted_at) ??
+    null
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-5 lg:py-8">
-      <header className="mb-5 lg:mb-8">
+    <div className="mx-auto max-w-5xl px-4 py-5 lg:py-8">
+      {/* 1. Header */}
+      <header className="mb-5">
         <p className="text-sm font-medium text-primary">{greeting}</p>
-        <h1 className="mt-1 font-serif text-3xl text-balance text-text lg:text-4xl">
-          SharedLife
+        <h1 className="mt-1 font-serif text-3xl text-text">
+          {pair?.partnerAName ?? 'Dennis'} & {pair?.partnerBName ?? 'Lea'}
         </h1>
         <p className="mt-1 text-sm text-text-muted">
-          {pair?.coupleBlurb || 'Euer gemeinsames digitales Zuhause'}
-          {together !== null ? ` · ${together} Tage` : ''}
+          {together !== null ? `${together} gemeinsame Tage` : 'Euer gemeinsames Leben'}
+          {pair?.coupleBlurb ? ` · ${pair.coupleBlurb}` : ''}
         </p>
       </header>
 
-      {/* Emotional pair card */}
+      {/* 2. Emotional hero — only one */}
       <section className="mb-5 overflow-hidden rounded-[22px] border border-border bg-surface shadow-sm">
-        <div className="relative aspect-[16/10] max-h-64 w-full sm:aspect-[21/9]">
-          {pair?.coverMediaPath ? (
-            <MediaImage
-              storagePath={pair.coverMediaPath}
-              alt="Titelbild"
-              className="absolute inset-0 !aspect-auto size-full rounded-none"
-              aspectRatio={16 / 10}
-              lazy={false}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#e7efe4,transparent_45%),radial-gradient(circle_at_80%_30%,#f3e4df,transparent_40%),linear-gradient(135deg,#f6f2ec,#efe8df)]" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-text/45 via-transparent to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-4 text-surface">
-            <p className="font-serif text-2xl">
-              {pair?.partnerAName ?? 'Dennis'} & {pair?.partnerBName ?? 'Lea'}
-            </p>
-            <p className="text-sm text-surface/85">
-              {together !== null ? `${together} gemeinsame Tage` : 'Paarprofil ergänzen'}
-            </p>
+        {heroTrip ? (
+          <Link to={entityDetailPath(heroTrip.entity_type, heroTrip.id)} className="block">
+            <div className="relative aspect-[16/10] max-h-64 w-full">
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,#d7e4ef,#f1ece5_55%,#f3e4df)]" />
+              {pair?.coverMediaPath ? (
+                <MediaImage
+                  storagePath={pair.coverMediaPath}
+                  alt={heroTrip.title}
+                  className="absolute inset-0 rounded-none"
+                  aspectRatio={16 / 10}
+                  lazy={false}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-text/50 via-transparent to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 text-surface">
+                <p className="text-xs font-medium uppercase tracking-wide text-surface/80">Nächste Reise</p>
+                <p className="font-serif text-2xl">{heroTrip.title}</p>
+                <p className="text-sm text-surface/85">
+                  {tripCountdown !== null
+                    ? `Noch ${tripCountdown} ${tripCountdown === 1 ? 'Tag' : 'Tage'}`
+                    : formatEntityDateRange(heroTrip)}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <div className="relative aspect-[16/10] max-h-64 w-full">
+            {pair?.coverMediaPath ? (
+              <MediaImage
+                storagePath={pair.coverMediaPath}
+                alt="Paarbild"
+                className="absolute inset-0 rounded-none"
+                aspectRatio={16 / 10}
+                lazy={false}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#e7efe4,transparent_45%),radial-gradient(circle_at_80%_30%,#f3e4df,transparent_40%),linear-gradient(135deg,#f6f2ec,#efe8df)]" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-text/40 via-transparent to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-4 text-surface">
+              <p className="font-serif text-2xl">
+                {pair?.partnerAName ?? 'Dennis'} & {pair?.partnerBName ?? 'Lea'}
+              </p>
+              <p className="text-sm text-surface/85">
+                {together !== null ? `${together} gemeinsame Tage` : 'Paarprofil ergänzen'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
-      {!hasAny ? (
+      {!entities.length && !shopping?.active.length ? (
         <EmptyState
           title="Noch nichts geplant"
-          description="Startet mit einem Eintrag über den Plus-Button — Termine, Ziele und mehr warten auf euch."
-          actionLabel="Planen öffnen"
-          onAction={() => void navigate('/planen')}
+          description="Startet mit dem Plus-Button — oder öffnet direkt den Einkauf."
+          actionLabel="Einkauf öffnen"
+          onAction={() => void navigate('/einkauf')}
         />
       ) : (
         <>
-          {/* Today strip */}
+          {/* 3. Heute */}
           <section className="mb-5">
             <div className="mb-3 flex items-end justify-between">
-              <h2 className="font-serif text-xl text-text">Heute im Überblick</h2>
+              <h2 className="font-serif text-xl text-text">Heute</h2>
               <Link to="/planen" className="text-sm font-medium text-primary">
-                Zur Planung
+                Planen
               </Link>
             </div>
-            <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
-              <Card className="min-w-[78%] snap-start sm:min-w-[46%] lg:min-w-0" padding="md">
-                <p className="text-xs font-medium text-primary">Heute</p>
-                <CardTitle className="mt-1">{format(now, 'HH:mm')} Uhr</CardTitle>
-                <CardDescription>
-                  {nextEvent?.title || todayReminders[0]?.title || 'Kein Termin — Zeit für euch'}
-                </CardDescription>
-                {tasksThisWeek.length > 0 ? (
-                  <p className="mt-3 text-xs text-text-muted">{tasksThisWeek.length} Aufgaben diese Woche</p>
-                ) : null}
+            <Card padding="md">
+              {todayItems.length === 0 ? (
+                <p className="text-sm text-text-muted">Heute ist noch ruhig — Zeit für euch.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {todayItems.map((item) => (
+                    <li key={item.id} className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm text-text">{item.label}</span>
+                      <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-xs text-text-muted">{format(now, 'EEEE, d. MMMM · HH:mm', { locale: de })}</p>
+            </Card>
+          </section>
+
+          {/* 4. Quick access */}
+          <section className="mb-6">
+            <h2 className="mb-3 font-serif text-xl text-text">Schnellzugriffe</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="border-orange/20" padding="md">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-medium text-orange">Einkauf</p>
+                    <CardTitle className="mt-1 text-lg">
+                      {shopping?.active.length ?? 0} offen
+                    </CardTitle>
+                  </div>
+                  <Link to="/einkauf?focus=1" className="text-xs font-medium text-primary">
+                    + Artikel
+                  </Link>
+                </div>
+                <ul className="mt-3 space-y-1">
+                  {(shopping?.active ?? []).slice(0, 3).map((item) => (
+                    <li key={item.id} className="truncate text-sm text-text-muted">
+                      • {item.title}
+                    </li>
+                  ))}
+                  {(shopping?.active.length ?? 0) === 0 ? (
+                    <li className="text-sm text-text-muted">Liste ist leer</li>
+                  ) : null}
+                </ul>
+                <Link to="/einkauf" className="mt-3 inline-block text-sm font-medium text-primary">
+                  Zur Liste
+                </Link>
               </Card>
 
-              <Card
-                className={cn(
-                  'min-w-[78%] snap-start overflow-hidden sm:min-w-[46%] lg:min-w-0',
-                  'border-emotional/25',
-                )}
-                padding="none"
-              >
+              <Card padding="md">
                 {activeTrip ? (
-                  <Link to={entityDetailPath(activeTrip.entity_type, activeTrip.id)} className="block">
-                    <div className="relative h-28 bg-surface-soft">
-                      {activeTrip.cover_media_id ? null : (
-                        <div className="absolute inset-0 bg-[linear-gradient(135deg,#c9d8e8,#f1ece5)]" />
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <p className="text-xs font-medium text-blue">Nächster Urlaub</p>
-                      <CardTitle className="mt-1">{activeTrip.title}</CardTitle>
-                      <CardDescription>
-                        {tripCountdown !== null ? `Noch ${tripCountdown} Tage` : formatEntityDateRange(activeTrip)}
-                        {nights !== null ? ` · ${nights} Nächte` : ''}
-                      </CardDescription>
-                    </div>
+                  <Link to={entityDetailPath(activeTrip.entity_type, activeTrip.id)}>
+                    <p className="text-xs font-medium text-blue">Nächste Reise</p>
+                    <CardTitle className="mt-1 text-lg">{activeTrip.title}</CardTitle>
+                    <CardDescription>
+                      {tripCountdown !== null ? `Noch ${tripCountdown} Tage` : formatEntityDateRange(activeTrip)}
+                    </CardDescription>
                   </Link>
                 ) : (
-                  <div className="p-4">
-                    <p className="text-xs font-medium text-blue">Nächster Urlaub</p>
-                    <CardTitle className="mt-1">Noch keine Reise</CardTitle>
+                  <>
+                    <p className="text-xs font-medium text-blue">Nächste Reise</p>
+                    <CardTitle className="mt-1 text-lg">Noch offen</CardTitle>
                     <button
                       type="button"
                       className="mt-3 text-sm font-medium text-primary"
@@ -275,21 +309,23 @@ export function HomePage() {
                     >
                       Reise planen
                     </button>
-                  </div>
+                  </>
                 )}
               </Card>
 
-              <Card className="min-w-[78%] snap-start sm:min-w-[46%] lg:min-w-0" padding="md">
+              <Card padding="md">
                 {activeGoal ? (
-                  <Link to={entityDetailPath(activeGoal.entity_type, activeGoal.id)} className="block">
-                    <p className="text-xs font-medium text-primary">Gemeinsames Ziel</p>
-                    <CardTitle className="mt-1">{activeGoal.title}</CardTitle>
-                    <GoalProgressCard goalId={activeGoal.id} />
+                  <Link to={entityDetailPath(activeGoal.entity_type, activeGoal.id)} className="flex items-center gap-3">
+                    <GoalMini goalId={activeGoal.id} />
+                    <div>
+                      <p className="text-xs font-medium text-primary">Aktives Ziel</p>
+                      <CardTitle className="mt-1 text-base">{activeGoal.title}</CardTitle>
+                    </div>
                   </Link>
                 ) : (
                   <>
-                    <p className="text-xs font-medium text-primary">Gemeinsames Ziel</p>
-                    <CardTitle className="mt-1">Noch kein Ziel</CardTitle>
+                    <p className="text-xs font-medium text-primary">Aktives Ziel</p>
+                    <CardTitle className="mt-1 text-lg">Kein Ziel</CardTitle>
                     <button
                       type="button"
                       className="mt-3 text-sm font-medium text-primary"
@@ -301,23 +337,23 @@ export function HomePage() {
                 )}
               </Card>
 
-              <Card className="min-w-[78%] snap-start sm:min-w-[46%] lg:min-w-0" padding="md">
+              <Card padding="md">
                 {nextDate ? (
-                  <Link to={entityDetailPath(nextDate.entity_type, nextDate.id)} className="block">
+                  <Link to={entityDetailPath(nextDate.entity_type, nextDate.id)}>
                     <p className="text-xs font-medium text-emotional">Date-Idee</p>
-                    <CardTitle className="mt-1">{nextDate.title}</CardTitle>
-                    <CardDescription>{formatEntityDateRange(nextDate) || 'Idee für euch zwei'}</CardDescription>
+                    <CardTitle className="mt-1 text-lg">{nextDate.title}</CardTitle>
+                    <CardDescription>{formatEntityDateRange(nextDate) || 'Idee für euch'}</CardDescription>
                   </Link>
                 ) : (
                   <>
                     <p className="text-xs font-medium text-emotional">Date-Idee</p>
-                    <CardTitle className="mt-1">Neue Idee finden</CardTitle>
+                    <CardTitle className="mt-1 text-lg">Neue Idee</CardTitle>
                     <button
                       type="button"
                       className="mt-3 text-sm font-medium text-primary"
                       onClick={() => void navigate('/planen/neu?type=date')}
                     >
-                      Date-Idee hinzufügen
+                      Hinzufügen
                     </button>
                   </>
                 )}
@@ -325,171 +361,85 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* Module cards */}
-          <section className="mb-8">
-            <h2 className="mb-3 font-serif text-xl text-text">Module</h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {DASHBOARD_MODULE_CARDS.map((mod) => (
-                <Link
-                  key={mod.key}
-                  to={mod.path}
-                  className="group min-h-[160px] overflow-hidden rounded-[20px] border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.99]"
+          {/* 5. Memories */}
+          <section className="mb-6">
+            <div className="mb-3 flex items-end justify-between">
+              <h2 className="font-serif text-xl text-text">Letzte Erinnerungen</h2>
+              <Link to="/erinnerungen" className="text-sm font-medium text-primary">
+                Alle
+              </Link>
+            </div>
+            {spaceId && memoryItems.length > 0 ? (
+              <Gallery items={memoryItems} spaceId={spaceId} horizontal />
+            ) : (
+              <Card padding="md">
+                <p className="text-sm text-text-muted">Noch keine Fotos.</p>
+                <button
+                  type="button"
+                  className="mt-3 text-sm font-medium text-primary"
+                  onClick={() => void navigate('/erinnerungen/neu')}
                 >
-                  <div className={cn('h-20', mod.accent.replace('text-', 'bg-').split(' ')[0], 'opacity-70')} />
-                  <div className="p-3">
-                    <p className="font-medium text-text">{mod.label}</p>
-                    <p className="mt-1 text-xs text-text-muted">{mod.description}</p>
+                  Erinnerung erstellen
+                </button>
+              </Card>
+            )}
+          </section>
+
+          {/* 6. Timeline preview — single entry */}
+          <section className="mb-6">
+            <div className="mb-3 flex items-end justify-between">
+              <h2 className="font-serif text-xl text-text">Timeline</h2>
+              <Link to="/timeline" className="text-sm font-medium text-primary">
+                Unsere Geschichte ansehen
+              </Link>
+            </div>
+            {latestTimeline && spaceId ? (
+              <Link to="/timeline">
+                <Card padding="none" className="overflow-hidden transition hover:-translate-y-0.5">
+                  {latestTimeline.storagePath ? (
+                    <MediaImage
+                      storagePath={latestTimeline.storagePath}
+                      spaceId={spaceId}
+                      alt={latestTimeline.title}
+                      aspectRatio={16 / 9}
+                    />
+                  ) : null}
+                  <div className="p-4">
+                    <p className="text-xs font-medium text-primary">
+                      {timelineKindLabel(latestTimeline.kind)}
+                    </p>
+                    <CardTitle className="mt-1">{latestTimeline.title}</CardTitle>
+                    <CardDescription>
+                      {format(parseISO(latestTimeline.occurredAt), 'd. MMMM yyyy', { locale: de })}
+                      {latestTimeline.body || latestTimeline.subtitle
+                        ? ` · ${latestTimeline.body || latestTimeline.subtitle}`
+                        : ''}
+                    </CardDescription>
                   </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* Memories + Timeline */}
-          <section className="mb-8 grid gap-6 lg:grid-cols-2">
-            <div>
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-xl text-text">Letzte Erinnerungen</h2>
-                <Link to="/erinnerungen" className="text-sm font-medium text-primary">
-                  Alle
-                </Link>
-              </div>
-              {spaceId && memoryItems.length > 0 ? (
-                <Gallery items={memoryItems} spaceId={spaceId} horizontal />
-              ) : (
-                <Card padding="md">
-                  <p className="text-sm text-text-muted">Noch keine Fotos — halte euren nächsten Moment fest.</p>
-                  <button
-                    type="button"
-                    className="mt-3 text-sm font-medium text-primary"
-                    onClick={() => void navigate('/erinnerungen/neu')}
-                  >
-                    Erinnerung erstellen
-                  </button>
                 </Card>
-              )}
-            </div>
-
-            <div>
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-xl text-text">Timeline</h2>
-                <Link to="/timeline" className="text-sm font-medium text-primary">
-                  Öffnen
-                </Link>
-              </div>
-              <ul className="space-y-2">
-                {timelinePreview.length === 0 ? (
-                  <Card padding="md">
-                    <p className="text-sm text-text-muted">Noch keine Ereignisse in der Timeline.</p>
-                  </Card>
-                ) : (
-                  timelinePreview.map((item) => (
-                    <li key={item.id}>
-                      <Card padding="sm" className="flex gap-3">
-                        {item.storagePath && spaceId ? (
-                          <div className="size-14 shrink-0 overflow-hidden rounded-xl">
-                            <MediaImage
-                              storagePath={item.storagePath}
-                              spaceId={spaceId}
-                              alt={item.title}
-                              aspectRatio={1}
-                            />
-                          </div>
-                        ) : null}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-text">{item.title}</p>
-                          <p className="text-xs text-text-muted">
-                            {item.sourceLabel} ·{' '}
-                            {format(parseISO(item.occurredAt), 'd. MMM yyyy', { locale: de })}
-                          </p>
-                        </div>
-                      </Card>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
+              </Link>
+            ) : (
+              <Card padding="md">
+                <p className="text-sm text-text-muted">Noch keine Timeline-Einträge.</p>
+              </Card>
+            )}
           </section>
 
-          {/* Lower widgets */}
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card padding="md">
-              <p className="text-xs font-medium text-primary">Top-Wunschliste</p>
-              <ul className="mt-3 space-y-2">
-                {recentWishes.length === 0 ? (
-                  <li className="text-sm text-text-muted">Noch keine Wünsche</li>
-                ) : (
-                  recentWishes.map((wish) => (
-                    <li key={wish.id}>
-                      <Link to={entityDetailPath(wish.entity_type, wish.id)} className="text-sm text-text hover:text-primary">
-                        {wish.title}
-                      </Link>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </Card>
-
-            <Card padding="md">
-              <p className="text-xs font-medium text-emotional">Geschenkideen</p>
-              <ul className="mt-3 space-y-2">
-                {gifts.length === 0 ? (
-                  <li className="text-sm text-text-muted">Noch keine Geschenkideen</li>
-                ) : (
-                  gifts.map((gift) => (
-                    <li key={gift.id}>
-                      <Link to={entityDetailPath(gift.entity_type, gift.id)} className="text-sm text-text hover:text-primary">
-                        {gift.title}
-                      </Link>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </Card>
-
-            <Card padding="md">
-              <p className="text-xs font-medium text-primary">Wöchentliche Highlights</p>
-              <ul className="mt-3 space-y-2 text-sm text-text-muted">
-                {tasksThisWeek.slice(0, 3).map((t) => (
-                  <li key={t.id}>{t.title}</li>
-                ))}
-                {todayReminders.slice(0, 2).map((r) => (
-                  <li key={r.id}>{r.title}</li>
-                ))}
-                {tasksThisWeek.length === 0 && todayReminders.length === 0 ? (
-                  <li>Diese Woche ist noch ruhig</li>
-                ) : null}
-              </ul>
-            </Card>
-
-            <Card padding="md">
-              <p className="text-xs font-medium text-emotional">Couple Journal</p>
-              <ul className="mt-3 space-y-2">
-                {journals.length === 0 ? (
-                  <li>
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary"
-                      onClick={() => void navigate('/planen/neu?type=journal')}
-                    >
-                      Ersten Eintrag schreiben
-                    </button>
-                  </li>
-                ) : (
-                  journals.map((entry) => (
-                    <li key={entry.id}>
-                      <Link
-                        to={entityDetailPath(entry.entity_type, entry.id)}
-                        className="text-sm text-text hover:text-primary"
-                      >
-                        {entry.title}
-                      </Link>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </Card>
-          </section>
+          {/* 7. Weekly highlight only if real data */}
+          {highlight ? (
+            <section>
+              <h2 className="mb-3 font-serif text-xl text-text">Wöchentliches Highlight</h2>
+              <Link to={entityDetailPath(highlight.entity_type, highlight.id)}>
+                <Card interactive padding="md">
+                  <p className="text-xs font-medium text-emotional">Highlight</p>
+                  <CardTitle className="mt-1">{highlight.title}</CardTitle>
+                  <CardDescription>
+                    {highlight.entity_type === 'goal' ? 'Ziel erreicht' : 'Besonderer Moment'}
+                  </CardDescription>
+                </Card>
+              </Link>
+            </section>
+          ) : null}
         </>
       )}
     </div>

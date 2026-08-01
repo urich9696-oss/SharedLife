@@ -8,6 +8,7 @@ import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFiel
 import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
 import {
   ENTITY_TYPE_META,
+  QUICK_CREATE_ACTIONS,
   QUICK_CREATE_TYPES,
   entityDetailPath,
   getEntityTypeMeta,
@@ -106,6 +107,28 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     >
       {!selectedType ? (
         <ul className="flex flex-col gap-2 pb-4">
+          {QUICK_CREATE_ACTIONS.map((action) => (
+            <li key={action.key}>
+              <button
+                type="button"
+                className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left transition duration-200 hover:border-sand hover:bg-surface active:scale-[0.99]"
+                onClick={() => {
+                  handleClose()
+                  void navigate(action.path)
+                }}
+              >
+                <span className="text-primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span>
+                  <span className="block font-medium text-text">{action.label}</span>
+                  <span className="mt-0.5 block text-sm text-text-muted">{action.description}</span>
+                </span>
+              </button>
+            </li>
+          ))}
           {QUICK_CREATE_TYPES.map((type) => {
             const meta = ENTITY_TYPE_META[type]
             return (

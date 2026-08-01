@@ -73,6 +73,10 @@ export async function createChecklistItem(input: {
   checklistId: string
   title: string
   sortOrder?: number
+  quantity?: string | null
+  unit?: string | null
+  category?: string | null
+  isFavorite?: boolean
 }): Promise<ChecklistItemRow> {
   const deviceId = await getOrCreateDeviceId()
   const now = nowIso()
@@ -88,6 +92,10 @@ export async function createChecklistItem(input: {
     assignee_id: null,
     due_date: null,
     sort_order: input.sortOrder ?? 0,
+    quantity: input.quantity ?? null,
+    unit: input.unit ?? null,
+    category: input.category ?? null,
+    is_favorite: input.isFavorite ?? false,
     created_at: now,
     updated_at: now,
     deleted_at: null,
@@ -108,6 +116,10 @@ export async function createChecklistItem(input: {
           checklist_id: input.checklistId,
           title: input.title,
           sort_order: row.sort_order,
+          quantity: row.quantity,
+          unit: row.unit,
+          category: row.category,
+          is_favorite: row.is_favorite,
         },
         createdAt: now,
       },
@@ -170,6 +182,20 @@ export async function updateChecklistItemTitle(
   spaceId: string,
   title: string,
 ): Promise<ChecklistItemRow> {
+  return updateChecklistItemFields(id, spaceId, { title })
+}
+
+export async function updateChecklistItemFields(
+  id: string,
+  spaceId: string,
+  patch: {
+    title?: string
+    quantity?: string | null
+    unit?: string | null
+    category?: string | null
+    is_favorite?: boolean
+  },
+): Promise<ChecklistItemRow> {
   const existing = await db.checklistItems.get(id)
   if (!existing || existing.space_id !== spaceId) {
     throw new Error('Checklistenpunkt nicht gefunden')
@@ -178,7 +204,11 @@ export async function updateChecklistItemTitle(
   const deviceId = await getOrCreateDeviceId()
   const now = nowIso()
 
-  const updated: ChecklistItemRow = { ...existing, title, updated_at: now }
+  const updated: ChecklistItemRow = {
+    ...existing,
+    ...patch,
+    updated_at: now,
+  }
 
   await db.transaction('rw', [db.checklistItems, db.outbox], async () => {
     await db.checklistItems.put(updated)
@@ -191,7 +221,7 @@ export async function updateChecklistItemTitle(
         resourceId: id,
         operation: 'update',
         expectedVersion: null,
-        payload: { title },
+        payload: { ...patch },
         createdAt: now,
       },
       { tx: db },

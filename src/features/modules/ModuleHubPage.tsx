@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -15,6 +15,10 @@ export function ModuleHubPage() {
   const module = MODULE_REGISTRY.find((m) => m.key === moduleKey)
   const types = module?.entityTypes ?? []
   const { data: entities = [], isLoading } = useEntities()
+
+  if (moduleKey === 'einkauf') {
+    return <Navigate to="/einkauf" replace />
+  }
 
   if (!module) {
     return (

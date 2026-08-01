@@ -224,12 +224,27 @@ export const QUICK_CREATE_TYPES: EntityType[] = [
   'trip',
   'goal',
   'expense',
-  'list',
   'recipe',
   'date',
   'journal',
   'gift',
 ]
+
+/** Spezielle Plus-Aktionen ohne eigenes Entity-Formular */
+export const QUICK_CREATE_ACTIONS = [
+  {
+    key: 'shopping-item',
+    label: 'Einkaufsartikel',
+    description: 'Schnell zur gemeinsamen Einkaufsliste',
+    path: '/einkauf?focus=1',
+  },
+  {
+    key: 'timeline-entry',
+    label: 'Timeline-Ereignis',
+    description: 'Manuellen Moment in der Geschichte festhalten',
+    path: '/timeline?compose=1',
+  },
+] as const
 
 export const CREATABLE_ENTITY_TYPES = (Object.values(ENTITY_TYPE_META) as EntityTypeMeta[])
   .filter((m) => m.creatable)

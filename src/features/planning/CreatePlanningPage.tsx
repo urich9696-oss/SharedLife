@@ -25,6 +25,11 @@ export function CreatePlanningPage() {
   const [params] = useSearchParams()
   const entityType = useMemo(() => resolveType(params.get('type')), [params])
   const meta = getEntityTypeMeta(entityType)
+
+  // Dedicated shopping module replaces generic list creation
+  if (entityType === 'list') {
+    void navigate('/einkauf?focus=1', { replace: true })
+  }
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
   const [title, setTitle] = useState('')

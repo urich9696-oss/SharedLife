@@ -258,6 +258,10 @@ export interface Database {
           assignee_id: string | null
           due_date: string | null
           sort_order: number
+          quantity: string | null
+          unit: string | null
+          category: string | null
+          is_favorite: boolean
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -273,6 +277,10 @@ export interface Database {
           assignee_id?: string | null
           due_date?: string | null
           sort_order?: number
+          quantity?: string | null
+          unit?: string | null
+          category?: string | null
+          is_favorite?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
