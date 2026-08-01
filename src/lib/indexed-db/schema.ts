@@ -12,6 +12,12 @@ export const ENTITY_TYPES = [
   'project',
   'note',
   'milestone',
+  'recipe',
+  'gift',
+  'household',
+  'leisure',
+  'journal',
+  'expense',
 ] as const
 
 export type EntityType = (typeof ENTITY_TYPES)[number]

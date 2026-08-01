@@ -47,6 +47,11 @@ const CreateMemoryPage = lazy(() =>
     default: m.CreateMemoryPage,
   })),
 )
+const ModuleHubPage = lazy(() =>
+  import('@/features/modules/ModuleHubPage').then((m) => ({
+    default: m.ModuleHubPage,
+  })),
+)
 const NotFoundPage = lazy(() =>
   import('@/features/misc/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
@@ -75,6 +80,7 @@ export const router = createBrowserRouter([
       { path: 'timeline', element: withSuspense(<TimelinePage />) },
       { path: 'erinnerungen/neu', element: withSuspense(<CreateMemoryPage />) },
       { path: 'wir', element: withSuspense(<WePage />) },
+      { path: 'module/:moduleKey', element: withSuspense(<ModuleHubPage />) },
       { path: 'entities/:type/:id', element: withSuspense(<EntityPage />) },
       { path: 'calendar', element: withSuspense(<CalendarPage />) },
       { path: 'conflicts', element: withSuspense(<ConflictsPage />) },

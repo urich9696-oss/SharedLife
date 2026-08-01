@@ -4,22 +4,32 @@
  */
 
 :root {
-  /* ── Core palette ───────────────────────────────────── */
+  /* ── Core palette (reference-aligned) ───────────────── */
+  --color-background: #f6f2ec;
   --color-bg: #f6f2ec;
   --color-surface: #fffdfc;
+  --color-surface-soft: #f1ece5;
+  --color-text-primary: #292623;
   --color-text: #292623;
+  --color-text-secondary: #817a73;
   --color-text-muted: #817a73;
   --color-primary: #8fa18a;
+  --color-emotional: #c98f82;
   --color-accent: #c98f82;
+  --color-coral: #ef6f7b;
+  --color-green: #48b866;
+  --color-purple: #9a55d4;
+  --color-orange: #f3a000;
+  --color-blue: #3274cc;
   --color-sand: #d8c8b5;
   --color-border: #e7e0d8;
 
   /* ── Semantic (derived harmoniously) ─────────────────── */
-  --color-success: #6d8f72;
+  --color-success: #48b866;
   --color-success-subtle: #e8f0e9;
-  --color-warning: #b8956a;
+  --color-warning: #f3a000;
   --color-warning-subtle: #f5ede0;
-  --color-error: #b86b5c;
+  --color-error: #ef6f7b;
   --color-error-subtle: #f9ebe8;
   --color-focus: #7a9175;
   --color-focus-ring: color-mix(in srgb, var(--color-focus) 35%, transparent);
@@ -35,8 +45,8 @@
   --color-surface-raised: #ffffff;
 
   /* ── Typography ──────────────────────────────────────── */
-  --font-serif: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -75,11 +85,11 @@
   --space-safe-bottom: env(safe-area-inset-bottom, 0px);
   --space-safe-left: env(safe-area-inset-left, 0px);
 
-  /* ── Radii (20–28px range) ─────────────────────────── */
+  /* ── Radii (16–22px range, soft cards) ─────────────── */
   --radius-sm: 12px;
-  --radius-md: 20px;
-  --radius-lg: 24px;
-  --radius-xl: 28px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 22px;
   --radius-full: 9999px;
 
   /* ── Shadows (warm, subtle) ──────────────────────────── */

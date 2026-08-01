@@ -163,13 +163,30 @@ export async function processImageFile(file: File): Promise<ProcessedImage> {
   }
 }
 
+/** Sanitizes filenames for Storage keys (spaces, umlauts, special chars). */
+export function sanitizeFilename(filename: string): string {
+  const trimmed = filename.trim() || 'photo'
+  const lastDot = trimmed.lastIndexOf('.')
+  const base = lastDot > 0 ? trimmed.slice(0, lastDot) : trimmed
+  const ext = lastDot > 0 ? trimmed.slice(lastDot + 1) : ''
+  const safeBase = base
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80) || 'photo'
+  const safeExt = ext.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toLowerCase()
+  return safeExt ? `${safeBase}.${safeExt}` : safeBase
+}
+
 export function buildStoragePath(
   spaceId: string,
   mediaId: string,
   variant: 'app' | 'thumb',
   filename: string,
 ): string {
-  return `${spaceId}/${mediaId}/${variant}/${filename}`
+  return `${spaceId}/${mediaId}/${variant}/${sanitizeFilename(filename)}`
 }
 
 export function extensionForMime(mime: string): string {

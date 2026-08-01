@@ -14,6 +14,13 @@ export interface Database {
           name: string
           slug: string | null
           timezone: string
+          partner_a_name: string | null
+          partner_b_name: string | null
+          partner_a_avatar_path: string | null
+          partner_b_avatar_path: string | null
+          cover_media_path: string | null
+          together_since: string | null
+          couple_blurb: string | null
           created_at: string
           updated_at: string
         }
@@ -22,6 +29,13 @@ export interface Database {
           name: string
           slug?: string | null
           timezone?: string
+          partner_a_name?: string | null
+          partner_b_name?: string | null
+          partner_a_avatar_path?: string | null
+          partner_b_avatar_path?: string | null
+          cover_media_path?: string | null
+          together_since?: string | null
+          couple_blurb?: string | null
           created_at?: string
           updated_at?: string
         }

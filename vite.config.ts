@@ -13,8 +13,10 @@ export default defineConfig({
       includeAssets: ['fonts/**/*', 'icons/**/*'],
       manifest: {
         name: 'SharedLife',
-        short_name: 'SharedLife',
+        short_name: 'Shared Life',
         description: 'Unser digitales Zuhause für gemeinsames Leben',
+        categories: ['lifestyle', 'productivity'],
+        display_override: ['standalone', 'browser'],
         theme_color: '#8FA18A',
         background_color: '#F6F2EC',
         display: 'standalone',
@@ -45,6 +47,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         importScripts: ['/sw-push.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Private API/Storage responses and signed media URLs must NOT be cached.
+        navigateFallbackDenylist: [/^\/api/, /^\/supabase/],
         runtimeCaching: [
           {
             urlPattern: ({ request, url }) =>
@@ -55,9 +59,14 @@ export default defineConfig({
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
+          {
+            urlPattern: ({ url }) =>
+              url.pathname.includes('/storage/v1/object/sign/') ||
+              url.searchParams.has('token'),
+            handler: 'NetworkOnly',
+            options: { cacheName: 'sharedlife-signed-media-bypass' },
+          },
         ],
-        // Private API/Storage responses must NOT be cached by Workbox.
-        navigateFallbackDenylist: [/^\/api/, /^\/supabase/],
       },
       devOptions: {
         enabled: false,

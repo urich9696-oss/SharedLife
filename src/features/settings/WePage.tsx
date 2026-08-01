@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { listActivityLog } from '@/lib/indexed-db/repositories/activity-log'
 import { formatInAppTz } from '@/lib/dates/timezone'
 
@@ -17,6 +18,8 @@ const ACTION_LABELS: Record<string, string> = {
 export function WePage() {
   const navigate = useNavigate()
   const { spaceId } = useAuth()
+  const { data: pair } = usePairProfile()
+  const together = daysTogether(pair?.togetherSince ?? null)
 
   const { data: activity = [], isLoading: activityLoading } = useQuery({
     queryKey: ['activity-log', spaceId],
@@ -27,13 +30,41 @@ export function WePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-heading">Wir</h1>
+        <h1 className="font-serif text-3xl text-text">Beziehung</h1>
         <p className="mt-2 text-text-muted">
-          Euer gemeinsamer Bereich — Partner, Familie und Einstellungen.
+          {pair
+            ? `${pair.partnerAName} & ${pair.partnerBName}${together !== null ? ` · ${together} Tage` : ''}`
+            : 'Euer gemeinsamer Bereich — Dates, Journal und Einstellungen.'}
         </p>
       </header>
 
       <div className="mb-10 grid gap-3 sm:grid-cols-2">
+        <Card
+          interactive
+          padding="md"
+          onClick={() => void navigate('/module/beziehung')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') void navigate('/module/beziehung')
+          }}
+        >
+          <h2 className="font-medium text-text">Beziehung</h2>
+          <p className="mt-1 text-sm text-text-muted">Dates, Wünsche, Journal</p>
+        </Card>
+        <Card
+          interactive
+          padding="md"
+          onClick={() => void navigate('/settings/pair')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') void navigate('/settings/pair')
+          }}
+        >
+          <h2 className="font-medium text-text">Paarprofil</h2>
+          <p className="mt-1 text-sm text-text-muted">Namen, Startdatum, Text</p>
+        </Card>
         <Card
           interactive
           padding="md"
@@ -45,7 +76,7 @@ export function WePage() {
           }}
         >
           <h2 className="font-medium text-text">Profil</h2>
-          <p className="mt-1 text-sm text-text-muted">Name, Avatar und Kontakt</p>
+          <p className="mt-1 text-sm text-text-muted">Name und persönliche Angaben</p>
         </Card>
         <Card
           interactive
@@ -69,7 +100,7 @@ export function WePage() {
         ) : activity.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {activity.map((entry) => (
-              <li key={entry.id} className="rounded-lg border border-border bg-surface px-4 py-3">
+              <li key={entry.id} className="rounded-[16px] border border-border bg-surface px-4 py-3">
                 <p className="text-sm text-text">
                   {ACTION_LABELS[entry.action] ?? entry.action}{' '}
                   <span className="text-text-muted">{entry.resource_type}</span>
@@ -82,19 +113,10 @@ export function WePage() {
           </ul>
         ) : (
           <EmptyState
-            icon={
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="9" cy="7" r="3" />
-                <circle cx="17" cy="9" r="2.5" />
-                <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" strokeLinecap="round" />
-              </svg>
-            }
-            title="Noch kein gemeinsamer Kreis"
-            description="Lade deinen Partner oder deine Familie ein, um gemeinsam zu planen und Erinnerungen zu teilen."
-            actionLabel="Einladen"
-            onAction={() => void navigate('/settings/invite')}
-            secondaryActionLabel="Anmelden"
-            onSecondaryAction={() => void navigate('/login')}
+            title="Noch ruhig hier"
+            description="Neue gemeinsame Einträge erscheinen hier als Aktivität — ohne fremde Einladungen."
+            actionLabel="Zum Dashboard"
+            onAction={() => void navigate('/')}
           />
         )}
       </section>

@@ -1,7 +1,7 @@
 /**
- * SharedLife V1 — Base styles
+ * SharedLife — Base styles
  *
- * Fonts: Inter via Google Fonts CDN in index.html.
+ * Fonts: Fraunces + Manrope via Google Fonts CDN in index.html.
  */
 
 *,
@@ -102,7 +102,7 @@ ol {
 }
 
 .text-hero {
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   font-size: var(--text-hero);
   line-height: var(--leading-tight);
   font-weight: var(--weight-semibold);
@@ -110,7 +110,7 @@ ol {
 }
 
 .text-heading {
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
   font-size: var(--text-2xl);
   line-height: var(--leading-tight);
   font-weight: var(--weight-semibold);

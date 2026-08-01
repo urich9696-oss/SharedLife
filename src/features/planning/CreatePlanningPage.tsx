@@ -1,16 +1,30 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { v4 as uuidv4 } from 'uuid'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { useAuth } from '@/features/auth/AuthProvider'
+import {
+  defaultDetailForType,
+  detailTypeForEntity,
+} from '@/features/entities/detail-payload-utils'
+import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { useCreateEntity } from '@/features/entities/useEntities'
-import { entityDetailPath } from '@/features/entities/entity-types'
+import { ENTITY_TYPES, type EntityType } from '@/lib/indexed-db/schema'
+import { createChecklist } from '@/lib/indexed-db/repositories/checklists'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
+
+function resolveType(raw: string | null): EntityType {
+  if (raw && (ENTITY_TYPES as readonly string[]).includes(raw)) return raw as EntityType
+  return 'event'
+}
 
 export function CreatePlanningPage() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const entityType = useMemo(() => resolveType(params.get('type')), [params])
+  const meta = getEntityTypeMeta(entityType)
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
   const [title, setTitle] = useState('')
@@ -18,14 +32,20 @@ export function CreatePlanningPage() {
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const needsDate = ['event', 'trip', 'date', 'gift', 'task'].includes(entityType)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!spaceId) {
       setError('Kein Space geladen.')
       return
     }
-    if (!title.trim() || !date) {
-      setError('Titel und Datum sind erforderlich.')
+    if (!title.trim()) {
+      setError('Titel ist erforderlich.')
+      return
+    }
+    if (needsDate && !date) {
+      setError('Datum ist erforderlich.')
       return
     }
 
@@ -35,22 +55,36 @@ export function CreatePlanningPage() {
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
-        entity_type: 'event',
+        entity_type: entityType,
         title: title.trim(),
         description: notes.trim() || null,
-        status: 'active',
-        all_day_start: date,
-        all_day_end: date,
+        status: entityType === 'date' || entityType === 'trip' || entityType === 'gift' ? 'draft' : 'active',
+        all_day_start: date || null,
+        all_day_end: date || null,
         sort_order: 0,
         metadata: {},
       })
-      await upsertEntityDetail({
-        entityId: id,
-        spaceId,
-        detailType: 'event',
-        payload: { locationName: '', recurrenceRule: '', calendarColor: '' },
-      })
-      void navigate(entityDetailPath('event', id))
+
+      const detailType = detailTypeForEntity(entityType)
+      if (detailType) {
+        await upsertEntityDetail({
+          entityId: id,
+          spaceId,
+          detailType,
+          payload: defaultDetailForType(entityType) as Record<string, unknown>,
+        })
+      }
+
+      if (entityType === 'list') {
+        await createChecklist({
+          id: uuidv4(),
+          spaceId,
+          entityId: id,
+          title: 'Einkaufsliste',
+        })
+      }
+
+      void navigate(entityDetailPath(entityType, id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen')
     }
@@ -59,12 +93,12 @@ export function CreatePlanningPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-heading">Neuer Termin</h1>
-        <p className="mt-2 text-text-muted">Schnell einen ganztägigen Termin anlegen.</p>
+        <h1 className="font-serif text-3xl text-text">{meta.label} erstellen</h1>
+        <p className="mt-2 text-text-muted">{meta.description}</p>
       </header>
 
       {error ? (
-        <p className="mb-4 rounded-lg bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
+        <p className="mb-4 rounded-[16px] bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}
@@ -72,18 +106,20 @@ export function CreatePlanningPage() {
       <form className="flex flex-col gap-5" onSubmit={(e) => void handleSubmit(e)}>
         <Input
           label="Titel"
-          placeholder="z. B. Abendessen bei Oma"
+          placeholder={`z. B. ${meta.label}`}
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <Input
-          label="Datum"
-          type="date"
-          required
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        {needsDate ? (
+          <Input
+            label="Datum"
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        ) : null}
         <Textarea
           label="Notizen"
           placeholder="Optional…"
@@ -95,7 +131,7 @@ export function CreatePlanningPage() {
           <Button type="submit" fullWidth loading={createEntity.isPending}>
             Speichern
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate('/planen')}>
+          <Button type="button" variant="secondary" onClick={() => void navigate(-1)}>
             Abbrechen
           </Button>
         </div>

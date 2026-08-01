@@ -1,10 +1,12 @@
-import { useMediaUrl } from '@/features/media/media-url'
+import { MediaImage } from '@/features/media/MediaImage'
+import { humanizeMediaTitle } from '@/features/media/media-url'
 import { cn } from '@/lib/utilities/cn'
 
 export interface CollageItem {
   id: string
   src: string
   caption?: string | null
+  originalFilename?: string | null
 }
 
 export interface CollageProps {
@@ -12,26 +14,6 @@ export interface CollageProps {
   spaceId: string
   columns?: number
   className?: string
-}
-
-function CollageTile({ item, spaceId }: { item: CollageItem; spaceId: string }) {
-  const url = useMediaUrl(item.src, spaceId)
-
-  return (
-    <div className="relative aspect-square overflow-hidden rounded-md bg-sand/30">
-      {url ? (
-        <img
-          src={url}
-          alt={item.caption ?? ''}
-          loading="lazy"
-          decoding="async"
-          className="size-full object-cover"
-        />
-      ) : (
-        <div className="size-full animate-pulse bg-sand/40" aria-hidden />
-      )}
-    </div>
-  )
 }
 
 export function Collage({ items, spaceId, columns = 3, className }: CollageProps) {
@@ -43,7 +25,14 @@ export function Collage({ items, spaceId, columns = 3, className }: CollageProps
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
       {visible.map((item) => (
-        <CollageTile key={item.id} item={item} spaceId={spaceId} />
+        <MediaImage
+          key={item.id}
+          storagePath={item.src}
+          spaceId={spaceId}
+          alt={humanizeMediaTitle(item.caption, item.originalFilename)}
+          className="rounded-md"
+          aspectRatio={1}
+        />
       ))}
     </div>
   )

@@ -7,6 +7,7 @@ import {
   buildStoragePath,
   extensionForMime,
   processImageFile,
+  sanitizeFilename,
   type ProcessedImage,
 } from '@/features/media/image-processing'
 import { getSupabaseClient } from '@/lib/supabase/client'
@@ -21,30 +22,59 @@ function queueKey(mediaId: string, variant: MediaVariant): string {
   return `${mediaId}:${variant}`
 }
 
+async function mirrorLocalBlobToRemoteKey(
+  mediaId: string,
+  variant: MediaVariant,
+  storagePath: string,
+): Promise<void> {
+  const local = await db.localMediaBlobs.get(queueKey(mediaId, variant))
+  if (!local) return
+  await db.localMediaBlobs.put({
+    key: `remote:${storagePath}`,
+    blob: local.blob,
+    mimeType: local.mimeType,
+    createdAt: local.createdAt,
+  })
+}
+
 export async function enqueueMediaUpload(input: {
   spaceId: string
   entityId?: string
   file: File
   userId?: string | null
   caption?: string | null
-}): Promise<{ mediaId: string }> {
+}): Promise<{ mediaId: string; storagePath: string }> {
   const processed = await processImageFile(input.file)
   const mediaId = uuidv4()
   const now = nowIso()
-  const baseName = input.file.name.replace(/\.[^.]+$/, '') || 'photo'
+  const baseName = sanitizeFilename(input.file.name.replace(/\.[^.]+$/, '') || 'photo')
 
   await storeLocalVariant(mediaId, 'app', processed.app.blob, processed.app.mimeType)
   await storeLocalVariant(mediaId, 'thumb', processed.thumb.blob, processed.thumb.mimeType)
 
+  const storagePath = buildStoragePath(
+    input.spaceId,
+    mediaId,
+    'app',
+    `${baseName}.${extensionForMime(processed.app.mimeType)}`,
+  )
+
+  await mirrorLocalBlobToRemoteKey(mediaId, 'app', storagePath)
+  await mirrorLocalBlobToRemoteKey(
+    mediaId,
+    'thumb',
+    buildStoragePath(
+      input.spaceId,
+      mediaId,
+      'thumb',
+      `${baseName}.${extensionForMime(processed.thumb.mimeType)}`,
+    ),
+  )
+
   const parentRow: MediaAssetRow = {
     id: mediaId,
     space_id: input.spaceId,
-    storage_path: buildStoragePath(
-      input.spaceId,
-      mediaId,
-      'app',
-      `${baseName}.${extensionForMime(processed.app.mimeType)}`,
-    ),
+    storage_path: storagePath,
     original_filename: input.file.name,
     mime_type: processed.app.mimeType,
     byte_size: processed.app.byteSize,
@@ -72,40 +102,7 @@ export async function enqueueMediaUpload(input: {
       await enqueueUploadRow(input.spaceId, mediaId, 'app', processed.app.mimeType)
       await enqueueUploadRow(input.spaceId, mediaId, 'thumb', processed.thumb.mimeType)
 
-      if (input.entityId) {
-        const linkId = uuidv4()
-        await db.entityMedia.put({
-          id: linkId,
-          space_id: input.spaceId,
-          entity_id: input.entityId,
-          media_id: mediaId,
-          role: 'gallery',
-          sort_order: 0,
-          caption: input.caption ?? null,
-          created_at: now,
-        })
-        await enqueueMutation(
-          {
-            mutationId: uuidv4(),
-            deviceId,
-            spaceId: input.spaceId,
-            resourceType: 'entity_media',
-            resourceId: linkId,
-            operation: 'create',
-            expectedVersion: null,
-            payload: {
-              entity_id: input.entityId,
-              media_id: mediaId,
-              role: 'gallery',
-              sort_order: 0,
-              caption: input.caption ?? null,
-            },
-            createdAt: now,
-          },
-          { tx: db },
-        )
-      }
-
+      // media_asset first so the server FK for entity_media succeeds
       await enqueueMutation(
         {
           mutationId: uuidv4(),
@@ -123,6 +120,7 @@ export async function enqueueMediaUpload(input: {
             width: parentRow.width,
             height: parentRow.height,
             variant: 'display',
+            // Server creates entity_media from this when present
             entity_id: input.entityId,
             caption: input.caption,
           },
@@ -130,10 +128,25 @@ export async function enqueueMediaUpload(input: {
         },
         { tx: db },
       )
+
+      if (input.entityId) {
+        const linkId = uuidv4()
+        await db.entityMedia.put({
+          id: linkId,
+          space_id: input.spaceId,
+          entity_id: input.entityId,
+          media_id: mediaId,
+          role: 'gallery',
+          sort_order: 0,
+          caption: input.caption ?? null,
+          created_at: now,
+        })
+        // Local-only link; remote link is created by applyMediaAssetMutation
+      }
     },
   )
 
-  return { mediaId }
+  return { mediaId, storagePath }
 }
 
 async function storeLocalVariant(
@@ -181,11 +194,11 @@ async function uploadVariant(
   variant: MediaVariant,
   processed: ProcessedImage | null,
   originalFilename: string,
-): Promise<void> {
+): Promise<string> {
   const local = await db.localMediaBlobs.get(row.localBlobKey)
   if (!local) throw new Error('Lokale Datei fehlt')
 
-  const baseName = originalFilename.replace(/\.[^.]+$/, '') || 'photo'
+  const baseName = sanitizeFilename(originalFilename.replace(/\.[^.]+$/, '') || 'photo')
   const variantData = variant === 'app' ? processed?.app : processed?.thumb
   const mimeType = local.mimeType
   const filename = `${baseName}.${extensionForMime(mimeType)}`
@@ -198,28 +211,45 @@ async function uploadVariant(
   })
   if (error) throw new Error(error.message)
 
-  const asset: MediaAssetRow = {
-    id: uuidv4(),
-    space_id: spaceId,
-    storage_path: path,
-    original_filename: originalFilename,
-    mime_type: mimeType,
-    byte_size: local.blob.size,
-    width: variantData?.width ?? null,
-    height: variantData?.height ?? null,
-    duration_ms: null,
-    blurhash: null,
-    variant: variant === 'app' ? 'display' : 'thumb',
-    parent_media_id: mediaId,
-    uploaded_by: null,
-    taken_at: null,
-    metadata: {},
-    created_at: nowIso(),
-    updated_at: nowIso(),
-    deleted_at: null,
+  await db.localMediaBlobs.put({
+    key: `remote:${path}`,
+    blob: local.blob,
+    mimeType: local.mimeType,
+    createdAt: local.createdAt,
+  })
+
+  // Parent display row already exists for "app"; only store thumb child rows
+  if (variant === 'thumb') {
+    const asset: MediaAssetRow = {
+      id: uuidv4(),
+      space_id: spaceId,
+      storage_path: path,
+      original_filename: originalFilename,
+      mime_type: mimeType,
+      byte_size: local.blob.size,
+      width: variantData?.width ?? null,
+      height: variantData?.height ?? null,
+      duration_ms: null,
+      blurhash: null,
+      variant: 'thumb',
+      parent_media_id: mediaId,
+      uploaded_by: null,
+      taken_at: null,
+      metadata: {},
+      created_at: nowIso(),
+      updated_at: nowIso(),
+      deleted_at: null,
+    }
+    await db.mediaAssets.put(asset)
+  } else {
+    await db.mediaAssets.update(mediaId, {
+      storage_path: path,
+      updated_at: nowIso(),
+      metadata: { ready_upload: true },
+    })
   }
 
-  await db.mediaAssets.put(asset)
+  return path
 }
 
 function parseVariantFromKey(localBlobKey: string): MediaVariant {

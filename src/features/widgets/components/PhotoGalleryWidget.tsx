@@ -23,6 +23,7 @@ export function PhotoGalleryWidget({
             id: link.id,
             src: asset.storage_path,
             caption: link.caption,
+            originalFilename: asset.original_filename,
             aspectRatio: asset.width && asset.height ? asset.width / asset.height : 4 / 3,
           }
         : null

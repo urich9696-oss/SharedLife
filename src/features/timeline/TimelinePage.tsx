@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { useAuth } from '@/app/providers'
 import { Card } from '@/components/ui/Card'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { MediaImage } from '@/features/media/MediaImage'
 import { deriveTimelineItems, type TimelineItem } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
 
@@ -46,7 +48,7 @@ export function TimelinePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-heading">Zeitleiste</h1>
+        <h1 className="font-serif text-3xl text-text">Zeitleiste</h1>
         <p className="mt-2 text-text-muted">
           Abgeleitet aus Momenten, Reisen, Terminen, Meilensteinen und Medien — ohne Inhaltsduplikate.
         </p>
@@ -68,14 +70,35 @@ export function TimelinePage() {
                 <ol className="space-y-3">
                   {items.map((item) => (
                     <li key={item.id}>
-                      <Card padding="sm">
-                        <p className="text-sm font-medium text-text">{item.title}</p>
-                        <p className="text-xs text-text-muted">
-                          {item.sourceLabel} · {format(parseISO(item.occurredAt), 'd. MMM yyyy', { locale: de })}
-                        </p>
-                        {item.subtitle ? (
-                          <p className="mt-1 text-sm text-text-muted">{item.subtitle}</p>
+                      <Card padding="sm" className="flex gap-3">
+                        {item.storagePath && spaceId ? (
+                          <div className="size-16 shrink-0 overflow-hidden rounded-xl">
+                            <MediaImage
+                              storagePath={item.storagePath}
+                              spaceId={spaceId}
+                              alt={item.title}
+                              aspectRatio={1}
+                            />
+                          </div>
                         ) : null}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-text">{item.title}</p>
+                          <p className="text-xs text-text-muted">
+                            {item.sourceLabel} ·{' '}
+                            {format(parseISO(item.occurredAt), 'd. MMM yyyy', { locale: de })}
+                          </p>
+                          {item.subtitle ? (
+                            <p className="mt-1 line-clamp-2 text-sm text-text-muted">{item.subtitle}</p>
+                          ) : null}
+                          {item.entityId ? (
+                            <Link
+                              to={`/entities/moment/${item.entityId}`}
+                              className="mt-1 inline-block text-xs font-medium text-primary"
+                            >
+                              Zum Eintrag
+                            </Link>
+                          ) : null}
+                        </div>
                       </Card>
                     </li>
                   ))}

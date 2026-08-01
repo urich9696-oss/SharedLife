@@ -1,27 +1,41 @@
 -- SharedLife Seed – lokaler Dev-Space
 -- Auth-Benutzer müssen über Supabase Auth angelegt werden (OTP, kein Auto-Signup).
 --
+-- Produktion: Nur Dennis anlegen. Lea erhält noch keinen Zugang (Überraschung).
+-- Lea-UUID unten nur für lokale RLS-Tests, falls der Auth-User manuell existiert.
+--
 -- Feste Test-UUIDs (in Kommentaren und optionalen Inserts):
 --   Space:     aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
 --   Dennis:    bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb  → dennis@sharedlife.local
---   Lea:       cccccccc-cccc-4ccc-8ccc-cccccccccccc  → lea@sharedlife.local
+--   Lea:       cccccccc-cccc-4ccc-8ccc-cccccccccccc  → lea@sharedlife.local (nur Tests, nicht einladen)
 --   Fremder:   dddddddd-dddd-4ddd-8ddd-dddddddddddd  → stranger@sharedlife.local (nur Tests)
 --
 -- Nach dem Anlegen der Auth-User (z. B. via Studio oder CLI):
 --   supabase auth users create dennis@sharedlife.local --id bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
---   supabase auth users create lea@sharedlife.local    --id cccccccc-cccc-4ccc-8ccc-cccccccccccc
+--   # Lea bewusst NICHT anlegen, bis die Überraschung freigegeben wird.
 
-insert into public.spaces (id, name, slug, timezone)
+insert into public.spaces (
+  id, name, slug, timezone,
+  partner_a_name, partner_b_name, together_since, couple_blurb
+)
 values (
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   'SharedLife',
   'sharedlife',
-  'Europe/Zurich'
+  'Europe/Zurich',
+  'Dennis',
+  'Lea',
+  '2022-06-18',
+  'Unser digitales Zuhause.'
 )
 on conflict (id) do update set
   name = excluded.name,
   slug = excluded.slug,
-  timezone = excluded.timezone;
+  timezone = excluded.timezone,
+  partner_a_name = excluded.partner_a_name,
+  partner_b_name = excluded.partner_b_name,
+  together_since = excluded.together_since,
+  couple_blurb = excluded.couple_blurb;
 
 -- Profile und Mitgliedschaft nur wenn Auth-User existieren
 do $$

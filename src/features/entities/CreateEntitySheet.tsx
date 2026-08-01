@@ -7,8 +7,8 @@ import { EntityForm } from '@/features/entities/EntityForm'
 import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFields'
 import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
 import {
-  CREATABLE_ENTITY_TYPES,
   ENTITY_TYPE_META,
+  QUICK_CREATE_TYPES,
   entityDetailPath,
   getEntityTypeMeta,
 } from '@/features/entities/entity-types'
@@ -106,13 +106,13 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     >
       {!selectedType ? (
         <ul className="flex flex-col gap-2 pb-4">
-          {CREATABLE_ENTITY_TYPES.map((type) => {
+          {QUICK_CREATE_TYPES.map((type) => {
             const meta = ENTITY_TYPE_META[type]
             return (
               <li key={type}>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-bg px-4 py-4 text-left transition-colors hover:border-sand hover:bg-surface"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left transition duration-200 hover:border-sand hover:bg-surface active:scale-[0.99]"
                   onClick={() => {
                     setSelectedType(type)
                     setDetailValues(defaultDetailForType(type))

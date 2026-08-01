@@ -17,7 +17,14 @@ export function PhotoCollageWidget({
   const items = links
     .map((link) => {
       const asset = assets.find((a) => a.id === link.media_id)
-      return asset ? { id: link.id, src: asset.storage_path, caption: link.caption } : null
+      return asset
+        ? {
+            id: link.id,
+            src: asset.storage_path,
+            caption: link.caption,
+            originalFilename: asset.original_filename,
+          }
+        : null
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
 

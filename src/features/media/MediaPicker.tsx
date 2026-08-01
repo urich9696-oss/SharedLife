@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { MediaImage } from '@/features/media/MediaImage'
 import { validateImageFile } from '@/features/media/image-processing'
 import { enqueueMediaUpload } from '@/features/media/upload-queue'
 import { cn } from '@/lib/utilities/cn'
@@ -8,8 +9,15 @@ export interface MediaPickerProps {
   spaceId: string
   entityId?: string
   userId?: string | null
-  onUploaded?: (mediaId: string) => void
+  onUploaded?: (mediaId: string, storagePath: string) => void
   className?: string
+}
+
+interface PreviewItem {
+  id: string
+  objectUrl: string
+  storagePath?: string
+  name: string
 }
 
 export function MediaPicker({
@@ -23,6 +31,15 @@ export function MediaPicker({
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [previews, setPreviews] = useState<PreviewItem[]>([])
+
+  useEffect(() => {
+    return () => {
+      for (const item of previews) {
+        if (item.objectUrl.startsWith('blob:')) URL.revokeObjectURL(item.objectUrl)
+      }
+    }
+  }, [previews])
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
@@ -38,13 +55,26 @@ export function MediaPicker({
             setError(check.error ?? 'Ungültige Datei')
             continue
           }
-          const { mediaId } = await enqueueMediaUpload({
+
+          const objectUrl = URL.createObjectURL(file)
+          const tempId = `preview-${crypto.randomUUID()}`
+          setPreviews((prev) => [...prev, { id: tempId, objectUrl, name: file.name }])
+
+          const { mediaId, storagePath } = await enqueueMediaUpload({
             spaceId,
             entityId,
             file,
             userId,
           })
-          onUploaded?.(mediaId)
+
+          setPreviews((prev) =>
+            prev.map((p) =>
+              p.id === tempId
+                ? { ...p, id: mediaId, storagePath, objectUrl: p.objectUrl }
+                : p,
+            ),
+          )
+          onUploaded?.(mediaId, storagePath)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Upload fehlgeschlagen')
@@ -59,7 +89,7 @@ export function MediaPicker({
     <div className={cn('space-y-3', className)}>
       <div
         className={cn(
-          'rounded-xl border-2 border-dashed p-6 text-center transition-colors',
+          'rounded-[18px] border-2 border-dashed p-6 text-center transition-colors duration-200',
           dragOver ? 'border-primary bg-primary/5' : 'border-border bg-bg',
         )}
         onDragOver={(e) => {
@@ -112,8 +142,35 @@ export function MediaPicker({
           }}
         />
       </div>
+
+      {previews.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2">
+          {previews.map((item) => (
+            <div key={item.id} className="overflow-hidden rounded-xl border border-border">
+              {item.storagePath ? (
+                <MediaImage
+                  storagePath={item.storagePath}
+                  spaceId={spaceId}
+                  alt="Hochgeladenes Foto"
+                  aspectRatio={1}
+                  lazy={false}
+                />
+              ) : (
+                <div className="relative aspect-square">
+                  <img
+                    src={item.objectUrl}
+                    alt="Vorschau"
+                    className="absolute inset-0 size-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {busy ? <p className="text-sm text-text-muted">Wird verarbeitet…</p> : null}
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
     </div>
   )
 }
