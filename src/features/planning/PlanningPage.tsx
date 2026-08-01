@@ -28,10 +28,11 @@ import {
   type PlanningTabKey,
 } from '@/features/entities/entity-types'
 import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
-import { useEntities } from '@/features/entities/useEntities'
+import { useEntities, useUpdateEntity } from '@/features/entities/useEntities'
 import { APP_TIMEZONE } from '@/lib/dates/timezone'
 import type { EntityRow, EntityType } from '@/lib/indexed-db/schema'
 import { cn } from '@/lib/utilities/cn'
+import { motion } from 'motion/react'
 
 const LEGACY_SEGMENT_TO_TAB: Record<string, PlanningTabKey> = Object.fromEntries(
   PLANNING_SEGMENTS.map((s) => [s.key, s.tab]),
@@ -90,6 +91,92 @@ function EntityListItem({ entity }: { entity: EntityRow }) {
         </div>
       </Card>
     </Link>
+  )
+}
+
+function AufgabenSection({ tasks }: { tasks: EntityRow[] }) {
+  const navigate = useNavigate()
+  const updateEntity = useUpdateEntity()
+  const [completingId, setCompletingId] = useState<string | null>(null)
+
+  if (tasks.length === 0) {
+    return (
+      <section>
+        <EmptyState
+          title="Keine Aufgaben"
+          description="Gemeinsame To-dos erscheinen hier — schlicht und übersichtlich."
+          actionLabel="Aufgabe erstellen"
+          onAction={() => void navigate('/planen/neu?type=task')}
+        />
+      </section>
+    )
+  }
+
+  return (
+    <section>
+      <ul className="flex flex-col gap-3">
+        {tasks.map((entity) => {
+          const meta = getEntityTypeMeta(entity.entity_type)
+          const role = String(entity.metadata?.assigneeRole ?? '')
+          const roleLabel =
+            role === 'dennis' ? 'Dennis' : role === 'lea' ? 'Lea' : role === 'gemeinsam' ? 'Gemeinsam' : null
+          const isCompleting = completingId === entity.id
+          return (
+            <li key={entity.id}>
+              <motion.div
+                layout
+                animate={
+                  isCompleting
+                    ? { opacity: 0, scale: 0.96, y: -8 }
+                    : { opacity: 1, scale: 1, y: 0 }
+                }
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Card padding="md" className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    aria-label="Als erledigt markieren"
+                    className={cn(
+                      'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[10px] border transition',
+                      entity.status === 'completed'
+                        ? 'border-primary bg-primary text-surface'
+                        : 'border-border bg-surface text-transparent hover:border-primary/50',
+                    )}
+                    onClick={() => {
+                      if (entity.status === 'completed') return
+                      setCompletingId(entity.id)
+                      window.setTimeout(() => {
+                        void updateEntity.mutateAsync({
+                          id: entity.id,
+                          patch: { status: 'completed' },
+                        })
+                      }, 220)
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <Link
+                    to={entityDetailPath(entity.entity_type, entity.id)}
+                    className="min-w-0 flex-1"
+                  >
+                    <h2 className="font-medium text-text">{entity.title}</h2>
+                    <p className="mt-0.5 text-sm text-text-muted">
+                      {formatEntityDateRange(entity) || 'Ohne Fälligkeit'}
+                      {roleLabel ? ` · ${roleLabel}` : ''}
+                    </p>
+                  </Link>
+                  <Badge variant={entity.status === 'completed' ? 'default' : 'primary'}>
+                    {meta.statusLabels[entity.status]}
+                  </Badge>
+                </Card>
+              </motion.div>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 
@@ -243,9 +330,9 @@ export function PlanningPage() {
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        'min-h-20 rounded-[12px] border p-1',
-                        inMonth ? 'border-border bg-surface' : 'border-transparent bg-bg/50 opacity-50',
-                        isToday && 'ring-2 ring-primary/30',
+                        'min-h-20 rounded-[16px] border p-1.5',
+                        inMonth ? 'border-border/80 bg-surface' : 'border-transparent bg-bg/50 opacity-50',
+                        isToday && 'ring-2 ring-primary/25',
                       )}
                     >
                       <span className="text-xs font-medium text-text-muted">{format(day, 'd')}</span>
@@ -315,7 +402,7 @@ export function PlanningPage() {
                   setParams(next, { replace: true })
                 }}
                 className={cn(
-                  'min-h-10 rounded-full px-3 text-sm',
+                  'min-h-10 rounded-[16px] px-3 text-sm',
                   !filter ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
                 )}
               >
@@ -331,7 +418,7 @@ export function PlanningPage() {
                     setParams(next, { replace: true })
                   }}
                   className={cn(
-                    'min-h-10 rounded-full px-3 text-sm',
+                    'min-h-10 rounded-[16px] px-3 text-sm',
                     filter === type ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
                   )}
                 >
@@ -361,41 +448,7 @@ export function PlanningPage() {
       ) : null}
 
       {tab === 'aufgaben' ? (
-        <section>
-          {tasks.length === 0 ? (
-            <EmptyState
-              title="Keine Aufgaben"
-              description="Gemeinsame To-dos erscheinen hier — schlicht und übersichtlich."
-              actionLabel="Aufgabe erstellen"
-              onAction={() => void navigate('/planen/neu?type=task')}
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {tasks.map((entity) => {
-                const meta = getEntityTypeMeta(entity.entity_type)
-                return (
-                  <li key={entity.id}>
-                    <Link to={entityDetailPath(entity.entity_type, entity.id)}>
-                      <Card interactive padding="md">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h2 className="font-medium text-text">{entity.title}</h2>
-                            <p className="mt-0.5 text-sm text-text-muted">
-                              {formatEntityDateRange(entity) || 'Ohne Fälligkeit'}
-                            </p>
-                          </div>
-                          <Badge variant={entity.status === 'completed' ? 'default' : 'primary'}>
-                            {meta.statusLabels[entity.status]}
-                          </Badge>
-                        </div>
-                      </Card>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </section>
+        <AufgabenSection tasks={tasks} />
       ) : null}
     </div>
   )

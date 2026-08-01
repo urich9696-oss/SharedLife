@@ -24,6 +24,7 @@ import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import type { EntityType } from '@/lib/indexed-db/schema'
 import { createChecklist } from '@/lib/indexed-db/repositories/checklists'
+import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 
 interface CreateEntitySheetProps {
   open: boolean
@@ -94,6 +95,13 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     const id = uuidv4()
 
     try {
+      const metadata: Record<string, unknown> = {}
+      if (selectedType === 'task') {
+        const task = detailValues as TaskDetailValues
+        metadata.assigneeRole = task.assigneeRole || ''
+        metadata.taskCategory = task.category || ''
+      }
+
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
@@ -103,7 +111,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         status: values.status,
         ...dates,
         sort_order: 0,
-        metadata: {},
+        metadata,
       })
 
       const detailType = detailTypeForEntity(selectedType)
@@ -122,6 +130,15 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
           spaceId,
           entityId: id,
           title: 'Checkliste',
+        })
+      }
+
+      if (selectedType === 'recipe') {
+        await createChecklist({
+          id: uuidv4(),
+          spaceId,
+          entityId: id,
+          title: 'Zutaten',
         })
       }
 
@@ -149,19 +166,14 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
             <li key={action.key}>
               <button
                 type="button"
-                className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-border bg-bg px-4 py-4 text-left transition duration-200 hover:border-sand hover:bg-surface active:scale-[0.99]"
+                className="flex min-h-14 w-full items-center gap-3 rounded-[22px] border border-border/80 bg-bg px-4 py-4 text-left transition duration-280 hover:border-sand hover:bg-surface active:scale-[0.99]"
                 onClick={() => {
                   if (action.kind === 'route') {
                     handleClose()
                     void navigate(action.path)
                     return
                   }
-                  if (action.kind === 'entity') {
-                    openForm(action.entityType)
-                    return
-                  }
-                  setChooserTypes([...action.chooserTypes])
-                  setView('chooser')
+                  openForm(action.entityType)
                 }}
               >
                 <span className="text-primary">
@@ -189,7 +201,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
               <span>
                 <span className="block font-medium text-text">Mehr erstellen</span>
                 <span className="mt-0.5 block text-sm text-text-muted">
-                  Ziel, Wunsch, Rezept und weitere Inhalte
+                  Projekt, Notiz, Zuhause und weitere Inhalte
                 </span>
               </span>
             </button>

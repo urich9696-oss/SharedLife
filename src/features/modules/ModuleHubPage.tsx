@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { FinanceDashboardPage } from '@/features/finances/FinanceDashboardPage'
+import { HomeRoomsPage } from '@/features/home-spaces/HomeRoomsPage'
+import { IdeasPage } from '@/features/ideas/IdeasPage'
+import { RecipesPage } from '@/features/recipes/RecipesPage'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { useEntities } from '@/features/entities/useEntities'
@@ -18,6 +22,22 @@ export function ModuleHubPage() {
 
   if (moduleKey === 'einkauf') {
     return <Navigate to="/einkauf" replace />
+  }
+
+  if (moduleKey === 'rezepte') {
+    return <RecipesPage />
+  }
+
+  if (moduleKey === 'finanzen') {
+    return <FinanceDashboardPage />
+  }
+
+  if (moduleKey === 'zuhause') {
+    return <HomeRoomsPage />
+  }
+
+  if (moduleKey === 'freizeit') {
+    return <IdeasPage />
   }
 
   if (moduleKey && LEGACY_MODULE_REDIRECTS[moduleKey]) {
@@ -47,8 +67,8 @@ export function ModuleHubPage() {
     <div className="mx-auto max-w-3xl px-4 py-6 lg:py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-primary">Modul</p>
-          <h1 className="font-serif text-3xl text-text">{module.label}</h1>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Modul</p>
+          <h1 className="mt-1 font-serif text-3xl text-text">{module.label}</h1>
           <p className="mt-2 text-text-muted">{module.description}</p>
         </div>
         {types[0] ? (
@@ -76,7 +96,7 @@ export function ModuleHubPage() {
             return (
               <li key={entity.id}>
                 <Link to={entityDetailPath(entity.entity_type, entity.id)}>
-                  <Card interactive padding="md" className="h-full transition duration-200 hover:-translate-y-0.5">
+                  <Card interactive padding="md" className="h-full transition duration-280 hover:-translate-y-0.5">
                     <p className="text-xs font-medium text-primary">{meta.label}</p>
                     <CardTitle className="mt-1">{entity.title || 'Ohne Titel'}</CardTitle>
                     <CardDescription>

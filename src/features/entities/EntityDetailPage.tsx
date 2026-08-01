@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { HeroCard } from '@/components/ui/HeroCard'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
+import { saveDateAsMoment } from '@/features/dates/save-as-moment'
 import { EntityLinksSection } from '@/features/entity-links/EntityLinksSection'
 import { EntityForm, entityFormDefaultsFromRow } from '@/features/entities/EntityForm'
 import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFields'
@@ -30,9 +33,15 @@ import { LocationAttach } from '@/features/locations/LocationAttach'
 import { NotesSection } from '@/features/notes/NotesSection'
 import { WidgetBoard } from '@/features/widgets/WidgetBoard'
 import { MediaPicker } from '@/features/media/MediaPicker'
+import {
+  addRecipeIngredientsToShopping,
+  getRecipeIngredients,
+} from '@/features/recipes/recipe-service'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { db } from '@/lib/indexed-db/db'
 import type { EntityType } from '@/lib/indexed-db/schema'
+import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 
 interface EntityDetailPageProps {
   type: EntityType
@@ -51,9 +60,41 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   const [editing, setEditing] = useState(false)
   const [detailValues, setDetailValues] = useState(parseDetailPayload(type, null))
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const [recipeMsg, setRecipeMsg] = useState<string | null>(null)
 
   const meta = getEntityTypeMeta(type)
   const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
+
+  const { data: coverPath } = useQuery({
+    queryKey: ['entity-cover', id, spaceId],
+    enabled: Boolean(spaceId && id),
+    queryFn: async () => {
+      const [links, assets] = await Promise.all([
+        db.entityMedia.where('entity_id').equals(id).toArray(),
+        db.mediaAssets.where('space_id').equals(spaceId!).toArray(),
+      ])
+      const sorted = links.sort((a, b) => a.sort_order - b.sort_order)
+      for (const link of sorted) {
+        const asset = assets.find(
+          (a) => a.id === link.media_id && !a.deleted_at && a.variant === 'display',
+        )
+        if (asset) return asset.storage_path
+      }
+      return null
+    },
+  })
+
+  const assigneeLabel = useMemo(() => {
+    if (type !== 'task') return null
+    const role =
+      (detailPayload as TaskDetailValues | null)?.assigneeRole ||
+      String(entity?.metadata?.assigneeRole ?? '')
+    if (role === 'dennis') return 'Dennis'
+    if (role === 'lea') return 'Lea'
+    if (role === 'gemeinsam') return 'Gemeinsam'
+    return null
+  }, [type, detailPayload, entity?.metadata])
 
   if (isLoading) return <LoadingState />
   if (error || !entity) {
@@ -68,19 +109,37 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   }
 
   const handleEditOpen = () => {
-    setDetailValues(parseDetailPayload(type, detailPayload as Record<string, unknown> | null))
+    const parsed = parseDetailPayload(type, detailPayload as Record<string, unknown> | null)
+    if (type === 'task') {
+      const role = String(entity.metadata?.assigneeRole ?? '')
+      setDetailValues({
+        ...(parsed as TaskDetailValues),
+        assigneeRole:
+          role === 'dennis' || role === 'lea' || role === 'gemeinsam'
+            ? role
+            : (parsed as TaskDetailValues).assigneeRole,
+      })
+    } else {
+      setDetailValues(parsed)
+    }
     setEditing(true)
   }
 
   const handleSave = async (values: EntityFormValues) => {
     if (!spaceId) return
     const dates = formValuesToEntityDates(values)
+    const metadata = { ...entity.metadata }
+    if (type === 'task') {
+      metadata.assigneeRole = (detailValues as TaskDetailValues).assigneeRole || ''
+      metadata.taskCategory = (detailValues as TaskDetailValues).category || ''
+    }
     await updateEntity.mutateAsync({
       id,
       patch: {
         title: values.title,
         description: values.description || null,
         status: values.status,
+        metadata,
         ...dates,
       },
     })
@@ -101,20 +160,64 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
     void navigate('/planen')
   }
 
+  const handleSaveAsMoment = async () => {
+    if (!spaceId) return
+    setConverting(true)
+    try {
+      const momentId = await saveDateAsMoment({
+        spaceId,
+        dateEntity: entity,
+        userId: session?.userId,
+      })
+      void navigate(`/entities/moment/${momentId}`)
+    } finally {
+      setConverting(false)
+    }
+  }
+
+  const handleRecipeToShopping = async () => {
+    if (!spaceId) return
+    const result = await addRecipeIngredientsToShopping({
+      spaceId,
+      entityId: id,
+      userId: session?.userId,
+    })
+    const ingredients = await getRecipeIngredients(id)
+    setRecipeMsg(
+      ingredients.ingredients.length === 0
+        ? 'Keine Zutaten vorhanden'
+        : result.added > 0
+          ? `${result.added} Zutat(en) zur Einkaufsliste hinzugefügt`
+          : 'Alle Zutaten waren bereits vorhanden',
+    )
+  }
+
   const dateLabel = formatEntityDateRange(entity)
+  const alreadyConverted = Boolean(entity.metadata?.convertedToMomentId)
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-5 sm:py-8">
+      <div className="mb-5">
+        <HeroCard
+          title={entity.title}
+          subtitle={dateLabel || entity.subtitle || meta.label}
+          eyebrow={meta.label}
+          mediaPath={coverPath}
+          spaceId={spaceId}
+          aspectClassName="aspect-[16/10] max-h-72"
+          ctaLabel={undefined}
+        />
+      </div>
+
       <header className="mb-5">
-        <div className="mb-2 flex items-center gap-2 text-primary">{meta.icon}</div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm text-text-muted">{meta.label}</p>
-            <h1 className="text-heading text-balance">{entity.title}</h1>
+            {assigneeLabel ? (
+              <p className="text-sm text-text-muted">Zuständig: {assigneeLabel}</p>
+            ) : null}
           </div>
           <Badge variant="primary">{getStatusLabel(type, entity.status)}</Badge>
         </div>
-        {dateLabel ? <p className="mt-2 text-sm text-text-muted">{dateLabel}</p> : null}
         {entity.description ? (
           <p className="mt-4 text-text whitespace-pre-wrap">{entity.description}</p>
         ) : null}
@@ -124,10 +227,26 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
         <Button variant="secondary" size="sm" onClick={handleEditOpen}>
           Bearbeiten
         </Button>
+        {type === 'date' && !alreadyConverted ? (
+          <Button
+            variant="accent"
+            size="sm"
+            loading={converting}
+            onClick={() => void handleSaveAsMoment()}
+          >
+            Als Moment speichern
+          </Button>
+        ) : null}
+        {type === 'recipe' ? (
+          <Button variant="primary" size="sm" onClick={() => void handleRecipeToShopping()}>
+            Zutaten einkaufen
+          </Button>
+        ) : null}
         <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)}>
           Löschen
         </Button>
       </div>
+      {recipeMsg ? <p className="mb-4 text-sm text-text-muted">{recipeMsg}</p> : null}
 
       {spaceId ? (
         <section className="mb-6">

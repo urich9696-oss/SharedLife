@@ -18,9 +18,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border bg-surface',
+        'rounded-[28px] border border-border/80 bg-surface',
         interactive &&
-          'cursor-pointer shadow-sm transition-[box-shadow,transform,border-color] duration-200 hover:shadow-md hover:border-sand active:scale-[0.99]',
+          'cursor-pointer shadow-sm transition-[box-shadow,transform,border-color] duration-280 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-md hover:border-sand/80 active:scale-[0.985]',
         !interactive && 'shadow-xs',
         paddingStyles[padding],
         className,

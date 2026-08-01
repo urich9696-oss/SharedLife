@@ -51,11 +51,15 @@ export function detailRowToLocalPayload(
       }
     case 'date':
       return {
+        phase: 'planned',
         occasion: row.occasion ?? '',
         venueName: row.venue_name ?? '',
         dressCode: row.dress_code ?? '',
         mood: row.mood ?? '',
         surprise: Boolean(row.surprise),
+        estimatedCost: row.estimated_cost != null ? String(row.estimated_cost) : '',
+        reservationReference: row.reservation_reference ?? '',
+        note: '',
       }
     case 'goal':
       return {
@@ -69,7 +73,10 @@ export function detailRowToLocalPayload(
       return {
         priority: priority === 'normal' ? 'medium' : priority === 'urgent' ? 'high' : priority,
         assigneeId: row.assignee_id ? String(row.assignee_id) : '',
+        assigneeRole: '',
         dueDate: row.due_date ? String(row.due_date) : '',
+        category: '',
+        note: '',
       }
     }
     case 'wish':

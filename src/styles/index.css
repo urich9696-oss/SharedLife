@@ -37,6 +37,9 @@
   --color-accent-hover: var(--color-accent-hover);
   --color-accent-active: var(--color-accent-active);
   --color-surface-raised: var(--color-surface-raised);
+  --color-pastel-1: var(--color-pastel-1);
+  --color-pastel-2: var(--color-pastel-2);
+  --color-pastel-3: var(--color-pastel-3);
 
   /* Typography */
   --font-serif: var(--font-serif);

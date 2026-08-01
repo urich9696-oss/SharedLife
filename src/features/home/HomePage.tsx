@@ -10,13 +10,13 @@ import {
   startOfDay,
 } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
+import { motion } from 'motion/react'
+import { HeroCard } from '@/components/ui/HeroCard'
+import { ProgressCard } from '@/components/ui/ProgressCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { VORHABEN_TYPES } from '@/features/content/content-map'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
-import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { useEntities, useReminders } from '@/features/entities/useEntities'
 import { selectHomeHero } from '@/features/home/hero'
 import { MediaImage } from '@/features/media/MediaImage'
@@ -55,11 +55,16 @@ function isTodayRelevant(entity: EntityRow, now: Date): boolean {
 }
 
 const QUICK_ACTIONS = [
-  { key: 'einkauf', label: 'Einkauf', path: '/einkauf?focus=1', hint: 'Artikel' },
-  { key: 'aufgabe', label: 'Aufgabe', path: '/planen/neu?type=task', hint: 'Erstellen' },
-  { key: 'termin', label: 'Termin', path: '/planen/neu?type=event', hint: 'Planen' },
-  { key: 'moment', label: 'Moment', path: '/erinnerungen/neu', hint: 'Festhalten' },
+  { key: 'einkauf', label: 'Einkauf', path: '/einkauf?focus=1', hint: 'Liste' },
+  { key: 'date', label: 'Date', path: '/planen/neu?type=date', hint: 'Planen' },
+  { key: 'ziel', label: 'Aktives Ziel', path: '/planen?tab=vorhaben&filter=goal', hint: 'Fortschritt' },
+  { key: 'reise', label: 'Reise', path: '/planen/neu?type=trip', hint: 'Vorhaben' },
 ] as const
+
+const fadeUp = {
+  initial: { opacity: 0, y: 12, scale: 0.985 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+}
 
 export function HomePage() {
   const navigate = useNavigate()
@@ -89,6 +94,26 @@ export function HomePage() {
     },
   })
 
+  const { data: detailProgress = {} } = useQuery({
+    queryKey: ['home-progress', spaceId],
+    enabled: Boolean(spaceId),
+    queryFn: async () => {
+      const details = await db.entityDetails.toArray()
+      const map: Record<string, number> = {}
+      for (const d of details) {
+        if (d.detail_type === 'goal' || d.detail_type === 'project') {
+          const payload = d.payload ?? {}
+          const percent =
+            d.detail_type === 'goal'
+              ? Number(payload.current ?? payload.progressPercent ?? 0)
+              : Number(payload.progressPercent ?? 0)
+          map[d.entity_id] = Math.min(100, Math.max(0, percent))
+        }
+      }
+      return map
+    },
+  })
+
   const hero = useMemo(
     () =>
       selectHomeHero({
@@ -108,7 +133,7 @@ export function HomePage() {
     const todayEntities = entities
       .filter((e) => isTodayRelevant(e, now))
       .filter((e) => e.id !== hero.entityId)
-      .slice(0, 6)
+      .slice(0, 4)
       .map((e) => ({
         id: e.id,
         label: e.title,
@@ -118,7 +143,7 @@ export function HomePage() {
 
     const todayReminders = reminders
       .filter((r) => !r.deleted_at && r.is_active && isSameDay(parseISO(r.remind_at), now))
-      .slice(0, 3)
+      .slice(0, 2)
       .map((r) => ({
         id: r.id,
         label: r.title,
@@ -126,26 +151,37 @@ export function HomePage() {
         href: null as string | null,
       }))
 
-    return [...todayEntities, ...todayReminders]
+    return [...todayEntities, ...todayReminders].slice(0, 4)
   }, [entities, reminders, now, hero.entityId])
 
-  const upcoming = useMemo(
-    () =>
-      entities
-        .filter((e) => {
-          if (e.deleted_at || e.status === 'cancelled' || e.status === 'archived') return false
-          if (hero.entityId && e.id === hero.entityId) return false
-          if (![...VORHABEN_TYPES, 'event' as const].includes(e.entity_type)) return false
-          const start = entityStart(e)
-          return start !== null && !isBefore(start, startOfDay(now))
-        })
-        .sort((a, b) => (entityStart(a)?.getTime() ?? 0) - (entityStart(b)?.getTime() ?? 0))
-        .slice(0, 4),
-    [entities, hero.entityId, now],
-  )
+  const progressCards = useMemo(() => {
+    const tones = ['sage', 'sand', 'rose', 'sky'] as const
+    return entities
+      .filter(
+        (e) =>
+          !e.deleted_at &&
+          e.status === 'active' &&
+          ['goal', 'project', 'trip', 'household'].includes(e.entity_type),
+      )
+      .map((e, i) => ({
+        id: e.id,
+        title: e.title,
+        subtitle: getEntityTypeMeta(e.entity_type).label,
+        href: entityDetailPath(e.entity_type, e.id),
+        progress:
+          detailProgress[e.id] ??
+          (typeof e.metadata?.progressPercent === 'number'
+            ? Number(e.metadata.progressPercent)
+            : e.entity_type === 'trip'
+              ? 35
+              : 20),
+        tone: tones[i % tones.length],
+      }))
+      .slice(0, 6)
+  }, [entities, detailProgress])
 
-  const { data: latestMoment } = useQuery({
-    queryKey: ['home-latest-moment', spaceId],
+  const { data: recentMoments = [] } = useQuery({
+    queryKey: ['home-recent-moments', spaceId],
     enabled: Boolean(spaceId),
     queryFn: async () => {
       const [ents, entries, mediaLinks, mediaAssets] = await Promise.all([
@@ -154,53 +190,38 @@ export function HomePage() {
         db.entityMedia.toArray(),
         db.mediaAssets.where('space_id').equals(spaceId!).toArray(),
       ])
-      const items = deriveTimelineItems({
+      return deriveTimelineItems({
         entities: ents.filter((e) => !e.deleted_at),
         timelineEntries: entries.filter((e) => !e.deleted_at),
         entityMedia: mediaLinks,
         mediaAssets: mediaAssets.filter((m) => !m.deleted_at),
-      })
-      return items[0] ?? null
+      }).slice(0, 12)
     },
   })
 
   if (isLoading) return <LoadingState />
 
   const hasAnyContent =
-    entities.length > 0 || reminders.some((r) => !r.deleted_at) || Boolean(latestMoment)
+    entities.length > 0 || reminders.some((r) => !r.deleted_at) || recentMoments.length > 0
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4 lg:py-8">
-      <section className="mb-5 overflow-hidden rounded-[22px] border border-border bg-surface shadow-sm">
-        <Link
-          to={hero.href}
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <div className="relative aspect-[16/10] max-h-64 w-full">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#e7efe4,transparent_45%),radial-gradient(circle_at_80%_30%,#f3e4df,transparent_40%),linear-gradient(135deg,#f6f2ec,#efe8df)]" />
-            {hero.mediaPath ? (
-              <MediaImage
-                storagePath={hero.mediaPath}
-                alt={hero.title}
-                className="absolute inset-0 rounded-none"
-                aspectRatio={16 / 10}
-                lazy={false}
-              />
-            ) : null}
-            <div className="absolute inset-0 bg-gradient-to-t from-text/55 via-text/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-4 text-surface sm:p-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-surface/80">
-                {hero.kind === 'emotional_fallback' ? 'SharedLife' : 'Jetzt relevant'}
-              </p>
-              <p className="mt-1 font-serif text-2xl sm:text-3xl">{hero.title}</p>
-              <p className="mt-1 text-sm text-surface/90">{hero.subtitle}</p>
-              <span className="mt-3 inline-flex min-h-10 items-center rounded-full bg-surface/95 px-4 text-sm font-medium text-text">
-                {hero.ctaLabel}
-              </span>
-            </div>
-          </div>
-        </Link>
-      </section>
+      <motion.section
+        className="mb-6"
+        {...fadeUp}
+        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <HeroCard
+          title={hero.title}
+          subtitle={hero.subtitle}
+          eyebrow={hero.kind === 'emotional_fallback' ? 'SharedLife' : 'Heute relevant'}
+          ctaLabel={hero.ctaLabel}
+          href={hero.href}
+          mediaPath={hero.mediaPath}
+          spaceId={spaceId}
+          aspectClassName="aspect-[4/5] max-h-[26rem] sm:aspect-[16/10] sm:max-h-[22rem]"
+        />
+      </motion.section>
 
       {!hasAnyContent ? (
         <EmptyState
@@ -212,26 +233,30 @@ export function HomePage() {
       ) : (
         <>
           {todayItems.length > 0 ? (
-            <section className="mb-6">
+            <motion.section
+              className="mb-7"
+              {...fadeUp}
+              transition={{ duration: 0.42, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+            >
               <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-xl text-text">Heute</h2>
+                <h2 className="font-serif text-2xl text-text">Heute</h2>
                 <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
-                  Alle anzeigen
+                  Kalender
                 </Link>
               </div>
-              <ul className="overflow-hidden rounded-[20px] border border-border bg-surface shadow-xs">
-                {todayItems.slice(0, 4).map((item) => (
-                  <li key={item.id} className="border-b border-border/70 last:border-b-0">
+              <ul className="overflow-hidden rounded-[28px] border border-border/80 bg-surface shadow-xs">
+                {todayItems.map((item) => (
+                  <li key={item.id} className="border-b border-border/60 last:border-b-0">
                     {item.href ? (
                       <Link
                         to={item.href}
-                        className="flex min-h-12 items-center justify-between gap-3 px-4 py-3"
+                        className="flex min-h-13 items-center justify-between gap-3 px-4 py-3.5"
                       >
                         <span className="text-sm text-text">{item.label}</span>
                         <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
                       </Link>
                     ) : (
-                      <div className="flex min-h-12 items-center justify-between gap-3 px-4 py-3">
+                      <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-3.5">
                         <span className="text-sm text-text">{item.label}</span>
                         <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
                       </div>
@@ -239,86 +264,102 @@ export function HomePage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </motion.section>
           ) : null}
 
-          <section className="mb-6">
-            <h2 className="mb-3 font-serif text-xl text-text">Schnellzugriffe</h2>
-            <div className="grid grid-cols-4 gap-2">
+          <motion.section
+            className="mb-7"
+            {...fadeUp}
+            transition={{ duration: 0.42, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h2 className="mb-3 font-serif text-2xl text-text">Schnellzugriffe</h2>
+            <div className="grid grid-cols-2 gap-3">
               {QUICK_ACTIONS.map((action) => (
                 <Link
                   key={action.key}
                   to={action.path}
                   className={cn(
-                    'flex min-h-[5.5rem] flex-col justify-between rounded-[18px] border border-border bg-surface p-3',
-                    'text-left shadow-xs transition duration-200 active:scale-[0.98] hover:-translate-y-0.5',
+                    'flex min-h-[6.5rem] flex-col justify-between rounded-[24px] border border-border/80 bg-surface p-4',
+                    'shadow-xs transition duration-280 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:-translate-y-0.5',
                   )}
                 >
-                  <span className="text-sm font-medium text-text">{action.label}</span>
+                  <span className="font-serif text-xl text-text">{action.label}</span>
                   <span className="text-xs text-text-muted">{action.hint}</span>
                 </Link>
               ))}
             </div>
-          </section>
+          </motion.section>
 
-          {upcoming.length > 0 ? (
-            <section className="mb-6">
+          {progressCards.length > 0 ? (
+            <motion.section
+              className="mb-7"
+              {...fadeUp}
+              transition={{ duration: 0.42, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            >
               <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-xl text-text">Als Nächstes</h2>
+                <h2 className="font-serif text-2xl text-text">Gemeinsamer Fortschritt</h2>
                 <Link to="/planen?tab=vorhaben" className="text-sm font-medium text-primary">
                   Vorhaben
                 </Link>
               </div>
-              <ul className="flex flex-col gap-2">
-                {upcoming.map((entity) => {
-                  const meta = getEntityTypeMeta(entity.entity_type)
-                  return (
-                    <li key={entity.id}>
-                      <Link to={entityDetailPath(entity.entity_type, entity.id)}>
-                        <Card interactive padding="md">
-                          <p className="text-xs font-medium text-primary">{meta.label}</p>
-                          <CardTitle className="mt-1 text-base">{entity.title}</CardTitle>
-                          <CardDescription>
-                            {formatEntityDateRange(entity) || meta.label}
-                          </CardDescription>
-                        </Card>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
+              <div className="flex snap-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {progressCards.map((card) => (
+                  <ProgressCard
+                    key={card.id}
+                    title={card.title}
+                    subtitle={card.subtitle}
+                    progress={card.progress}
+                    href={card.href}
+                    tone={card.tone}
+                  />
+                ))}
+              </div>
+            </motion.section>
           ) : null}
 
-          {latestMoment && spaceId ? (
-            <section className="mb-2">
+          {recentMoments.length > 0 && spaceId ? (
+            <motion.section
+              className="mb-2"
+              {...fadeUp}
+              transition={{ duration: 0.42, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            >
               <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-xl text-text">Letzter gemeinsamer Moment</h2>
+                <h2 className="font-serif text-2xl text-text">Letzte Momente</h2>
                 <Link to="/erinnerungen" className="text-sm font-medium text-primary">
-                  Momente
+                  Alle
                 </Link>
               </div>
-              <Link to="/timeline">
-                <Card padding="none" className="overflow-hidden transition hover:-translate-y-0.5">
-                  {latestMoment.storagePath ? (
-                    <MediaImage
-                      storagePath={latestMoment.storagePath}
-                      spaceId={spaceId}
-                      alt={latestMoment.title}
-                      aspectRatio={16 / 10}
-                    />
-                  ) : (
-                    <div className="aspect-[16/10] bg-[linear-gradient(135deg,#e7efe4,#f3e4df)]" />
-                  )}
-                  <div className="p-4">
-                    <CardTitle>{latestMoment.title}</CardTitle>
-                    <CardDescription>
-                      {format(parseISO(latestMoment.occurredAt), 'd. MMMM yyyy', { locale: de })}
-                    </CardDescription>
-                  </div>
-                </Card>
-              </Link>
-            </section>
+              <div className="flex snap-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {recentMoments.map((moment) => (
+                  <Link
+                    key={moment.id}
+                    to={
+                      moment.entityId && moment.entityType
+                        ? `/entities/${moment.entityType}/${moment.entityId}`
+                        : '/erinnerungen'
+                    }
+                    className="min-w-[14rem] snap-start overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-xs transition duration-280 hover:-translate-y-0.5"
+                  >
+                    {moment.storagePath ? (
+                      <MediaImage
+                        storagePath={moment.storagePath}
+                        spaceId={spaceId}
+                        alt={moment.title}
+                        aspectRatio={4 / 5}
+                      />
+                    ) : (
+                      <div className="aspect-[4/5] bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))]" />
+                    )}
+                    <div className="p-3.5">
+                      <p className="font-serif text-lg leading-tight text-text">{moment.title}</p>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {format(parseISO(moment.occurredAt), 'd. MMM yyyy', { locale: de })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </motion.section>
           ) : null}
         </>
       )}

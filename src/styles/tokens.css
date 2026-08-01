@@ -1,52 +1,55 @@
 /**
- * SharedLife V1 — Design Tokens
- * Warm Editorial + Photo First
+ * SharedLife V4 — Design Tokens
+ * Apple Premium · warm · airy · emotional
  */
 
 :root {
-  /* ── Core palette (reference-aligned) ───────────────── */
-  --color-background: #f6f2ec;
-  --color-bg: #f6f2ec;
-  --color-surface: #fffdfc;
-  --color-surface-soft: #f1ece5;
-  --color-text-primary: #292623;
-  --color-text: #292623;
-  --color-text-secondary: #817a73;
-  --color-text-muted: #817a73;
-  --color-primary: #8fa18a;
-  --color-emotional: #c98f82;
-  --color-accent: #c98f82;
-  --color-coral: #ef6f7b;
-  --color-green: #48b866;
-  --color-purple: #9a55d4;
-  --color-orange: #f3a000;
-  --color-blue: #3274cc;
-  --color-sand: #d8c8b5;
-  --color-border: #e7e0d8;
+  /* ── Core palette ─────────────────────────────────────── */
+  --color-background: #f5f4f2;
+  --color-bg: #f5f4f2;
+  --color-surface: #fffcfa;
+  --color-surface-soft: #eceae6;
+  --color-text-primary: #2c2a28;
+  --color-text: #2c2a28;
+  --color-text-secondary: #7a7670;
+  --color-text-muted: #7a7670;
+  --color-primary: #7d8f7a;
+  --color-emotional: #b89a8c;
+  --color-accent: #b89a8c;
+  --color-coral: #d4a39a;
+  --color-green: #6f9b78;
+  --color-purple: #9a8fb0;
+  --color-orange: #c9a87a;
+  --color-blue: #7f95ad;
+  --color-sand: #ddd4c8;
+  --color-border: #e5e1db;
+  --color-pastel-1: #e8eee6;
+  --color-pastel-2: #f0e8e3;
+  --color-pastel-3: #e7ebf0;
 
-  /* ── Semantic (derived harmoniously) ─────────────────── */
-  --color-success: #48b866;
-  --color-success-subtle: #e8f0e9;
-  --color-warning: #f3a000;
-  --color-warning-subtle: #f5ede0;
-  --color-error: #ef6f7b;
-  --color-error-subtle: #f9ebe8;
-  --color-focus: #7a9175;
-  --color-focus-ring: color-mix(in srgb, var(--color-focus) 35%, transparent);
-  --color-disabled: #b5aea6;
-  --color-disabled-bg: #f0ebe4;
-  --color-overlay: color-mix(in srgb, var(--color-text) 45%, transparent);
+  /* ── Semantic ─────────────────────────────────────────── */
+  --color-success: #6f9b78;
+  --color-success-subtle: #e8eee6;
+  --color-warning: #c9a87a;
+  --color-warning-subtle: #f3eee6;
+  --color-error: #c97b7b;
+  --color-error-subtle: #f5e8e8;
+  --color-focus: #7d8f7a;
+  --color-focus-ring: color-mix(in srgb, var(--color-focus) 30%, transparent);
+  --color-disabled: #b0aba4;
+  --color-disabled-bg: #efedea;
+  --color-overlay: color-mix(in srgb, var(--color-text) 40%, transparent);
 
   /* ── Interactive states ──────────────────────────────── */
-  --color-primary-hover: #7d9178;
-  --color-primary-active: #6f836a;
-  --color-accent-hover: #b87f72;
-  --color-accent-active: #a87165;
+  --color-primary-hover: #6f816c;
+  --color-primary-active: #61725e;
+  --color-accent-hover: #a88b7d;
+  --color-accent-active: #987c6f;
   --color-surface-raised: #ffffff;
 
   /* ── Typography ──────────────────────────────────────── */
-  --font-serif: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-  --font-sans: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-serif: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Instrument Sans', 'Avenir Next', 'Segoe UI', sans-serif;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -56,9 +59,9 @@
   --text-2xl: 1.5rem;
   --text-3xl: 1.875rem;
   --text-4xl: 2.25rem;
-  --text-hero: clamp(2rem, 5vw, 3rem);
+  --text-hero: clamp(2.125rem, 5.5vw, 3.25rem);
 
-  --leading-tight: 1.2;
+  --leading-tight: 1.15;
   --leading-normal: 1.5;
   --leading-relaxed: 1.65;
 
@@ -67,7 +70,7 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* ── Spacing scale ───────────────────────────────────── */
+  /* ── Spacing ─────────────────────────────────────────── */
   --space-0: 0;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -85,39 +88,39 @@
   --space-safe-bottom: env(safe-area-inset-bottom, 0px);
   --space-safe-left: env(safe-area-inset-left, 0px);
 
-  /* ── Radii (16–22px range, soft cards) ─────────────── */
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 22px;
+  /* ── Radii (large, soft cards) ───────────────────────── */
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 32px;
   --radius-full: 9999px;
 
-  /* ── Shadows (warm, subtle) ──────────────────────────── */
+  /* ── Shadows (fine, single-layer) ────────────────────── */
   --shadow-xs: 0 1px 2px color-mix(in srgb, var(--color-text) 4%, transparent);
-  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--color-text) 6%, transparent);
-  --shadow-md: 0 4px 16px color-mix(in srgb, var(--color-text) 8%, transparent);
-  --shadow-lg: 0 8px 32px color-mix(in srgb, var(--color-text) 10%, transparent);
+  --shadow-sm: 0 2px 10px color-mix(in srgb, var(--color-text) 5%, transparent);
+  --shadow-md: 0 8px 24px color-mix(in srgb, var(--color-text) 7%, transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb, var(--color-text) 9%, transparent);
   --shadow-focus: 0 0 0 3px var(--color-focus-ring);
 
   /* ── Borders ─────────────────────────────────────────── */
   --border-width: 1px;
   --border-color: var(--color-border);
-  --border-color-strong: color-mix(in srgb, var(--color-border) 70%, var(--color-text));
+  --border-color-strong: color-mix(in srgb, var(--color-border) 65%, var(--color-text));
 
   /* ── Motion ──────────────────────────────────────────── */
   --duration-instant: 0ms;
-  --duration-fast: 120ms;
-  --duration-normal: 200ms;
-  --duration-slow: 320ms;
-  --duration-slower: 480ms;
+  --duration-fast: 160ms;
+  --duration-normal: 280ms;
+  --duration-slow: 420ms;
+  --duration-slower: 560ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 
-  /* ── Layout (iPhone 16 Pro: 393×852 logical px) ──────── */
-  --nav-bottom-height: 4rem;
-  --nav-fab-overlap: 1.25rem;
-  --nav-side-width: 16rem;
+  /* ── Layout ──────────────────────────────────────────── */
+  --nav-bottom-height: 4.25rem;
+  --nav-fab-overlap: 1.35rem;
+  --nav-side-width: 16.5rem;
   --content-max-width: 72rem;
   --phone-content-max: 430px;
   --header-height: 3.25rem;

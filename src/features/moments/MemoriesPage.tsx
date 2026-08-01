@@ -11,12 +11,14 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { Gallery } from '@/features/media/Gallery'
 import { MediaImage } from '@/features/media/MediaImage'
 import { humanizeMediaTitle } from '@/features/media/media-url'
+import { MomentSwipeDeck } from '@/features/moments/MomentSwipeDeck'
 import { TimelineBrowser } from '@/features/timeline/TimelineBrowser'
 import { deriveTimelineItems, type TimelineItem } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
 import { cn } from '@/lib/utilities/cn'
 
 const MOMENT_TABS = [
+  { key: 'deck', label: 'Erleben' },
   { key: 'timeline', label: 'Timeline' },
   { key: 'fotos', label: 'Fotos' },
   { key: 'alben', label: 'Alben' },
@@ -31,9 +33,13 @@ export function MemoriesPage() {
   const [params, setParams] = useSearchParams()
   const tabParam = params.get('tab')
   const tab: MomentTab =
-    tabParam === 'fotos' || tabParam === 'alben' || tabParam === 'favoriten' || tabParam === 'timeline'
+    tabParam === 'fotos' ||
+    tabParam === 'alben' ||
+    tabParam === 'favoriten' ||
+    tabParam === 'timeline' ||
+    tabParam === 'deck'
       ? tabParam
-      : 'timeline'
+      : 'deck'
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
   const [browserIndex, setBrowserIndex] = useState<number | null>(null)
 
@@ -129,7 +135,7 @@ export function MemoriesPage() {
         <div>
           <h1 className="font-serif text-3xl text-text">Momente</h1>
           <p className="mt-2 text-sm text-text-muted">
-            Timeline, Fotos und eure gemeinsame Geschichte.
+            Große Bilder. Eure gemeinsame Geschichte.
           </p>
         </div>
         <Button type="button" size="sm" onClick={() => void navigate('/erinnerungen/neu')}>
@@ -138,7 +144,7 @@ export function MemoriesPage() {
       </header>
 
       <div
-        className="mb-5 grid grid-cols-4 gap-1 rounded-[18px] border border-border bg-surface-soft/70 p-1"
+        className="mb-5 grid grid-cols-5 gap-1 rounded-[20px] border border-border/80 bg-surface-soft/70 p-1"
         role="tablist"
         aria-label="Momente"
       >
@@ -150,7 +156,7 @@ export function MemoriesPage() {
             aria-selected={tab === item.key}
             onClick={() => setTab(item.key)}
             className={cn(
-              'min-h-11 rounded-[14px] px-1 text-xs font-medium transition sm:text-sm',
+              'min-h-11 rounded-[14px] px-0.5 text-[10px] font-medium transition sm:text-xs',
               tab === item.key ? 'bg-surface text-text shadow-xs' : 'text-text-muted',
             )}
           >
@@ -166,6 +172,19 @@ export function MemoriesPage() {
           actionLabel="Moment festhalten"
           onAction={() => void navigate('/erinnerungen/neu')}
         />
+      ) : null}
+
+      {hasContent && tab === 'deck' && spaceId ? (
+        <section className="pb-2">
+          <MomentSwipeDeck
+            items={timelineItems}
+            spaceId={spaceId}
+            onOpen={(item) => {
+              const idx = timelineItems.findIndex((t) => t.id === item.id)
+              setBrowserIndex(idx >= 0 ? idx : 0)
+            }}
+          />
+        </section>
       ) : null}
 
       {hasContent && tab === 'timeline' ? (
@@ -202,7 +221,7 @@ export function MemoriesPage() {
                           >
                             <Card padding="sm" className="flex items-center gap-3">
                               {item.storagePath && spaceId ? (
-                                <div className="size-14 shrink-0 overflow-hidden rounded-lg">
+                                <div className="size-14 shrink-0 overflow-hidden rounded-[16px]">
                                   <MediaImage
                                     storagePath={item.storagePath}
                                     spaceId={spaceId}
@@ -238,7 +257,7 @@ export function MemoriesPage() {
           <Gallery items={data!.gallery} spaceId={spaceId} />
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {data!.gallery.map((item) => (
-              <figure key={item.id} className="overflow-hidden rounded-[18px] border border-border">
+              <figure key={item.id} className="overflow-hidden rounded-[22px] border border-border/80">
                 <MediaImage
                   storagePath={item.src}
                   spaceId={spaceId}
@@ -269,7 +288,7 @@ export function MemoriesPage() {
                           aspectRatio={16 / 10}
                         />
                       ) : (
-                        <div className="aspect-[16/10] bg-[linear-gradient(135deg,#e7efe4,#f3e4df)]" />
+                        <div className="aspect-[16/10] bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))]" />
                       )}
                       <div className="p-3">
                         <p className="font-medium text-text">{album.title}</p>
@@ -295,7 +314,7 @@ export function MemoriesPage() {
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {favorites.map((item) => (
-                <figure key={item.id} className="overflow-hidden rounded-[18px] border border-border">
+                <figure key={item.id} className="overflow-hidden rounded-[22px] border border-border/80">
                   {spaceId ? (
                     <MediaImage
                       storagePath={item.src}

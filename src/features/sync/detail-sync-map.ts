@@ -17,6 +17,8 @@ export function localPayloadToDetailColumns(
         dress_code: (payload.dressCode as string) || null,
         mood: (payload.mood as string) || null,
         surprise: Boolean(payload.surprise),
+        reservation_reference: (payload.reservationReference as string) || null,
+        estimated_cost: payload.estimatedCost ? Number(payload.estimatedCost) : null,
       }
     case 'goal': {
       const kind = String(payload.progressKind ?? 'percent')
@@ -31,9 +33,15 @@ export function localPayloadToDetailColumns(
     }
     case 'task': {
       const priority = String(payload.priority ?? 'medium')
+      const assigneeId = String(payload.assigneeId ?? '')
+      const looksLikeUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          assigneeId,
+        )
       return {
         priority: priority === 'medium' ? 'normal' : priority,
-        assignee_id: (payload.assigneeId as string) || null,
+        // Pair-Rollen (dennis/lea/gemeinsam) bleiben lokal im Payload; nur echte UUIDs syncen
+        assignee_id: looksLikeUuid ? assigneeId : null,
         due_date: (payload.dueDate as string) || null,
       }
     }

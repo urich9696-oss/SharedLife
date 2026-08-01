@@ -2,7 +2,7 @@
 
 Private Progressive Web App für **Dennis und Lea** – gemeinsames digitales Zuhause für Organisation, Erinnerungen, Reisen, Dates, Ziele und Momente.
 
-Warm Editorial · Photo First · Offline-First · Apple-inspiriert
+Premium · Photo First · Offline-First · Apple-inspiriert
 
 ## Stack
 
@@ -42,6 +42,8 @@ Details: [docs/setup.md](docs/setup.md)
 
 ## Dokumentation
 
+- [V4 Premium](docs/v4-premium.md)
+- [V4 manuelle QA](docs/qa-checklist-v4.md)
 - [V3 Product Cleanup](docs/v3-product-cleanup.md)
 - [V3 manuelle QA](docs/qa-checklist-v3.md)
 - [Umsetzungsstatus](docs/implementation-status.md)
