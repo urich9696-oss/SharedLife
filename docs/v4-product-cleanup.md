@@ -32,7 +32,7 @@ EntityForm zeigt nur noch Titel + typische Felder (keine generische Titel/Datum/
 | Rezept | Hero, Titel, Zutaten-Enter, Button → Einkauf, Notiz |
 | Finanzen | Monatsbudget, Einnahmen/Ausgaben monatlich/einmalig, Kuchendiagramm |
 | Wunsch | Preis, Link, Anlass, Priorität, Status, Notiz |
-| Date Idee | Ort, Link, Notiz |
+| Date Idee | Datums-Vorschlag, Ort, Link, Notiz |
 
 ## Home
 

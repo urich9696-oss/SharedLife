@@ -78,12 +78,18 @@ export function formValuesToEntityDates(values: EntityFormValues): {
   return { starts_at, ends_at, all_day_start: null, all_day_end: null }
 }
 
+function formatAllDayDisplay(value: string): string {
+  const [y, m, d] = value.split('-')
+  if (!y || !m || !d) return value
+  return `${d}.${m}.${y}`
+}
+
 export function formatEntityDateRange(entity: EntityRow): string | null {
   if (entity.all_day_start) {
     const start = normalizeAllDayValue(entity.all_day_start)
     const end = entity.all_day_end ? normalizeAllDayValue(entity.all_day_end) : null
-    if (end && end !== start) return `${start} – ${end}`
-    return start
+    if (end && end !== start) return `${formatAllDayDisplay(start)} – ${formatAllDayDisplay(end)}`
+    return formatAllDayDisplay(start)
   }
   if (entity.starts_at) {
     const start = formatInAppTz(entity.starts_at, 'dd.MM.yyyy HH:mm')

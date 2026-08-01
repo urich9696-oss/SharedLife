@@ -1,5 +1,8 @@
+import { useEffect } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { Input } from '@/components/ui/Input'
-import { EntityNoteField } from '@/features/entities/SharedFormFields'
+import { EntityDateFields, EntityNoteField } from '@/features/entities/SharedFormFields'
+import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 
 export interface LeisureDetailValues {
   place: string
@@ -11,15 +14,30 @@ interface LeisureFormFieldsProps {
   onChange: (values: LeisureDetailValues) => void
 }
 
-/** Date Ideen – schlanke Eingabe laut V4 Cleanup */
+function LeisureDateDefaults() {
+  const { setValue } = useFormContext<EntityFormValues>()
+  useEffect(() => {
+    setValue('allDay', true)
+  }, [setValue])
+  return null
+}
+
+/** Date Ideen – Datums-Vorschlag, Ort, Link, Notiz */
 export function LeisureFormFields({ values, onChange }: LeisureFormFieldsProps) {
   return (
     <>
+      <LeisureDateDefaults />
+      <EntityDateFields
+        showEnd={false}
+        showAllDay={false}
+        showTime={false}
+        startLabel="Datums-Vorschlag"
+      />
       <Input
         label="Ort"
         value={values.place}
         onChange={(e) => onChange({ ...values, place: e.target.value })}
-        placeholder="Optional"
+        placeholder="Restaurant, Park, Stadt…"
       />
       <Input
         label="Link"
@@ -29,7 +47,9 @@ export function LeisureFormFields({ values, onChange }: LeisureFormFieldsProps) 
         placeholder="https://…"
       />
       <EntityNoteField />
-      <p className="text-xs text-text-muted">Hero-Bild nach dem Speichern unter Fotos hinzufügen.</p>
+      <p className="text-xs text-text-muted">
+        Optionaler Tag für die Idee — z. B. ein konkretes Wochenende. Hero-Bild nach dem Speichern.
+      </p>
     </>
   )
 }

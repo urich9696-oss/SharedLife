@@ -180,7 +180,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
 
   const handleSave = async (values: EntityFormValues) => {
     if (!spaceId) return
-    const dates = formValuesToEntityDates(values)
+    const dates = formValuesToEntityDates(type === 'leisure' ? { ...values, allDay: true } : values)
     const metadata = metadataFromDetail(type, detailValues, entity.metadata)
     await updateEntity.mutateAsync({
       id,

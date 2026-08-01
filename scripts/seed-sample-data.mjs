@@ -22,30 +22,61 @@ const client = createClient(url, anon)
 const ids = {
   tripGreece: randomUUID(),
   tripWeekend: randomUUID(),
+  tripBerlin: randomUUID(),
   dateDinner: randomUUID(),
   dateHike: randomUUID(),
+  dateBoat: randomUUID(),
   goalApartment: randomUUID(),
   goalFitness: randomUUID(),
+  goalSavings: randomUUID(),
   eventBrunch: randomUUID(),
   eventDentist: randomUUID(),
   eventAnniversary: randomUUID(),
+  eventParents: randomUUID(),
   taskPacking: randomUUID(),
   taskInsurance: randomUUID(),
   taskGroceries: randomUUID(),
+  taskFlowers: randomUUID(),
+  taskLease: randomUUID(),
   listPacking: randomUUID(),
   listShopping: randomUUID(),
   wishCamera: randomUUID(),
   wishConcert: randomUUID(),
+  wishCook: randomUUID(),
   momentLake: randomUUID(),
   momentFirstHome: randomUUID(),
+  momentRain: randomUUID(),
+  momentBreakfast: randomUUID(),
+  momentConcert: randomUUID(),
+  leisurePicnic: randomUUID(),
+  leisureDinner: randomUUID(),
+  leisureHike: randomUUID(),
+  leisureFlea: randomUUID(),
+  leisureCinema: randomUUID(),
+  leisureSpa: randomUUID(),
+  leisureCook: randomUUID(),
+  leisureMuseum: randomUUID(),
+  recipePasta: randomUUID(),
+  recipeShakshuka: randomUUID(),
+  recipeVeggies: randomUUID(),
+  expenseRent: randomUUID(),
+  expenseGroceries: randomUUID(),
+  expenseTransit: randomUUID(),
+  expenseBrunch: randomUUID(),
+  expenseNetflix: randomUUID(),
+  incomeDennis: randomUUID(),
+  incomeLea: randomUUID(),
+  incomeTax: randomUUID(),
   projectRenovation: randomUUID(),
   milestoneKitchen: randomUUID(),
   milestoneBath: randomUUID(),
   noteShared: randomUUID(),
   checklistPacking: randomUUID(),
   checklistShopping: randomUUID(),
+  checklistRecipePasta: randomUUID(),
   budgetTrip: randomUUID(),
   budgetHome: randomUUID(),
+  budgetMonth: randomUUID(),
   locAthens: randomUUID(),
   locZurich: randomUUID(),
   locLake: randomUUID(),
@@ -305,6 +336,12 @@ async function main() {
       status: 'active',
     },
     {
+      id: ids.wishCook,
+      entity_type: 'wish',
+      title: 'Kochkurs-Gutschein',
+      status: 'active',
+    },
+    {
       id: ids.momentLake,
       entity_type: 'moment',
       title: 'Sonnenuntergang am Zürichsee',
@@ -321,6 +358,301 @@ async function main() {
       status: 'active',
       all_day_start: dateDaysFromNow(-120),
       all_day_end: dateDaysFromNow(-120),
+    },
+    {
+      id: ids.momentRain,
+      entity_type: 'moment',
+      title: 'Regenwanderung mit Lachen',
+      description: 'Komplett nass, trotzdem die besten Fotos.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-5),
+      all_day_end: dateDaysFromNow(-5),
+    },
+    {
+      id: ids.momentBreakfast,
+      entity_type: 'moment',
+      title: 'Sonntagsfrühstück im Bett',
+      description: 'Croissants, Orangensaft, keine Pläne.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-2),
+      all_day_end: dateDaysFromNow(-2),
+    },
+    {
+      id: ids.momentConcert,
+      entity_type: 'moment',
+      title: 'Konzert im Dachstock',
+      description: 'Live-Musik, geteilte Kopfhörer auf dem Heimweg.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-18),
+      all_day_end: dateDaysFromNow(-18),
+    },
+    {
+      id: ids.leisurePicnic,
+      entity_type: 'leisure',
+      title: 'Picknick am Zürichsee',
+      description: 'Decke, Lemonade, Playlist für den Sonnenuntergang.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(3),
+      all_day_end: dateDaysFromNow(3),
+      metadata: { place: 'Zürichhorn', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureDinner,
+      entity_type: 'leisure',
+      title: 'Kerzenlicht-Dinner zu Hause',
+      description: 'Drei Gänge, kein Handy, Lieblingswein.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(6),
+      all_day_end: dateDaysFromNow(6),
+      metadata: { place: 'Zuhause', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureHike,
+      entity_type: 'leisure',
+      title: 'Nachtwanderung Uetliberg',
+      description: 'Stirnlampen, Thermoskanne, Sternenhimmel.',
+      status: 'draft',
+      all_day_start: dateDaysFromNow(14),
+      all_day_end: dateDaysFromNow(14),
+      metadata: { place: 'Uetliberg', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureFlea,
+      entity_type: 'leisure',
+      title: 'Flohmarkt & Café Brunnen',
+      description: 'Schätze suchen, danach Cappuccino teilen.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(10),
+      all_day_end: dateDaysFromNow(10),
+      metadata: { place: 'Bürkliplatz', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureCinema,
+      entity_type: 'leisure',
+      title: 'Kino + Streetfood',
+      description: 'Spontaner Filmabend, danach Food Court.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(2),
+      all_day_end: dateDaysFromNow(2),
+      metadata: { place: 'Sihlcity', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureSpa,
+      entity_type: 'leisure',
+      title: 'Therme Bad Zurzach',
+      description: 'Ganzer Tag entspannen, Sauna-Runde.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(21),
+      all_day_end: dateDaysFromNow(21),
+      metadata: { place: 'Bad Zurzach', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureCook,
+      entity_type: 'leisure',
+      title: 'Kochkurs für zwei',
+      description: 'Pasta frisch machen lernen.',
+      status: 'draft',
+      all_day_start: dateDaysFromNow(28),
+      all_day_end: dateDaysFromNow(28),
+      metadata: { place: 'Zürich', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.leisureMuseum,
+      entity_type: 'leisure',
+      title: 'Museumsnacht',
+      description: 'Kunsthalle + anschliessend Weinbar.',
+      status: 'active',
+      all_day_start: dateDaysFromNow(35),
+      all_day_end: dateDaysFromNow(35),
+      metadata: { place: 'Kunsthaus Zürich', ideaCategory: 'date', seed: 'sample-v2' },
+    },
+    {
+      id: ids.tripBerlin,
+      entity_type: 'trip',
+      title: 'Berlin Kurztrip',
+      description: 'Kultur, Streetfood, Flohmärkte.',
+      status: 'draft',
+      all_day_start: dateDaysFromNow(70),
+      all_day_end: dateDaysFromNow(73),
+    },
+    {
+      id: ids.dateBoat,
+      entity_type: 'date',
+      title: 'Bootsfahrt Vierwaldstättersee',
+      description: 'Tickets online, Picnic-Korb mitnehmen.',
+      status: 'active',
+      starts_at: isoDaysFromNow(18, 11),
+      ends_at: isoDaysFromNow(18, 16),
+    },
+    {
+      id: ids.goalSavings,
+      entity_type: 'goal',
+      title: 'Notfallpolster aufbauen',
+      description: '3 Monatsausgaben auf dem Sparkonto.',
+      status: 'active',
+    },
+    {
+      id: ids.eventParents,
+      entity_type: 'event',
+      title: 'Elternabend Lea',
+      status: 'active',
+      starts_at: isoDaysFromNow(4, 18),
+      ends_at: isoDaysFromNow(4, 20),
+    },
+    {
+      id: ids.taskFlowers,
+      entity_type: 'task',
+      title: 'Blumen fürs Wohnzimmer',
+      status: 'active',
+      starts_at: isoDaysFromNow(0, 12),
+    },
+    {
+      id: ids.taskLease,
+      entity_type: 'task',
+      title: 'Mietvertrag vergleichen',
+      status: 'draft',
+      starts_at: isoDaysFromNow(7, 19),
+    },
+    {
+      id: ids.recipePasta,
+      entity_type: 'recipe',
+      title: 'Pasta al Limone',
+      description: 'Zitronig, cremig, unter 20 Minuten.',
+      status: 'active',
+    },
+    {
+      id: ids.recipeShakshuka,
+      entity_type: 'recipe',
+      title: 'Shakshuka für zwei',
+      description: 'Wochenend-Brunch Klassiker.',
+      status: 'active',
+    },
+    {
+      id: ids.recipeVeggies,
+      entity_type: 'recipe',
+      title: 'Ofengemüse mit Halloumi',
+      description: 'One-Tray, wenig Abwasch.',
+      status: 'active',
+    },
+    {
+      id: ids.expenseRent,
+      entity_type: 'expense',
+      title: 'Miete',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-3),
+      metadata: {
+        amount: '1850',
+        category: 'Wohnen',
+        paidBy: 'gemeinsam',
+        financeKind: 'expense',
+        recurrence: 'monthly',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.expenseGroceries,
+      entity_type: 'expense',
+      title: 'Wocheneinkauf Coop',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-1),
+      metadata: {
+        amount: '112.40',
+        category: 'Lebensmittel',
+        paidBy: 'lea',
+        financeKind: 'expense',
+        recurrence: 'once',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.expenseTransit,
+      entity_type: 'expense',
+      title: 'ÖV-Abo Dennis',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-5),
+      metadata: {
+        amount: '86',
+        category: 'Mobilität',
+        paidBy: 'dennis',
+        financeKind: 'expense',
+        recurrence: 'monthly',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.expenseBrunch,
+      entity_type: 'expense',
+      title: 'Restaurant Brunch',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-6),
+      metadata: {
+        amount: '68.50',
+        category: 'Freizeit',
+        paidBy: 'gemeinsam',
+        financeKind: 'expense',
+        recurrence: 'once',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.expenseNetflix,
+      entity_type: 'expense',
+      title: 'Netflix',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-8),
+      metadata: {
+        amount: '18.90',
+        category: 'Abo',
+        paidBy: 'gemeinsam',
+        financeKind: 'expense',
+        recurrence: 'monthly',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.incomeDennis,
+      entity_type: 'expense',
+      title: 'Lohn Dennis',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-2),
+      metadata: {
+        amount: '5200',
+        category: 'Gehalt',
+        paidBy: 'dennis',
+        financeKind: 'income',
+        recurrence: 'monthly',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.incomeLea,
+      entity_type: 'expense',
+      title: 'Lohn Lea',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-2),
+      metadata: {
+        amount: '4100',
+        category: 'Gehalt',
+        paidBy: 'lea',
+        financeKind: 'income',
+        recurrence: 'monthly',
+        seed: 'sample-v2',
+      },
+    },
+    {
+      id: ids.incomeTax,
+      entity_type: 'expense',
+      title: 'Steuer-Rückerstattung',
+      status: 'active',
+      all_day_start: dateDaysFromNow(-12),
+      metadata: {
+        amount: '340',
+        category: 'Sonstiges',
+        paidBy: 'gemeinsam',
+        financeKind: 'income',
+        recurrence: 'once',
+        seed: 'sample-v2',
+      },
     },
     {
       id: ids.projectRenovation,
@@ -357,12 +689,12 @@ async function main() {
   ]
 
   for (const entity of entities) {
-    const { id, ...rest } = entity
+    const { id, metadata: entityMeta, ...rest } = entity
     await createEntity(token, deviceId, {
       id,
       space_id: SPACE_ID,
       sort_order: 0,
-      metadata: { seed: 'sample-v1' },
+      metadata: { seed: 'sample-v2', ...(entityMeta || {}) },
       ...rest,
     })
     process.stdout.write('.')
@@ -375,6 +707,9 @@ async function main() {
   })
   await createDetail(token, deviceId, ids.tripWeekend, 'trip', {
     destination: 'Locarno',
+  })
+  await createDetail(token, deviceId, ids.tripBerlin, 'trip', {
+    destination: 'Berlin',
   })
   await createDetail(token, deviceId, ids.dateDinner, 'date', {
     occasion: 'Date Night',
@@ -389,6 +724,12 @@ async function main() {
     mood: 'aktiv',
     surprise: true,
   })
+  await createDetail(token, deviceId, ids.dateBoat, 'date', {
+    occasion: 'Ausflug',
+    venueName: 'Vierwaldstättersee',
+    mood: 'entspannt',
+    surprise: false,
+  })
   await createDetail(token, deviceId, ids.goalApartment, 'goal', {
     progressKind: 'percent',
     current: 35,
@@ -401,6 +742,12 @@ async function main() {
     target: 24,
     milestones: 'Wochenziel: 2 Einheiten',
   })
+  await createDetail(token, deviceId, ids.goalSavings, 'goal', {
+    progressKind: 'currency',
+    current: 4800,
+    target: 12000,
+    milestones: 'Sparrate 500/Monat',
+  })
   await createDetail(token, deviceId, ids.eventBrunch, 'event', {
     locationName: 'Zürich West',
     recurrenceRule: '',
@@ -410,6 +757,10 @@ async function main() {
     locationName: 'Geheim',
     recurrenceRule: '',
     calendarColor: '#C98F82',
+  })
+  await createDetail(token, deviceId, ids.eventParents, 'event', {
+    locationName: 'Schule',
+    recurrenceRule: '',
   })
   await createDetail(token, deviceId, ids.taskPacking, 'task', {
     priority: 'high',
@@ -424,6 +775,14 @@ async function main() {
   await createDetail(token, deviceId, ids.taskGroceries, 'task', {
     priority: 'low',
     dueDate: dateDaysFromNow(1),
+  })
+  await createDetail(token, deviceId, ids.taskFlowers, 'task', {
+    priority: 'low',
+    dueDate: dateDaysFromNow(0),
+  })
+  await createDetail(token, deviceId, ids.taskLease, 'task', {
+    priority: 'high',
+    dueDate: dateDaysFromNow(7),
   })
   await createDetail(token, deviceId, ids.listPacking, 'list', {
     listKind: 'packing',
@@ -447,6 +806,13 @@ async function main() {
     priority: 'dream',
     fulfilled: false,
   })
+  await createDetail(token, deviceId, ids.wishCook, 'wish', {
+    url: '',
+    price: '220',
+    currency: 'CHF',
+    priority: 'medium',
+    fulfilled: false,
+  })
   await createDetail(token, deviceId, ids.momentLake, 'moment', {
     capturedAt: isoDaysFromNow(-10, 18),
     mood: 'glücklich',
@@ -458,6 +824,24 @@ async function main() {
     mood: 'aufgeregt',
     weather: '',
     highlight: true,
+  })
+  await createDetail(token, deviceId, ids.momentRain, 'moment', {
+    capturedAt: isoDaysFromNow(-5, 15),
+    mood: 'verspielt',
+    weather: 'Regen',
+    highlight: false,
+  })
+  await createDetail(token, deviceId, ids.momentBreakfast, 'moment', {
+    capturedAt: isoDaysFromNow(-2, 10),
+    mood: 'entspannt',
+    weather: 'sonnig',
+    highlight: true,
+  })
+  await createDetail(token, deviceId, ids.momentConcert, 'moment', {
+    capturedAt: isoDaysFromNow(-18, 21),
+    mood: 'begeistert',
+    weather: '',
+    highlight: false,
   })
   await createDetail(token, deviceId, ids.projectRenovation, 'project', {
     category: 'Zuhause',
@@ -519,6 +903,26 @@ async function main() {
     amount_spent: '1280.00',
     period_start: dateDaysFromNow(40),
     period_end: dateDaysFromNow(60),
+  })
+  const monthStart = (() => {
+    const d = new Date()
+    d.setUTCDate(1)
+    return d.toISOString().slice(0, 10)
+  })()
+  const monthEnd = (() => {
+    const d = new Date()
+    d.setUTCMonth(d.getUTCMonth() + 1, 0)
+    return d.toISOString().slice(0, 10)
+  })()
+  await createRow(token, deviceId, 'budget', ids.budgetMonth, {
+    entity_id: null,
+    name: 'Monatsbudget',
+    description: 'Gemeinsames Monatsbudget',
+    currency: 'CHF',
+    amount_limit: '3500.00',
+    amount_spent: '0.00',
+    period_start: monthStart,
+    period_end: monthEnd,
   })
   await createRow(token, deviceId, 'budget', ids.budgetHome, {
     entity_id: ids.projectRenovation,

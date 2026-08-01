@@ -6,6 +6,7 @@ import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { entityDetailPath } from '@/features/entities/entity-types'
 import { useEntities } from '@/features/entities/useEntities'
 import { MediaImage } from '@/features/media/MediaImage'
@@ -65,36 +66,45 @@ export function IdeasPage() {
       {ideas.length === 0 ? (
         <EmptyState
           title="Noch keine Date Ideen"
-          description="Sammelt Orte und Inspirationen mit Foto, Link und Notiz."
+          description="Sammelt Orte und Inspirationen mit Foto, Link, Datums-Vorschlag und Notiz."
           actionLabel="Idee hinzufügen"
           onAction={() => void navigate('/planen/neu?type=leisure')}
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
-          {ideas.map((idea) => (
-            <li key={idea.id}>
-              <Link to={entityDetailPath('leisure', idea.id)}>
-                <Card interactive padding="none" className="overflow-hidden">
-                  {covers[idea.id] && spaceId ? (
-                    <MediaImage
-                      storagePath={covers[idea.id]}
-                      spaceId={spaceId}
-                      alt={idea.title}
-                      aspectRatio={16 / 10}
-                    />
-                  ) : (
-                    <div className="aspect-[16/10] bg-[linear-gradient(145deg,var(--color-pastel-2),var(--color-pastel-3))]" />
-                  )}
-                  <div className="p-4">
-                    <CardTitle className="text-xl">{idea.title}</CardTitle>
-                    <CardDescription>
-                      {String(idea.metadata?.place || idea.description || idea.subtitle || 'Date Idee')}
-                    </CardDescription>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
+          {ideas.map((idea) => {
+            const suggested = formatEntityDateRange(idea)
+            const place = String(idea.metadata?.place || '')
+            const subtitle =
+              [suggested ? `Vorschlag: ${suggested}` : null, place || null]
+                .filter(Boolean)
+                .join(' · ') ||
+              idea.description ||
+              idea.subtitle ||
+              'Date Idee'
+            return (
+              <li key={idea.id}>
+                <Link to={entityDetailPath('leisure', idea.id)}>
+                  <Card interactive padding="none" className="overflow-hidden">
+                    {covers[idea.id] && spaceId ? (
+                      <MediaImage
+                        storagePath={covers[idea.id]}
+                        spaceId={spaceId}
+                        alt={idea.title}
+                        aspectRatio={16 / 10}
+                      />
+                    ) : (
+                      <div className="aspect-[16/10] bg-[linear-gradient(145deg,var(--color-pastel-2),var(--color-pastel-3))]" />
+                    )}
+                    <div className="p-4">
+                      <CardTitle className="text-xl">{idea.title}</CardTitle>
+                      <CardDescription>{subtitle}</CardDescription>
+                    </div>
+                  </Card>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>

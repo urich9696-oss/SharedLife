@@ -65,6 +65,7 @@ export function metadataFromDetail(
       meta.place = d.place || ''
       meta.link = d.link || ''
       meta.ideaCategory = 'date'
+      // Datums-Vorschlag liegt auf entities.all_day_start (via EntityForm)
       break
     }
     case 'expense': {

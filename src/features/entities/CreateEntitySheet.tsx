@@ -93,7 +93,9 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       return
     }
     setFormError(null)
-    const dates = formValuesToEntityDates(values)
+    const dates = formValuesToEntityDates(
+      selectedType === 'leisure' ? { ...values, allDay: true } : values,
+    )
     const id = uuidv4()
 
     try {

@@ -54,7 +54,9 @@ export function CreatePlanningPage() {
     }
     setError(null)
     const id = uuidv4()
-    const dates = formValuesToEntityDates(values)
+    const dates = formValuesToEntityDates(
+      entityType === 'leisure' ? { ...values, allDay: true } : values,
+    )
     const metadata = metadataFromDetail(entityType, detailValues)
 
     try {

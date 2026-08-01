@@ -1,10 +1,12 @@
 import { Link, Route, Routes } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
+import { loadSampleData } from '@/features/demo/load-sample-data'
 import { ExportPage } from '@/features/settings/ExportPage'
 import { PairProfilePage } from '@/features/settings/PairProfilePage'
 import {
@@ -18,10 +20,13 @@ import { getSupabaseClient } from '@/lib/supabase/client'
 import { DEMO_MODE } from '@/lib/demo'
 
 function SettingsHome() {
+  const queryClient = useQueryClient()
   const { spaceId, session, profile, signOut } = useAuth()
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushMessage, setPushMessage] = useState<string | null>(null)
   const [pushLoading, setPushLoading] = useState(false)
+  const [sampleLoading, setSampleLoading] = useState(false)
+  const [sampleMessage, setSampleMessage] = useState<string | null>(null)
   const supported = isPushSupported()
   const permission = getPushPermissionState()
   const needsPwaNote =
@@ -84,6 +89,40 @@ function SettingsHome() {
         ) : null}
         {pushMessage ? <p className="text-sm text-text-muted">{pushMessage}</p> : null}
         <Switch label="Automatische Synchronisation" description="Änderungen im Hintergrund syncen" defaultChecked />
+        <div className="rounded-[16px] border border-border bg-bg px-3 py-3">
+          <p className="text-sm font-medium text-text">Musterdaten</p>
+          <p className="mt-1 text-xs text-text-muted">
+            Lädt fiktive Date Ideen, Reisen, Momente, Finanzen und mehr — zum Ausprobieren.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            className="mt-3"
+            loading={sampleLoading}
+            disabled={!spaceId || sampleLoading}
+            onClick={() => {
+              if (!spaceId) return
+              setSampleLoading(true)
+              setSampleMessage(null)
+              void loadSampleData(spaceId, session?.userId ?? null)
+                .then(async (count) => {
+                  await queryClient.invalidateQueries()
+                  setSampleMessage(
+                    count > 0
+                      ? `${count} Einträge geladen.`
+                      : 'Musterdaten sind bereits vorhanden.',
+                  )
+                })
+                .catch((err: unknown) => {
+                  setSampleMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen')
+                })
+                .finally(() => setSampleLoading(false))
+            }}
+          >
+            Musterdaten laden
+          </Button>
+          {sampleMessage ? <p className="mt-2 text-sm text-text-muted">{sampleMessage}</p> : null}
+        </div>
       </div>
       <nav className="mt-8 flex flex-col gap-2 text-sm">
         <Link to="/settings/profile" className="min-h-11 rounded-[14px] px-1 py-2 text-primary hover:underline">
