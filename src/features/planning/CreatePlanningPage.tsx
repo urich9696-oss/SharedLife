@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { v4 as uuidv4 } from 'uuid'
 import { Button } from '@/components/ui/Button'
@@ -25,12 +25,13 @@ export function CreatePlanningPage() {
   const [params] = useSearchParams()
   const entityType = useMemo(() => resolveType(params.get('type')), [params])
   const meta = getEntityTypeMeta(entityType)
-
-  // Dedicated shopping module replaces generic list creation
-  if (entityType === 'list') {
-    void navigate('/einkauf?focus=1', { replace: true })
-  }
   const { spaceId } = useAuth()
+
+  useEffect(() => {
+    if (entityType === 'list') {
+      void navigate('/einkauf?focus=1', { replace: true })
+    }
+  }, [entityType, navigate])
   const createEntity = useCreateEntity()
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
