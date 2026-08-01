@@ -55,8 +55,8 @@ export function Modal({
     <div
       className={cn(
         'fixed inset-0 z-[var(--z-modal)] flex items-end justify-center sm:items-center',
-        'px-[max(1rem,var(--space-safe-left))] pr-[max(1rem,var(--space-safe-right))]',
-        'pt-[max(1rem,var(--space-safe-top))] pb-[max(1rem,var(--space-safe-bottom))]',
+        'px-[max(var(--page-gutter),var(--space-safe-left))] pr-[max(var(--page-gutter),var(--space-safe-right))]',
+        'pt-[max(var(--page-gutter),var(--space-safe-top))] pb-[max(var(--page-gutter),var(--space-safe-bottom))]',
       )}
     >
       <button
@@ -80,7 +80,7 @@ export function Modal({
           className,
         )}
       >
-        <div className="flex shrink-0 items-start justify-between gap-4 px-6 pb-2 pt-6">
+        <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-3 pt-6 sm:px-6">
           <div className="min-w-0">
             {title ? (
               <h2 id={titleId} className="text-xl font-bold tracking-[-0.025em] text-text">
@@ -88,7 +88,10 @@ export function Modal({
               </h2>
             ) : null}
             {description ? (
-              <p id={descriptionId} className="mt-2 text-sm font-medium text-text-muted">
+              <p
+                id={descriptionId}
+                className="mt-[var(--heading-content-gap)] text-sm font-medium text-text-muted"
+              >
                 {description}
               </p>
             ) : null}
@@ -99,7 +102,7 @@ export function Modal({
             onClick={onClose}
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 sm:px-6">
           {children}
         </div>
       </div>

@@ -14,7 +14,7 @@ export function LoadingState({
       role="status"
       aria-live="polite"
       className={cn(
-        'flex flex-col items-center justify-center gap-4 px-6 py-16',
+        'flex min-h-[50dvh] flex-col items-center justify-center gap-4 px-page py-16',
         className,
       )}
     >

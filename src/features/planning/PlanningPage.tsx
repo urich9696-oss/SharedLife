@@ -114,7 +114,7 @@ function AufgabenSection({ tasks }: { tasks: EntityRow[] }) {
 
   return (
     <section>
-      <ul className="flex flex-col gap-3">
+      <ul className="card-stack">
         {tasks.map((entity) => {
           const meta = getEntityTypeMeta(entity.entity_type)
           const role = String(entity.metadata?.assigneeRole ?? '')
@@ -252,16 +252,16 @@ export function PlanningPage() {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 lg:py-8">
-      <header className="mb-5">
+    <div className="mx-auto max-w-2xl px-page py-6 lg:py-8">
+      <header className="mb-[var(--section-gap)]">
         <h1 className="font-serif text-3xl text-text">Planen</h1>
-        <p className="mt-2 text-sm text-text-muted">
+        <p className="mt-[var(--heading-content-gap)] text-sm text-text-muted">
           Kalender, Vorhaben und Aufgaben — ohne doppelte Module.
         </p>
       </header>
 
       <div
-        className="mb-5 grid grid-cols-3 gap-1 rounded-[18px] border border-border bg-surface-soft/70 p-1"
+        className="mb-[var(--section-gap)] grid grid-cols-3 gap-1 rounded-[18px] border border-border bg-surface-soft/70 p-1"
         role="tablist"
         aria-label="Planen"
       >
@@ -361,7 +361,7 @@ export function PlanningPage() {
 
               <div className="mt-6">
                 <h2 className="mb-3 font-serif text-xl text-text">In diesem Monat</h2>
-                <ul className="flex flex-col gap-2">
+                <ul className="card-stack">
                   {calendarEntities
                     .filter((e) => {
                       const d = entityStart(e)
@@ -436,7 +436,7 @@ export function PlanningPage() {
               onAction={() => void navigate('/planen/neu?type=trip')}
             />
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="card-stack">
               {vorhaben.map((entity) => (
                 <li key={entity.id}>
                   <EntityListItem entity={entity} />

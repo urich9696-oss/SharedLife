@@ -51,7 +51,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined
             }
             className={cn(
-              'h-auto w-full appearance-none border-0 border-b border-border/90 bg-transparent py-0 pb-4 pr-8 pt-0 text-[17px] text-text',
+              'h-auto w-full appearance-none border-0 border-b border-border/90 bg-transparent py-0 pb-4 pr-8 pt-0 text-base text-text sm:text-[17px]',
               'transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
               'rounded-none shadow-none outline-none',
               'focus-visible:border-primary focus-visible:shadow-[0_1px_0_0_var(--color-primary)]',

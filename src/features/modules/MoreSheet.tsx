@@ -21,7 +21,7 @@ export function MoreSheet({ open, onClose }: MoreSheetProps) {
       <Link
         to="/settings/pair"
         onClick={onClose}
-        className="mb-6 flex items-center gap-4 rounded-lg border border-border/80 bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))] p-4 shadow-xs transition duration-[var(--duration-normal)] hover:-translate-y-0.5"
+        className="mb-[var(--section-gap)] flex items-center gap-4 rounded-lg border border-border/80 bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))] p-4 shadow-xs transition duration-[var(--duration-normal)] hover:-translate-y-0.5"
       >
         <div className="relative size-16 shrink-0 overflow-hidden rounded-full border border-border bg-surface">
           {pair?.coverMediaPath || pair?.partnerAAvatarPath ? (
@@ -55,20 +55,20 @@ export function MoreSheet({ open, onClose }: MoreSheetProps) {
       <div className="space-y-6 pb-6">
         {groups.map((group) => (
           <section key={group.key}>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-text-muted">
               {group.label}
             </h3>
-            <ul className="space-y-2">
+            <ul className="card-stack">
               {group.modules.map((mod) => (
                 <li key={mod.key}>
                   <Link
                     to={mod.path}
                     onClick={onClose}
-                    className="flex min-h-14 items-center justify-between gap-3 rounded-[22px] border border-border/80 bg-surface px-4 py-3 transition duration-[var(--duration-normal)] active:scale-[0.99] hover:bg-surface-soft"
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-[22px] border border-border/80 bg-surface px-4 py-3.5 transition duration-[var(--duration-normal)] active:scale-[0.99] hover:bg-surface-soft"
                   >
                     <span>
                       <span className="block text-sm font-medium text-text">{mod.label}</span>
-                      <span className="mt-0.5 block text-xs text-text-muted">{mod.description}</span>
+                      <span className="mt-1 block text-xs text-text-muted">{mod.description}</span>
                     </span>
                     <span className={`rounded-lg px-2 py-1 text-[10px] font-medium ${mod.accent}`}>
                       Öffnen

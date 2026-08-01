@@ -39,16 +39,16 @@ export function EntityDateFields({
   const allDay = watch('allDay')
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {showAllDay ? <Switch label="Ganztägig" {...register('allDay')} /> : null}
-      <div className={showTime && !allDay ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
+      <div className={showTime && !allDay ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
         <Input label={startLabel} type="date" {...register('startDate')} />
         {showTime && !allDay ? (
           <Input label="Uhrzeit" type="time" {...register('startTime')} />
         ) : null}
       </div>
       {showEnd ? (
-        <div className={showTime && !allDay ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
+        <div className={showTime && !allDay ? 'grid gap-5 sm:grid-cols-2' : 'grid gap-5'}>
           <Input label={endLabel} type="date" {...register('endDate')} />
           {showTime && !allDay ? (
             <Input label="Endzeit" type="time" {...register('endTime')} />

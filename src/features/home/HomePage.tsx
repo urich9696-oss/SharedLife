@@ -54,8 +54,8 @@ function isTodayRelevant(entity: EntityRow, now: Date): boolean {
 }
 
 const fadeUp = {
-  initial: { opacity: 0, y: 8, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
 }
 
 export function HomePage() {
@@ -203,7 +203,7 @@ export function HomePage() {
     entities.length > 0 || reminders.some((r) => !r.deleted_at) || recentMoments.length > 0
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 lg:py-8">
+    <div className="mx-auto max-w-5xl px-page py-6 lg:py-8">
       <motion.section className="mb-8" {...fadeUp} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
         <HeroCard
           title={hero.title}
@@ -227,8 +227,8 @@ export function HomePage() {
       ) : (
         <>
           {todayItems.length > 0 ? (
-            <section className="mb-8">
-              <div className="mb-4 flex items-end justify-between">
+            <section className="mb-[var(--section-gap)]">
+              <div className="mb-3 flex items-end justify-between gap-4">
                 <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Heute</h2>
                 <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
                   Kalender
@@ -262,14 +262,14 @@ export function HomePage() {
           ) : null}
 
           {activeGoals.length > 0 ? (
-            <section className="mb-8">
-              <div className="mb-4 flex items-end justify-between">
+            <section className="mb-[var(--section-gap)]">
+              <div className="mb-3 flex items-end justify-between gap-4">
                 <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktive Ziele</h2>
                 <Link to="/planen?tab=vorhaben&filter=goal" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
               </div>
-              <div className="flex snap-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {activeGoals.map((goal, i) => (
                   <ProgressCard
                     key={goal.id}
@@ -285,14 +285,14 @@ export function HomePage() {
           ) : null}
 
           {activeTrips.length > 0 ? (
-            <section className="mb-8">
-              <div className="mb-4 flex items-end justify-between">
+            <section className="mb-[var(--section-gap)]">
+              <div className="mb-3 flex items-end justify-between gap-4">
                 <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktuelle Reisen</h2>
                 <Link to="/planen?tab=vorhaben&filter=trip" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
               </div>
-              <ul className="space-y-2">
+              <ul className="card-stack">
                 {activeTrips.map((trip) => (
                   <li key={trip.id}>
                     <Link
@@ -329,13 +329,13 @@ export function HomePage() {
 
           {recentMoments.length > 0 && spaceId ? (
             <section className="mb-2">
-              <div className="mb-4 flex items-end justify-between">
+              <div className="mb-3 flex items-end justify-between gap-4">
                 <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Letzte Momente</h2>
                 <Link to="/erinnerungen" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
               </div>
-              <div className="flex snap-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {recentMoments.map((moment) => (
                   <Link
                     key={moment.id}

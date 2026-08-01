@@ -208,7 +208,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   return (
     <BottomSheet open={open} onClose={handleClose} title={title}>
       {view === 'menu' ? (
-        <ul className="flex flex-col gap-2 pb-4">
+        <ul className="card-stack pb-4">
           {primaryActions.map((action) => (
             <li key={action.key}>
               <button
@@ -257,7 +257,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       ) : null}
 
       {view === 'chooser' ? (
-        <ul className="flex flex-col gap-2 pb-4">
+        <ul className="card-stack pb-4">
           {chooserTypes.map((type) => {
             const meta = ENTITY_TYPE_META[type]
             return (
@@ -289,7 +289,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       ) : null}
 
       {view === 'more' ? (
-        <ul className="flex flex-col gap-2 pb-4">
+        <ul className="card-stack pb-4">
           {MORE_CREATE_TYPES.map((type) => {
             const meta = ENTITY_TYPE_META[type]
             return (

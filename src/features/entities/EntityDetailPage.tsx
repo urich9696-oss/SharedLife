@@ -398,7 +398,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   ]
 
   return (
-    <PageEnter className="mx-auto max-w-2xl px-4 pb-8 pt-2">
+    <PageEnter className="mx-auto max-w-2xl px-page pb-8 pt-2">
       <DetailChrome title={`${groupLabel(group)} · ${meta.label}`} menuActions={menuActions}>
         {showHero && spaceId && type !== 'expense' ? (
           <div className="mb-8">

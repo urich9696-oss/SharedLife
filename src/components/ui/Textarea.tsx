@@ -29,7 +29,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             error ? `${textareaId}-error` : hint ? `${textareaId}-hint` : undefined
           }
           className={cn(
-            'w-full resize-none border-0 border-b border-border/90 bg-transparent px-0 pb-4 pt-0 text-[17px] text-text',
+            'w-full resize-none border-0 border-b border-border/90 bg-transparent px-0 pb-4 pt-0 text-base text-text sm:text-[17px]',
             'placeholder:text-text-muted/70 transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
             'rounded-none shadow-none outline-none',
             'focus-visible:border-primary focus-visible:shadow-[0_1px_0_0_var(--color-primary)]',

@@ -176,7 +176,7 @@ export function ShoppingPage() {
   const openCount = active.length
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6 lg:py-8">
+    <div className="mx-auto max-w-xl px-page py-6 lg:py-8">
       <header className="mb-5">
         <h1 className="font-serif text-3xl text-text">Einkauf</h1>
         <p className="mt-1 text-sm text-text-muted">
@@ -200,7 +200,7 @@ export function ShoppingPage() {
           placeholder="Artikel hinzufügen…"
           enterKeyHint="done"
           autoComplete="off"
-          className="min-h-12 w-full rounded-[20px] border border-border/80 bg-surface px-4 text-base text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus"
+          className="min-h-12 w-full rounded-[20px] border border-border/80 bg-surface px-4 text-[16px] text-text shadow-xs outline-none transition focus:border-primary focus:shadow-focus sm:text-[17px]"
           aria-label="Neuen Einkaufsartikel eingeben"
         />
       </form>
@@ -252,7 +252,7 @@ export function ShoppingPage() {
                     <input
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="min-h-11 w-full rounded-[14px] border border-border bg-bg px-3 text-base"
+                      className="min-h-11 w-full rounded-[14px] border border-border bg-bg px-3 text-[16px] sm:text-[17px]"
                       autoFocus
                       enterKeyHint="done"
                     />

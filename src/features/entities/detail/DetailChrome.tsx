@@ -37,7 +37,7 @@ export function DetailChrome({
 
   return (
     <div className={cn('relative', className)}>
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-[var(--heading-content-gap)] flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={() => navigate(-1)}

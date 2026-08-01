@@ -8,7 +8,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 const paddingStyles = {
   none: '',
-  sm: 'p-4',
+  sm: 'p-4', /* 16px */
   md: 'p-6',
   lg: 'p-8',
 }
@@ -38,7 +38,7 @@ export function CardHeader({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('mb-4', className)} {...props} />
+  return <div className={cn('mb-[var(--heading-content-gap)]', className)} {...props} />
 }
 
 export function CardTitle({
@@ -60,5 +60,7 @@ export function CardDescription({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('mt-1 text-sm font-medium text-text-muted', className)} {...props} />
+  return (
+    <p className={cn('mt-[var(--heading-content-gap)] text-sm font-medium text-text-muted', className)} {...props} />
+  )
 }

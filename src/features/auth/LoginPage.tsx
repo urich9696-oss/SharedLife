@@ -93,14 +93,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12 pt-[max(3rem,var(--space-safe-top))] pb-[max(3rem,var(--space-safe-bottom))]">
+    <div className="flex min-h-dvh max-w-[100vw] flex-col items-center justify-center overflow-x-clip bg-bg px-page py-12 pt-[max(3rem,var(--space-safe-top))] pb-[max(3rem,var(--space-safe-bottom))]">
       <div className="w-full max-w-sm">
         <div className="mb-10 flex justify-center">
           <AppLogo size="lg" />
         </div>
 
         <h1 className="text-heading text-center">Willkommen</h1>
-        <p className="mt-2 text-center text-text-muted">
+        <p className="mt-[var(--heading-content-gap)] text-center text-text-muted">
           {usePassword
             ? 'Melde dich mit E-Mail und Passwort an.'
             : step === 'email'
@@ -109,7 +109,10 @@ export function LoginPage() {
         </p>
 
         {usePassword ? (
-          <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handlePasswordLogin(e)}>
+          <form
+            className="mt-[var(--section-gap)] flex flex-col gap-5"
+            onSubmit={(e) => void handlePasswordLogin(e)}
+          >
             <Input
               label="E-Mail"
               type="email"
@@ -137,7 +140,10 @@ export function LoginPage() {
             </Button>
           </form>
         ) : step === 'email' ? (
-          <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handleSendOtp(e)}>
+          <form
+            className="mt-[var(--section-gap)] flex flex-col gap-5"
+            onSubmit={(e) => void handleSendOtp(e)}
+          >
             <Input
               label="E-Mail"
               type="email"
@@ -157,7 +163,7 @@ export function LoginPage() {
             </Button>
           </form>
         ) : (
-          <div className="mt-8 flex flex-col gap-5">
+          <div className="mt-[var(--section-gap)] flex flex-col gap-5">
             <OtpInput
               value={otp}
               onChange={setOtp}
