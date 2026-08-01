@@ -100,7 +100,7 @@ export function LoginPage() {
         </div>
 
         <h1 className="text-heading text-center">Willkommen</h1>
-        <p className="mt-2 text-center text-text-muted">
+        <p className="mt-[var(--heading-content-gap)] text-center text-text-muted">
           {usePassword
             ? 'Melde dich mit E-Mail und Passwort an.'
             : step === 'email'
@@ -109,7 +109,10 @@ export function LoginPage() {
         </p>
 
         {usePassword ? (
-          <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handlePasswordLogin(e)}>
+          <form
+            className="mt-[var(--section-gap)] flex flex-col gap-5"
+            onSubmit={(e) => void handlePasswordLogin(e)}
+          >
             <Input
               label="E-Mail"
               type="email"
