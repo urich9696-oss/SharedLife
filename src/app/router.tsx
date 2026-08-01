@@ -1,63 +1,65 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { RouteErrorPage } from '@/components/shared/RouteErrorPage'
+import { lazyWithRetry } from '@/lib/utilities/lazy-retry'
 
-const HomePage = lazy(() =>
+const HomePage = lazyWithRetry(() =>
   import('@/features/home/HomePage').then((m) => ({ default: m.HomePage })),
 )
-const PlanningPage = lazy(() =>
+const PlanningPage = lazyWithRetry(() =>
   import('@/features/planning/PlanningPage').then((m) => ({ default: m.PlanningPage })),
 )
-const MemoriesPage = lazy(() =>
+const MemoriesPage = lazyWithRetry(() =>
   import('@/features/moments/MemoriesPage').then((m) => ({ default: m.MemoriesPage })),
 )
-const TimelinePage = lazy(() =>
+const TimelinePage = lazyWithRetry(() =>
   import('@/features/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage })),
 )
-const WePage = lazy(() =>
+const WePage = lazyWithRetry(() =>
   import('@/features/settings/WePage').then((m) => ({ default: m.WePage })),
 )
-const LoginPage = lazy(() =>
+const LoginPage = lazyWithRetry(() =>
   import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 )
-const EntityPage = lazy(() =>
+const EntityPage = lazyWithRetry(() =>
   import('@/features/entities/EntityPage').then((m) => ({ default: m.EntityPage })),
 )
-const CalendarPage = lazy(() =>
+const CalendarPage = lazyWithRetry(() =>
   import('@/features/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 )
-const ConflictsPage = lazy(() =>
+const ConflictsPage = lazyWithRetry(() =>
   import('@/features/conflicts/ConflictsPage').then((m) => ({ default: m.ConflictsPage })),
 )
-const TrashPage = lazy(() =>
+const TrashPage = lazyWithRetry(() =>
   import('@/features/trash/TrashPage').then((m) => ({ default: m.TrashPage })),
 )
-const SettingsPage = lazy(() =>
+const SettingsPage = lazyWithRetry(() =>
   import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
-const CreatePlanningPage = lazy(() =>
+const CreatePlanningPage = lazyWithRetry(() =>
   import('@/features/planning/CreatePlanningPage').then((m) => ({
     default: m.CreatePlanningPage,
   })),
 )
-const CreateMemoryPage = lazy(() =>
+const CreateMemoryPage = lazyWithRetry(() =>
   import('@/features/moments/CreateMemoryPage').then((m) => ({
     default: m.CreateMemoryPage,
   })),
 )
-const ModuleHubPage = lazy(() =>
+const ModuleHubPage = lazyWithRetry(() =>
   import('@/features/modules/ModuleHubPage').then((m) => ({
     default: m.ModuleHubPage,
   })),
 )
-const ShoppingPage = lazy(() =>
+const ShoppingPage = lazyWithRetry(() =>
   import('@/features/shopping/ShoppingPage').then((m) => ({
     default: m.ShoppingPage,
   })),
 )
-const NotFoundPage = lazy(() =>
+const NotFoundPage = lazyWithRetry(() =>
   import('@/features/misc/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 )
 
@@ -77,6 +79,7 @@ export const router = createBrowserRouter([
         <AppShell />
       </RequireAuth>
     ),
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: withSuspense(<HomePage />) },
       { path: 'planen', element: withSuspense(<PlanningPage />) },
@@ -94,7 +97,15 @@ export const router = createBrowserRouter([
       { path: 'settings/*', element: withSuspense(<SettingsPage />) },
     ],
   },
-  { path: '/login', element: withSuspense(<LoginPage />) },
-  { path: '/404', element: withSuspense(<NotFoundPage />) },
+  {
+    path: '/login',
+    element: withSuspense(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/404',
+    element: withSuspense(<NotFoundPage />),
+    errorElement: <RouteErrorPage />,
+  },
   { path: '*', element: <Navigate to="/404" replace /> },
 ])

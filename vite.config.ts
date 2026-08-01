@@ -9,7 +9,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      // Auto-activate new SW so deploys don't leave tabs on stale hashed chunks.
+      registerType: 'autoUpdate',
       includeAssets: ['fonts/**/*', 'icons/**/*'],
       manifest: {
         name: 'SharedLife',
@@ -44,6 +45,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         navigateFallback: '/index.html',
         importScripts: ['/sw-push.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
