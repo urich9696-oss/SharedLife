@@ -88,7 +88,7 @@ describe('relevance', () => {
   })
 
   it('builds greeting with display name', () => {
-    expect(getGreeting(now, 'Lea')).toBe('Guten Tag, Lea')
+    expect(getGreeting(now, 'Lea')).toBe('Hallo, Lea')
   })
 
   it('picks the soonest upcoming trip over undated drafts', () => {
