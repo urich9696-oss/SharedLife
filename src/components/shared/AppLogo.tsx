@@ -7,9 +7,36 @@ export interface AppLogoProps {
 }
 
 const sizeStyles = {
-  sm: { icon: 'size-8 text-base', wordmark: 'text-lg' },
-  md: { icon: 'size-10 text-lg', wordmark: 'text-xl' },
-  lg: { icon: 'size-14 text-2xl', wordmark: 'text-3xl' },
+  sm: { icon: 'size-8', wordmark: 'text-lg' },
+  md: { icon: 'size-10', wordmark: 'text-xl' },
+  lg: { icon: 'size-14', wordmark: 'text-3xl' },
+}
+
+function HeartMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 512 512"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="512" height="512" rx="112" fill="#FAF8F5" />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="28"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M256 402
+           C256 402 118 312 118 214
+           C118 158 158 122 204 122
+           C230 122 248 136 256 154
+           C264 136 282 122 308 122
+           C354 122 394 158 394 214
+           C394 312 256 402 256 402Z"
+      />
+    </svg>
+  )
 }
 
 export function AppLogo({
@@ -21,15 +48,12 @@ export function AppLogo({
 
   return (
     <div className={cn('flex items-center gap-4', className)}>
-      <div
+      <HeartMark
         className={cn(
-          'flex shrink-0 items-center justify-center rounded-[14px] bg-primary font-bold tracking-[-0.03em] text-surface shadow-xs',
+          'shrink-0 rounded-[14px] text-text shadow-xs ring-1 ring-border/60',
           styles.icon,
         )}
-        aria-hidden="true"
-      >
-        S
-      </div>
+      />
       {showWordmark ? (
         <span
           className={cn(

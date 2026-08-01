@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#8FA18A"/>
-  <rect x="51" y="51" width="410" height="410" rx="82" fill="#F6F2EC"/>
-  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-    font-family="Georgia, serif" font-size="184.5" fill="#8FA18A">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="SharedLife">
+  <rect width="512" height="512" fill="#FAF8F5"/>
+  <!-- Heart inset for maskable safe zone (~20%) -->
+  <g transform="translate(256 256) scale(0.72) translate(-256 -256)">
+    <path
+      fill="none"
+      stroke="#111111"
+      stroke-width="28"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M256 402
+         C256 402 118 312 118 214
+         C118 158 158 122 204 122
+         C230 122 248 136 256 154
+         C264 136 282 122 308 122
+         C354 122 394 158 394 214
+         C394 312 256 402 256 402Z"
+    />
+  </g>
 </svg>

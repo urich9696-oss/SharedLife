@@ -1,132 +1,73 @@
-#!/usr/bin/env node
 /**
- * Generates SharedLife PWA icons without native dependencies.
- * Creates minimal valid PNGs (solid sage green) plus SVG sources.
+ * Renders SharedLife PWA icons from the heart SVG mark.
  *
  * Usage: node scripts/generate-icons.mjs
  */
 
-import { createHash } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { deflateSync } from 'node:zlib'
+import { chromium } from 'playwright'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const OUT_DIR = join(__dirname, '..', 'public', 'icons')
+const ROOT = join(__dirname, '..')
+const OUT_DIR = join(ROOT, 'public', 'icons')
 
-const BRAND = {
-  sage: [0x8f, 0xa1, 0x8a],
-  cream: [0xf6, 0xf2, 0xec],
-  terracotta: [0xc9, 0x8f, 0x82],
-}
-
-function crc32(buf) {
-  let crc = 0xffffffff
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i]
-    for (let j = 0; j < 8; j++) {
-      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0
-}
-
-function pngChunk(type, data) {
-  const typeBuf = Buffer.from(type, 'ascii')
-  const len = Buffer.alloc(4)
-  len.writeUInt32BE(data.length)
-  const crcBuf = Buffer.alloc(4)
-  const crcData = Buffer.concat([typeBuf, data])
-  crcBuf.writeUInt32BE(crc32(crcData))
-  return Buffer.concat([len, typeBuf, data, crcBuf])
-}
-
-function createSolidPng(width, height, [r, g, b]) {
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-
-  const ihdr = Buffer.alloc(13)
-  ihdr.writeUInt32BE(width, 0)
-  ihdr.writeUInt32BE(height, 4)
-  ihdr[8] = 8 // bit depth
-  ihdr[9] = 2 // RGB
-  ihdr[10] = 0
-  ihdr[11] = 0
-  ihdr[12] = 0
-
-  const rowSize = 1 + width * 3
-  const raw = Buffer.alloc(rowSize * height)
-  for (let y = 0; y < height; y++) {
-    const offset = y * rowSize
-    raw[offset] = 0 // filter none
-    for (let x = 0; x < width; x++) {
-      const px = offset + 1 + x * 3
-      raw[px] = r
-      raw[px + 1] = g
-      raw[px + 2] = b
-    }
-  }
-
-  const idat = deflateSync(raw)
-  return Buffer.concat([
-    signature,
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', idat),
-    pngChunk('IEND', Buffer.alloc(0)),
-  ])
-}
-
-function createMaskableSvg(size) {
-  const padding = Math.round(size * 0.1)
-  const inner = size - padding * 2
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" fill="#8FA18A"/>
-  <rect x="${padding}" y="${padding}" width="${inner}" height="${inner}" rx="${inner * 0.2}" fill="#F6F2EC"/>
-  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-    font-family="Georgia, serif" font-size="${inner * 0.45}" fill="#8FA18A">S</text>
-</svg>`
-}
-
-function createAppIconSvg(size) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${size * 0.22}" fill="#8FA18A"/>
-  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-    font-family="Georgia, serif" font-size="${size * 0.5}" fill="#FFFDFC">S</text>
-</svg>`
-}
+const TARGETS = [
+  { name: 'icon-192.png', size: 192, source: 'icon.svg' },
+  { name: 'icon-512.png', size: 512, source: 'icon.svg' },
+  { name: 'icon-512-maskable.png', size: 512, source: 'icon-maskable.svg' },
+  { name: 'apple-touch-icon.png', size: 180, source: 'icon.svg' },
+]
 
 mkdirSync(OUT_DIR, { recursive: true })
 
-const icons = [
-  { name: 'icon-192.png', size: 192, color: BRAND.sage },
-  { name: 'icon-512.png', size: 512, color: BRAND.sage },
-  { name: 'icon-512-maskable.png', size: 512, color: BRAND.sage },
-  { name: 'apple-touch-icon.png', size: 180, color: BRAND.sage },
-]
+const browser = await chromium.launch({
+  executablePath: process.env.CHROME_PATH || '/usr/local/bin/google-chrome',
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
+})
 
-for (const icon of icons) {
-  const png = createSolidPng(icon.size, icon.size, icon.color)
-  writeFileSync(join(OUT_DIR, icon.name), png)
-  console.log(`✓ ${icon.name} (${icon.size}×${icon.size}, ${png.length} bytes)`)
+try {
+  for (const target of TARGETS) {
+    const svg = readFileSync(join(OUT_DIR, target.source), 'utf8')
+    const page = await browser.newPage({
+      viewport: { width: target.size, height: target.size },
+      deviceScaleFactor: 1,
+    })
+    await page.setContent(
+      `<!doctype html><html><head><style>
+        html,body{margin:0;padding:0;width:${target.size}px;height:${target.size}px;background:#FAF8F5;overflow:hidden}
+        svg{display:block;width:${target.size}px;height:${target.size}px}
+      </style></head><body>${svg}</body></html>`,
+      { waitUntil: 'load' },
+    )
+    const buffer = await page.screenshot({
+      type: 'png',
+      omitBackground: false,
+      clip: { x: 0, y: 0, width: target.size, height: target.size },
+    })
+    writeFileSync(join(OUT_DIR, target.name), buffer)
+    console.log(`✓ ${target.name} (${target.size}×${target.size}, ${buffer.length} bytes)`)
+    await page.close()
+  }
+} finally {
+  await browser.close()
 }
-
-writeFileSync(join(OUT_DIR, 'icon.svg'), createAppIconSvg(512))
-writeFileSync(join(OUT_DIR, 'icon-maskable.svg'), createMaskableSvg(512))
 
 writeFileSync(
   join(OUT_DIR, 'README.md'),
   `# SharedLife Icons
 
-Generated by \`scripts/generate-icons.mjs\`.
+Herz-Mark (schwarzer Outline auf Off-White), generiert mit \`npm run prepare:icons\`.
 
-- PNG files are minimal valid solid-color placeholders (sage #8FA18A).
-- SVG sources (\`icon.svg\`, \`icon-maskable.svg\`) provide sharper previews.
-- Replace with designed assets before production launch.
-
-SHA-256 (icon-512.png): ${createHash('sha256').update(createSolidPng(512, 512, BRAND.sage)).digest('hex')}
+| Datei | Verwendung |
+|-------|------------|
+| \`icon.svg\` | Quelle App-Icon |
+| \`icon-maskable.svg\` | Maskable mit Safe-Zone |
+| \`icon-192.png\` / \`icon-512.png\` | PWA Manifest |
+| \`icon-512-maskable.png\` | Adaptive Icons |
+| \`apple-touch-icon.png\` | iOS Homescreen |
 `,
 )
 
-console.log('✓ SVG sources + README written to public/icons/')
+console.log('✓ Icons geschrieben nach public/icons/')
