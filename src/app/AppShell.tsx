@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { CreateEntitySheet } from '@/features/entities/CreateEntitySheet'
 import { MoreSheet } from '@/features/modules/MoreSheet'
 import { getGroupedModules, PRIMARY_NAV } from '@/features/modules/module-registry'
+import { CoupleAvatars } from '@/features/space/CoupleAvatars'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { cn } from '@/lib/utilities/cn'
 
@@ -127,18 +128,13 @@ export function AppShell() {
             to="/settings/pair"
             className="flex items-center gap-3 rounded-[18px] border border-border bg-surface-soft/60 p-3 transition hover:bg-surface-soft"
           >
-            <div className="flex -space-x-2">
-              <div className="size-9 overflow-hidden rounded-full border-2 border-surface bg-sand/40">
-                <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
-                  {(pair?.partnerAName ?? 'D').slice(0, 1)}
-                </div>
-              </div>
-              <div className="size-9 overflow-hidden rounded-full border-2 border-surface bg-primary/20">
-                <div className="flex size-full items-center justify-center text-xs font-semibold text-text">
-                  {(pair?.partnerBName ?? 'L').slice(0, 1)}
-                </div>
-              </div>
-            </div>
+            <CoupleAvatars
+              partnerAName={pair?.partnerAName ?? 'Dennis'}
+              partnerBName={pair?.partnerBName ?? 'Lea'}
+              partnerAAvatarPath={pair?.partnerAAvatarPath}
+              partnerBAvatarPath={pair?.partnerBAvatarPath}
+              size="md"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-text">
                 {pair?.partnerAName ?? 'Dennis'} & {pair?.partnerBName ?? 'Lea'}

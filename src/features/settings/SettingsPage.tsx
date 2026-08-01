@@ -23,6 +23,7 @@ import {
 } from '@/features/reminders/push-subscription'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DEMO_MODE } from '@/lib/demo'
+import { ProfileAvatarPicker } from '@/features/space/ProfileAvatarPicker'
 import { usePairProfile } from '@/features/space/pair-profile'
 
 function SettingsHome() {
@@ -169,35 +170,61 @@ function SettingsHome() {
 }
 
 function SettingsProfile() {
-  const { profile, session, refreshSession } = useAuth()
+  const { profile, session, refreshSession, spaceId } = useAuth()
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
+  const [avatarPath, setAvatarPath] = useState<string | null>(profile?.avatarUrl ?? null)
   const [message, setMessage] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '')
-  }, [profile?.displayName])
+    setAvatarPath(profile?.avatarUrl ?? null)
+  }, [profile?.displayName, profile?.avatarUrl])
 
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!session?.userId || DEMO_MODE) {
-      setMessage(DEMO_MODE ? 'Im Demo-Modus nicht persistiert.' : 'Keine Session.')
+  const saveProfileFields = async (fields: {
+    display_name?: string
+    avatar_url?: string | null
+  }) => {
+    if (!session?.userId) {
+      setMessage('Keine Session.')
+      return
+    }
+    if (DEMO_MODE) {
+      setMessage('Im Demo-Modus lokal vorgemerkt — nicht remote persistiert.')
+      if (fields.avatar_url !== undefined) setAvatarPath(fields.avatar_url)
       return
     }
     setSaving(true)
     setMessage(null)
     const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName.trim() || 'Dennis' })
-      .eq('id', session.userId)
+    const { error } = await supabase.from('profiles').update(fields).eq('id', session.userId)
     setSaving(false)
     if (error) {
       setMessage(error.message)
-      return
+      throw new Error(error.message)
     }
     await refreshSession()
-    setMessage('Profil gespeichert.')
+  }
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await saveProfileFields({ display_name: displayName.trim() || 'Dennis' })
+      setMessage('Profil gespeichert.')
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Speichern fehlgeschlagen')
+    }
+  }
+
+  const saveAvatar = async (path: string | null) => {
+    try {
+      await saveProfileFields({ avatar_url: path })
+      setAvatarPath(path)
+      setMessage(path ? 'Profilbild gespeichert.' : 'Profilbild entfernt.')
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Profilbild konnte nicht gespeichert werden')
+      throw err
+    }
   }
 
   return (
@@ -206,6 +233,15 @@ function SettingsProfile() {
         ← Einstellungen
       </Link>
       <h1 className="mt-4 mb-6 font-serif text-3xl text-text">Profil</h1>
+      <div className="mb-8">
+        <ProfileAvatarPicker
+          label="Profilbild"
+          name={displayName || profile?.displayName || 'Profil'}
+          storagePath={avatarPath}
+          disabled={saving || !spaceId}
+          onChange={(path) => saveAvatar(path)}
+        />
+      </div>
       <form className="space-y-4" onSubmit={(e) => void save(e)}>
         <Input
           label="Anzeigename"

@@ -11,6 +11,7 @@ import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { OutlineHeart } from '@/components/shared/AppLogo'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { getGreeting } from '@/features/home/relevance'
+import { CoupleAvatars } from '@/features/space/CoupleAvatars'
 import { usePairProfile } from '@/features/space/pair-profile'
 import { cn } from '@/lib/utilities/cn'
 
@@ -25,31 +26,6 @@ function BrandMark({ className }: { className?: string }) {
         SharedLife
       </span>
     </div>
-  )
-}
-
-function CoupleInitials({
-  partnerA,
-  partnerB,
-  className,
-}: {
-  partnerA: string
-  partnerB: string
-  className?: string
-}) {
-  const a = (partnerA.trim() || 'D').charAt(0).toUpperCase()
-  const b = (partnerB.trim() || 'L').charAt(0).toUpperCase()
-  return (
-    <span
-      className={cn(
-        'flex size-[38px] shrink-0 items-center justify-center rounded-full',
-        'bg-surface-soft text-[12px] font-semibold tracking-wide text-text',
-        className,
-      )}
-      aria-hidden="true"
-    >
-      {a} · {b}
-    </span>
   )
 }
 
@@ -130,7 +106,13 @@ export function AppHeaderHome({ className }: { className?: string }) {
               className="shrink-0 rounded-full outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
               aria-label="Paarprofil"
             >
-              <CoupleInitials partnerA={partnerA} partnerB={partnerB} />
+              <CoupleAvatars
+                partnerAName={partnerA}
+                partnerBName={partnerB}
+                partnerAAvatarPath={pair?.partnerAAvatarPath}
+                partnerBAvatarPath={pair?.partnerBAvatarPath}
+                size="sm"
+              />
             </Link>
           </div>
 

@@ -63,7 +63,7 @@ export function WePage() {
           }}
         >
           <h2 className="font-medium text-text">Paarprofil</h2>
-          <p className="mt-1 text-sm text-text-muted">Namen, Startdatum, Text</p>
+          <p className="mt-1 text-sm text-text-muted">Fotos, Namen, Startdatum</p>
         </Card>
         <Card
           interactive
@@ -76,7 +76,7 @@ export function WePage() {
           }}
         >
           <h2 className="font-medium text-text">Profil</h2>
-          <p className="mt-1 text-sm text-text-muted">Name und persönliche Angaben</p>
+          <p className="mt-1 text-sm text-text-muted">Foto, Name und persönliche Angaben</p>
         </Card>
         <Card
           interactive
