@@ -13,6 +13,8 @@ import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
 import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
+import type { RecipeDetailValues } from '@/features/recipes/RecipeForm'
+import { seedRecipeIngredients } from '@/features/recipes/recipe-service'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import type { TripDetailValues } from '@/features/trips/TripForm'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
@@ -105,11 +107,10 @@ export function CreatePlanningPage() {
       }
 
       if (entityType === 'recipe') {
-        await createChecklist({
-          id: uuidv4(),
+        await seedRecipeIngredients({
           spaceId,
           entityId: id,
-          title: 'Zutaten',
+          ingredientsText: (detailValues as RecipeDetailValues).ingredientsText,
         })
       }
 

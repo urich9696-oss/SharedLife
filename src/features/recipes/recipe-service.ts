@@ -78,6 +78,72 @@ export async function addIngredient(input: {
   })
 }
 
+/** Eine Zutat pro Zeile (wie Packliste). */
+export function parseIngredientLines(text: string | null | undefined): string[] {
+  if (!text) return []
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+/** Legt die Zutaten-Checkliste an und füllt optionale Zeilen. */
+export async function seedRecipeIngredients(input: {
+  spaceId: string
+  entityId: string
+  ingredientsText?: string | null
+}): Promise<string> {
+  const checklistId = await ensureRecipeIngredientsList({
+    spaceId: input.spaceId,
+    entityId: input.entityId,
+  })
+  const lines = parseIngredientLines(input.ingredientsText)
+  for (const [index, name] of lines.entries()) {
+    await createChecklistItem({
+      id: uuidv4(),
+      spaceId: input.spaceId,
+      checklistId,
+      title: name,
+      sortOrder: index,
+      category: 'Rezept',
+    })
+  }
+  return checklistId
+}
+
+/** Kopiert Zutaten von einem Rezept auf ein anderes. */
+export async function copyRecipeIngredients(input: {
+  spaceId: string
+  fromEntityId: string
+  toEntityId: string
+}): Promise<number> {
+  const { ingredients } = await getRecipeIngredients(input.fromEntityId)
+  if (ingredients.length === 0) {
+    await ensureRecipeIngredientsList({
+      spaceId: input.spaceId,
+      entityId: input.toEntityId,
+    })
+    return 0
+  }
+  const checklistId = await ensureRecipeIngredientsList({
+    spaceId: input.spaceId,
+    entityId: input.toEntityId,
+  })
+  for (const [index, ingredient] of ingredients.entries()) {
+    await createChecklistItem({
+      id: uuidv4(),
+      spaceId: input.spaceId,
+      checklistId,
+      title: ingredient.name,
+      sortOrder: index,
+      quantity: ingredient.quantity ?? null,
+      unit: ingredient.unit ?? null,
+      category: 'Rezept',
+    })
+  }
+  return ingredients.length
+}
+
 /** Fügt Rezeptzutaten zur Einkaufsliste hinzu — ohne Duplikate. */
 export async function addRecipeIngredientsToShopping(input: {
   spaceId: string

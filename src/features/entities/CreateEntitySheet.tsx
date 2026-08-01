@@ -25,6 +25,8 @@ import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import type { EntityType } from '@/lib/indexed-db/schema'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
+import type { RecipeDetailValues } from '@/features/recipes/RecipeForm'
+import { seedRecipeIngredients } from '@/features/recipes/recipe-service'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import type { TripDetailValues } from '@/features/trips/TripForm'
 
@@ -133,11 +135,10 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       }
 
       if (selectedType === 'recipe') {
-        await createChecklist({
-          id: uuidv4(),
+        await seedRecipeIngredients({
           spaceId,
           entityId: id,
-          title: 'Zutaten',
+          ingredientsText: (detailValues as RecipeDetailValues).ingredientsText,
         })
       }
 

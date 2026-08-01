@@ -8,11 +8,8 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath } from '@/features/entities/entity-types'
 import { useEntities } from '@/features/entities/useEntities'
 import { MediaImage } from '@/features/media/MediaImage'
-import {
-  addIngredient,
-  addRecipeIngredientsToShopping,
-  getRecipeIngredients,
-} from '@/features/recipes/recipe-service'
+import { RecipeIngredientsEditor } from '@/features/recipes/RecipeIngredientsEditor'
+import { addRecipeIngredientsToShopping } from '@/features/recipes/recipe-service'
 import { db } from '@/lib/indexed-db/db'
 import { cn } from '@/lib/utilities/cn'
 
@@ -22,7 +19,6 @@ export function RecipesPage() {
   const { spaceId, session } = useAuth()
   const { data: entities = [], isLoading } = useEntities()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [draft, setDraft] = useState('')
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
 
   const recipes = useMemo(
@@ -54,23 +50,6 @@ export function RecipesPage() {
 
   const activeId = selectedId ?? recipes[0]?.id ?? null
   const active = recipes.find((r) => r.id === activeId) ?? null
-
-  const { data: ingredients = [], refetch } = useQuery({
-    queryKey: ['recipe-ingredients', activeId],
-    enabled: Boolean(activeId),
-    queryFn: async () => (await getRecipeIngredients(activeId!)).ingredients,
-  })
-
-  const handleAddIngredient = async () => {
-    if (!spaceId || !activeId || !draft.trim()) return
-    await addIngredient({
-      spaceId,
-      entityId: activeId,
-      ingredient: { name: draft.trim() },
-    })
-    setDraft('')
-    await refetch()
-  }
 
   const handleAddToShopping = async () => {
     if (!spaceId || !activeId) return
@@ -158,39 +137,23 @@ export function RecipesPage() {
               )}
               <div className="flex items-start justify-between gap-3">
                 <h2 className="font-serif text-3xl text-text">{active.title}</h2>
-                <Link to={entityDetailPath('recipe', active.id)} className="text-sm font-medium text-primary">
-                  Bearbeiten
+                <Link
+                  to={entityDetailPath('recipe', active.id)}
+                  className="text-sm font-medium text-primary"
+                >
+                  Öffnen
                 </Link>
               </div>
 
               <div className="mt-6">
-                <h3 className="font-serif text-xl text-text">Zutaten</h3>
-                <form
-                  className="mt-3"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    void handleAddIngredient()
-                  }}
+                <h3 className="mb-3 font-serif text-xl text-text">Zutaten</h3>
+                <RecipeIngredientsEditor entityId={active.id} compact />
+                <Button
+                  type="button"
+                  className="mt-4"
+                  fullWidth
+                  onClick={() => void handleAddToShopping()}
                 >
-                  <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder="Zutat hinzufügen…"
-                    enterKeyHint="done"
-                    className="min-h-12 w-full rounded-[18px] border border-border/80 bg-bg px-4 text-[16px] outline-none focus:border-primary sm:text-[17px]"
-                  />
-                </form>
-                <ul className="mt-3 space-y-2">
-                  {ingredients.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex min-h-11 items-center rounded-[16px] bg-bg px-3 text-sm"
-                    >
-                      {item.name}
-                    </li>
-                  ))}
-                </ul>
-                <Button type="button" className="mt-4" fullWidth onClick={() => void handleAddToShopping()}>
                   Zutaten zur Einkaufsliste hinzufügen
                 </Button>
                 {statusMsg ? <p className="mt-2 text-sm text-text-muted">{statusMsg}</p> : null}
