@@ -22,6 +22,7 @@ import { useEntities, useReminders } from '@/features/entities/useEntities'
 import { selectHomeHero } from '@/features/home/hero'
 import { MediaImage } from '@/features/media/MediaImage'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
+import { TripCountdownBadge } from '@/features/trips/TripCountdown'
 import { deriveTimelineItems } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
 import type { EntityRow } from '@/lib/indexed-db/schema'
@@ -322,8 +323,11 @@ export function HomePage() {
                           <div className="aspect-square bg-pastel-1" />
                         )}
                       </div>
-                      <div className="p-4">
-                        <p className="font-serif text-lg text-text">{trip.title}</p>
+                      <div className="flex min-w-0 flex-1 flex-col justify-center p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-serif text-lg text-text">{trip.title}</p>
+                          <TripCountdownBadge entity={trip} />
+                        </div>
                         <p className="mt-1 text-xs text-text-muted">
                           {entityStart(trip)
                             ? format(entityStart(trip)!, 'd. MMM yyyy', { locale: de })

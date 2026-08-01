@@ -33,6 +33,7 @@ import { useEntities, useUpdateEntity } from '@/features/entities/useEntities'
 import { APP_TIMEZONE } from '@/lib/dates/timezone'
 import type { EntityRow, EntityType } from '@/lib/indexed-db/schema'
 import { cn } from '@/lib/utilities/cn'
+import { TripCountdownBadge } from '@/features/trips/TripCountdown'
 import { motion } from 'motion/react'
 
 const LEGACY_SEGMENT_TO_TAB: Record<string, PlanningTabKey> = Object.fromEntries(
@@ -74,6 +75,7 @@ function getEventsForDay(entities: EntityRow[], day: Date): EntityRow[] {
 
 function EntityListItem({ entity }: { entity: EntityRow }) {
   const meta = getEntityTypeMeta(entity.entity_type)
+  const isTrip = entity.entity_type === 'trip'
   return (
     <Link to={entityDetailPath(entity.entity_type, entity.id)}>
       <Card interactive padding="md">
@@ -83,6 +85,7 @@ function EntityListItem({ entity }: { entity: EntityRow }) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-medium text-text">{entity.title}</h2>
               <span className="text-xs text-text-muted">{meta.label}</span>
+              {isTrip ? <TripCountdownBadge entity={entity} /> : null}
             </div>
             <p className="mt-0.5 text-sm text-text-muted">
               {formatEntityDateRange(entity) || meta.label}

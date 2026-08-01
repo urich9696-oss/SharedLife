@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -58,6 +57,7 @@ import type { EntityType } from '@/lib/indexed-db/schema'
 import type { DateDetailValues } from '@/features/dates/DateForm'
 import type { MomentDetailValues } from '@/features/moments/MomentForm'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
+import { TripCountdownCard } from '@/features/trips/TripCountdown'
 import { v4 as uuidv4 } from 'uuid'
 
 interface EntityDetailPageProps {
@@ -369,11 +369,6 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
     .map((l) => l.trim())
     .filter(Boolean)
 
-  const countdown =
-    type === 'trip' && entity.all_day_start
-      ? differenceInCalendarDays(parseISO(entity.all_day_start), new Date())
-      : null
-
   const menuActions: DetailMenuAction[] = [
     {
       key: 'edit',
@@ -444,6 +439,8 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
           ) : null}
         </header>
 
+        {type === 'trip' ? <TripCountdownCard entity={entity} className="mb-8" /> : null}
+
         {/* Modulspezifische Meta */}
         {type === 'expense' ? (
           <MetaList className="mb-8">
@@ -467,15 +464,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
                 <MetaRow label="Zeitraum" value={dateLabel} />
                 <MetaRow
                   label="Status"
-                  value={
-                    countdown !== null
-                      ? countdown > 0
-                        ? `Noch ${countdown} Tage`
-                        : countdown === 0
-                          ? 'Heute'
-                          : 'Unterwegs / vorbei'
-                      : getStatusLabel(type, entity.status)
-                  }
+                  value={getStatusLabel(type, entity.status)}
                 />
                 <MetaRow
                   label="Budget"
