@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { ProfileAvatarPicker } from '@/features/space/ProfileAvatarPicker'
 import { daysTogether, usePairProfile, useUpdatePairProfile } from '@/features/space/pair-profile'
 
 export function PairProfilePage() {
@@ -46,6 +47,20 @@ export function PairProfilePage() {
     }
   }
 
+  const saveAvatar = async (
+    field: 'partnerAAvatarPath' | 'partnerBAvatarPath',
+    path: string | null,
+  ) => {
+    setMessage(null)
+    try {
+      await update.mutateAsync({ [field]: path })
+      setMessage(path ? 'Profilbild gespeichert.' : 'Profilbild entfernt.')
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Profilbild konnte nicht gespeichert werden')
+      throw err
+    }
+  }
+
   return (
     <div className="mx-auto max-w-lg px-page py-8">
       <Link to="/settings" className="text-sm text-primary">
@@ -58,6 +73,23 @@ export function PairProfilePage() {
           {together !== null ? ` Aktuell ${together} gemeinsame Tage.` : ''}
         </p>
       </header>
+
+      <div className="mb-8 grid grid-cols-2 gap-4">
+        <ProfileAvatarPicker
+          label="Foto Partner A"
+          name={partnerAName || pair.partnerAName}
+          storagePath={pair.partnerAAvatarPath}
+          disabled={update.isPending}
+          onChange={(path) => saveAvatar('partnerAAvatarPath', path)}
+        />
+        <ProfileAvatarPicker
+          label="Foto Partner B"
+          name={partnerBName || pair.partnerBName}
+          storagePath={pair.partnerBAvatarPath}
+          disabled={update.isPending}
+          onChange={(path) => saveAvatar('partnerBAvatarPath', path)}
+        />
+      </div>
 
       <form className="space-y-4" onSubmit={(e) => void handleSave(e)}>
         <Input label="Space-Name" value={name} onChange={(e) => setName(e.target.value)} />

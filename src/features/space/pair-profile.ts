@@ -44,6 +44,8 @@ const DEMO_PAIR: PairProfile = {
   timezone: 'Europe/Zurich',
 }
 
+let demoPairState: PairProfile = { ...DEMO_PAIR }
+
 function mapRow(row: Record<string, unknown>): PairProfile {
   return {
     spaceId: String(row.id),
@@ -59,8 +61,26 @@ function mapRow(row: Record<string, unknown>): PairProfile {
   }
 }
 
+/** Nur gesetzte Felder — verhindert, dass Avatare beim Text-Speichern gelöscht werden. */
+export function buildPairProfilePayload(patch: PairProfileUpdate): Record<string, unknown> {
+  const payload: Record<string, unknown> = {}
+  if (patch.name !== undefined) payload.name = patch.name
+  if (patch.partnerAName !== undefined) payload.partner_a_name = patch.partnerAName
+  if (patch.partnerBName !== undefined) payload.partner_b_name = patch.partnerBName
+  if (patch.partnerAAvatarPath !== undefined) {
+    payload.partner_a_avatar_path = patch.partnerAAvatarPath
+  }
+  if (patch.partnerBAvatarPath !== undefined) {
+    payload.partner_b_avatar_path = patch.partnerBAvatarPath
+  }
+  if (patch.coverMediaPath !== undefined) payload.cover_media_path = patch.coverMediaPath
+  if (patch.togetherSince !== undefined) payload.together_since = patch.togetherSince
+  if (patch.coupleBlurb !== undefined) payload.couple_blurb = patch.coupleBlurb
+  return payload
+}
+
 export async function fetchPairProfile(spaceId: string): Promise<PairProfile | null> {
-  if (DEMO_MODE) return { ...DEMO_PAIR, spaceId }
+  if (DEMO_MODE) return { ...demoPairState, spaceId }
 
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
@@ -101,26 +121,23 @@ export async function updatePairProfile(
   patch: PairProfileUpdate,
 ): Promise<PairProfile | null> {
   if (DEMO_MODE) {
-    return {
-      ...DEMO_PAIR,
+    demoPairState = {
+      ...demoPairState,
       spaceId,
       ...patch,
     }
+    return { ...demoPairState }
+  }
+
+  const payload = buildPairProfilePayload(patch)
+  if (Object.keys(payload).length === 0) {
+    return fetchPairProfile(spaceId)
   }
 
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from('spaces')
-    .update({
-      name: patch.name,
-      partner_a_name: patch.partnerAName,
-      partner_b_name: patch.partnerBName,
-      partner_a_avatar_path: patch.partnerAAvatarPath,
-      partner_b_avatar_path: patch.partnerBAvatarPath,
-      cover_media_path: patch.coverMediaPath,
-      together_since: patch.togetherSince,
-      couple_blurb: patch.coupleBlurb,
-    })
+    .update(payload)
     .eq('id', spaceId)
     .select(
       'id, name, timezone, partner_a_name, partner_b_name, partner_a_avatar_path, partner_b_avatar_path, cover_media_path, together_since, couple_blurb',
@@ -154,7 +171,10 @@ export function useUpdatePairProfile() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (patch: PairProfileUpdate) => updatePairProfile(spaceId!, patch),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data && spaceId) {
+        queryClient.setQueryData(['pair-profile', spaceId], data)
+      }
       void queryClient.invalidateQueries({ queryKey: ['pair-profile', spaceId] })
     },
   })

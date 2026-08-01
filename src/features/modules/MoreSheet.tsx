@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { BottomSheet } from '@/components/ui/BottomSheet'
-import { MediaImage } from '@/features/media/MediaImage'
 import { getGroupedModules } from '@/features/modules/module-registry'
+import { CoupleAvatars } from '@/features/space/CoupleAvatars'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 
 interface MoreSheetProps {
@@ -32,22 +32,13 @@ export function MoreSheet({ open, onClose }: MoreSheetProps) {
         onClick={onClose}
         className="mb-[var(--section-gap)] flex items-center gap-4 rounded-lg border border-border/80 bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))] p-4 shadow-xs transition duration-[var(--duration-normal)] hover:-translate-y-0.5"
       >
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-full border border-border bg-surface">
-          {pair?.coverMediaPath || pair?.partnerAAvatarPath ? (
-            <MediaImage
-              storagePath={pair.coverMediaPath ?? pair.partnerAAvatarPath}
-              alt={`${a} und ${b}`}
-              aspectRatio={1}
-              className="rounded-full"
-              lazy={false}
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center font-serif text-lg text-primary">
-              {a.slice(0, 1)}
-              {b.slice(0, 1)}
-            </div>
-          )}
-        </div>
+        <CoupleAvatars
+          partnerAName={a}
+          partnerBName={b}
+          partnerAAvatarPath={pair?.partnerAAvatarPath}
+          partnerBAvatarPath={pair?.partnerBAvatarPath}
+          size="lg"
+        />
         <div className="min-w-0">
           <p className="font-serif text-xl text-text">
             {a} & {b}
