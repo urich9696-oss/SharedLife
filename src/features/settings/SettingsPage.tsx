@@ -90,9 +90,11 @@ function SettingsHome() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="mb-2 text-3xl font-bold tracking-[-0.03em] text-text">Einstellungen</h1>
-      <p className="mb-8 text-[17px] text-text-muted">
+    <div className="mx-auto max-w-lg px-page py-8">
+      <h1 className="mb-[var(--heading-content-gap)] text-3xl font-bold tracking-[-0.03em] text-text">
+        Einstellungen
+      </h1>
+      <p className="mb-[var(--section-gap)] text-[17px] text-text-muted">
         Angemeldet als {profile?.displayName ?? 'Dennis'} — nur privater Zugang.
       </p>
       <div className="flex flex-col gap-6">
@@ -199,7 +201,7 @@ function SettingsProfile() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
+    <div className="mx-auto max-w-lg px-page py-8">
       <Link to="/settings" className="text-sm text-primary">
         ← Einstellungen
       </Link>
@@ -266,7 +268,7 @@ function SettingsInvite() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
+    <div className="mx-auto max-w-lg px-page py-8">
       <Link to="/settings" className="text-sm text-primary">
         ← Einstellungen
       </Link>

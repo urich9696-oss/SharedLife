@@ -20,7 +20,7 @@ export function FormRow({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('px-6 py-4', className)} {...props}>
+    <div className={cn('px-5 py-4 sm:px-6', className)} {...props}>
       {children}
     </div>
   )
@@ -34,10 +34,10 @@ export function FormSectionHeader({
   description?: ReactNode
 }) {
   return (
-    <div className="px-6 pb-2 pt-6">
+    <div className="px-5 pb-3 pt-6 sm:px-6">
       <h3 className="text-sm font-medium text-text-muted">{title}</h3>
       {description ? (
-        <p className="mt-1 text-sm text-text-muted/80">{description}</p>
+        <p className="mt-[var(--heading-content-gap)] text-sm text-text-muted/80">{description}</p>
       ) : null}
     </div>
   )

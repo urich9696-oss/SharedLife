@@ -90,7 +90,7 @@ export function RecipesPage() {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 lg:py-8">
+    <div className="mx-auto max-w-5xl px-page py-6 lg:py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl text-text">Rezepte</h1>
@@ -177,7 +177,7 @@ export function RecipesPage() {
                     onChange={(e) => setDraft(e.target.value)}
                     placeholder="Zutat hinzufügen…"
                     enterKeyHint="done"
-                    className="min-h-12 w-full rounded-[18px] border border-border/80 bg-bg px-4 text-base outline-none focus:border-primary"
+                    className="min-h-12 w-full rounded-[18px] border border-border/80 bg-bg px-4 text-[16px] outline-none focus:border-primary sm:text-[17px]"
                   />
                 </form>
                 <ul className="mt-3 space-y-2">

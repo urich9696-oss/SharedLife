@@ -47,7 +47,7 @@ export function PairProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
+    <div className="mx-auto max-w-lg px-page py-8">
       <Link to="/settings" className="text-sm text-primary">
         ← Einstellungen
       </Link>

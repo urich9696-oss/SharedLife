@@ -93,7 +93,7 @@ export function TimelinePage() {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-5 sm:py-8">
+    <div className="mx-auto max-w-3xl px-page py-5 sm:py-8">
       <header className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Unsere Geschichte</p>

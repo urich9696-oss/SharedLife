@@ -22,7 +22,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!spaceId) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4">
+      <div className="flex min-h-dvh items-center justify-center px-page">
         <EmptyState
           title="Kein gemeinsamer Space"
           description="Dein Konto ist angemeldet, aber noch keinem SharedLife-Space zugeordnet. Bitte den Owner um eine Einladung."

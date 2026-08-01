@@ -65,4 +65,7 @@
   --spacing-safe-bottom: var(--space-safe-bottom);
   --spacing-nav-bottom: var(--nav-bottom-height);
   --spacing-nav-side: var(--nav-side-width);
+  --spacing-page: var(--page-gutter);
+  --spacing-section: var(--section-gap);
+  --spacing-card-stack: var(--card-stack-gap);
 }

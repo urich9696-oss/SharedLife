@@ -71,7 +71,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-bg">
+    <div className="flex min-h-dvh max-w-[100vw] overflow-x-clip bg-bg">
       <aside
         className={cn(
           'hidden lg:flex lg:w-[var(--nav-side-width)] lg:flex-col',
@@ -160,13 +160,13 @@ export function AppShell() {
         </div>
       </aside>
 
-      <div className="flex min-h-dvh flex-1 flex-col">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip">
         <OnlineStatusBanner />
         <header
           className={cn(
             'flex items-center justify-between gap-4 border-b border-border/60 bg-bg/75 backdrop-blur-xl lg:hidden',
             'min-h-[var(--header-height)] pt-[var(--space-safe-top)]',
-            'px-[max(1rem,var(--space-safe-left))] pr-[max(1rem,var(--space-safe-right))]',
+            'px-[max(var(--page-gutter),var(--space-safe-left))] pr-[max(var(--page-gutter),var(--space-safe-right))]',
           )}
         >
           <div className="min-w-0 py-2">
@@ -200,7 +200,7 @@ export function AppShell() {
 
         <main
           className={cn(
-            'mx-auto w-full flex-1 overflow-y-auto',
+            'mx-auto w-full min-w-0 flex-1 overflow-x-clip overflow-y-auto',
             'max-w-[var(--phone-content-max)] lg:max-w-none',
             // Extra space so FAB/home-indicator nicht den letzten Inhalt verdecken
             'pb-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+var(--nav-fab-overlap)+0.75rem)] lg:pb-[var(--space-safe-bottom)]',

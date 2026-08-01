@@ -73,7 +73,7 @@ export function EntityForm({
 
         {children ? (
           <FormSection>
-            <div className="flex flex-col divide-y divide-border/80 [&>*]:px-6 [&>*]:py-4">
+            <div className="flex flex-col divide-y divide-border/80 [&>*]:px-5 [&>*]:py-4 sm:[&>*]:px-6">
               {children}
             </div>
           </FormSection>

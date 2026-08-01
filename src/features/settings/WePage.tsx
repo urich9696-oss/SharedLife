@@ -28,7 +28,7 @@ export function WePage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-2xl px-page py-8">
       <header className="mb-8">
         <h1 className="font-serif text-3xl text-text">Beziehung</h1>
         <p className="mt-2 text-text-muted">
@@ -38,7 +38,7 @@ export function WePage() {
         </p>
       </header>
 
-      <div className="mb-10 grid gap-3 sm:grid-cols-2">
+      <div className="mb-10 grid gap-[var(--card-stack-gap)] sm:grid-cols-2">
         <Card
           interactive
           padding="md"

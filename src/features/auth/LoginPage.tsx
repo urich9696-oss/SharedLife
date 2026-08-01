@@ -93,7 +93,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12 pt-[max(3rem,var(--space-safe-top))] pb-[max(3rem,var(--space-safe-bottom))]">
+    <div className="flex min-h-dvh max-w-[100vw] flex-col items-center justify-center overflow-x-clip bg-bg px-page py-12 pt-[max(3rem,var(--space-safe-top))] pb-[max(3rem,var(--space-safe-bottom))]">
       <div className="w-full max-w-sm">
         <div className="mb-10 flex justify-center">
           <AppLogo size="lg" />

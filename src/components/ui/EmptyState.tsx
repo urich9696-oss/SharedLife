@@ -82,12 +82,12 @@ export function EmptyState({
         {title}
       </h2>
       {description ? (
-        <p className="mt-4 max-w-sm text-balance text-[17px] leading-normal text-text-muted">
+        <p className="mt-3 max-w-sm text-balance text-[17px] leading-normal text-text-muted">
           {description}
         </p>
       ) : null}
       {(actionLabel || secondaryActionLabel) && (
-        <div className="mt-8 flex w-full max-w-xs flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center">
+        <div className="mt-6 flex w-full max-w-xs flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center">
           {actionLabel && onAction ? (
             <Button onClick={onAction}>{actionLabel}</Button>
           ) : null}

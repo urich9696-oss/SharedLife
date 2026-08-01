@@ -94,6 +94,14 @@
   --space-lg: 2rem; /* 32 */
   --space-xl: 3rem; /* 48 */
 
+  /* ── Mobile layout rhythm ─────────────────────────────── */
+  --page-gutter: 1.25rem; /* 20 — horizontal page inset */
+  --section-gap: 1.5rem; /* 24 — between independent sections */
+  --card-stack-gap: 0.875rem; /* 14 — between related cards */
+  --card-padding: 1rem; /* 16 — default card inset */
+  --heading-content-gap: 0.625rem; /* 10 — heading → content */
+  --copy-action-gap: 0.75rem; /* 12 — description → action */
+
   --space-safe-top: env(safe-area-inset-top, 0px);
   --space-safe-right: env(safe-area-inset-right, 0px);
   --space-safe-bottom: env(safe-area-inset-bottom, 0px);

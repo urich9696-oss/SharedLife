@@ -170,7 +170,7 @@ export function CreatePlanningPage() {
   if (entityType === 'list') return null
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 lg:py-8">
+    <div className="mx-auto max-w-lg px-page py-6 lg:py-8">
       <header className="mb-6">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Neu</p>
         <h1 className="mt-1 font-serif text-3xl text-text">{meta.label}</h1>

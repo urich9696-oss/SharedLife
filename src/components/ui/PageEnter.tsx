@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/utilities/cn'
 
-/** Ruhiger Einstieg — Fade + Scale, 120–250 ms */
+/** Ruhiger Einstieg — nur Opacity (kein Scale/Zoom beim Laden) */
 export function PageEnter({
   children,
   className,
@@ -15,10 +15,10 @@ export function PageEnter({
   return (
     <motion.div
       className={cn(className)}
-      initial={reduce ? false : { opacity: 0, scale: 0.975, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{
-        duration: reduce ? 0 : 0.22,
+        duration: reduce ? 0 : 0.18,
         ease: [0.22, 1, 0.36, 1],
       }}
     >

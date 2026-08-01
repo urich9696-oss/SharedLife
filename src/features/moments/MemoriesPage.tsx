@@ -157,11 +157,11 @@ export function MemoriesPage() {
   const timelineItems = data?.items ?? []
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 lg:py-8">
-      <header className="mb-5 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-3xl px-page py-6 lg:py-8">
+      <header className="mb-[var(--section-gap)] flex items-start justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl text-text">Momente</h1>
-          <p className="mt-2 text-sm text-text-muted">
+          <p className="mt-[var(--heading-content-gap)] text-sm text-text-muted">
             Große Bilder. Eure gemeinsame Geschichte.
           </p>
         </div>
@@ -171,7 +171,7 @@ export function MemoriesPage() {
       </header>
 
       <div
-        className="mb-5 grid grid-cols-5 gap-1 rounded-[20px] border border-border/80 bg-surface-soft/70 p-1"
+        className="mb-[var(--section-gap)] grid grid-cols-5 gap-1 rounded-[20px] border border-border/80 bg-surface-soft/70 p-1"
         role="tablist"
         aria-label="Momente"
       >
@@ -240,7 +240,7 @@ export function MemoriesPage() {
                   <h3 className="mb-2 text-sm font-medium text-primary">
                     {format(new Date(viewYear, month, 1), 'MMMM', { locale: de })}
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="card-stack">
                     {items.map((item) => {
                       const globalIndex = timelineItems.findIndex((t) => t.id === item.id)
                       return (
@@ -286,7 +286,7 @@ export function MemoriesPage() {
       {hasContent && tab === 'fotos' && spaceId ? (
         <section>
           <Gallery items={data!.gallery} spaceId={spaceId} />
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {data!.gallery.map((item) => (
               <figure key={item.id} className="overflow-hidden rounded-[22px] border border-border/80">
                 <MediaImage
@@ -343,7 +343,7 @@ export function MemoriesPage() {
               Markierte Favoriten erscheinen hier. Einzelne Erinnerungen bleiben weiterhin Momente.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {favorites.map((item) => (
                 <figure key={item.id} className="overflow-hidden rounded-[22px] border border-border/80">
                   {spaceId ? (

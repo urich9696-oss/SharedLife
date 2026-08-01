@@ -73,12 +73,12 @@ export function BottomSheet({
         {title ? (
           <h2
             id={titleId}
-            className="shrink-0 px-6 pb-4 text-xl font-bold tracking-[-0.025em] text-text"
+            className="shrink-0 px-5 pb-4 text-xl font-bold tracking-[-0.025em] text-text sm:px-6"
           >
             {title}
           </h2>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-2">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 sm:px-6">
           {children}
         </div>
       </div>

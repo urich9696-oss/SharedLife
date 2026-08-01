@@ -39,7 +39,7 @@ export function ExportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
+    <div className="mx-auto max-w-lg px-page py-8">
       <h1 className="text-heading mb-6">Daten exportieren</h1>
 
       <Card padding="md" className="space-y-4">

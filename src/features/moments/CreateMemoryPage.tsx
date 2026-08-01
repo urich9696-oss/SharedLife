@@ -83,7 +83,7 @@ export function CreateMemoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 lg:py-8">
+    <div className="mx-auto max-w-lg px-page py-6 lg:py-8">
       <header className="mb-6">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Momente</p>
         <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-text">Neuer Moment</h1>

@@ -23,7 +23,7 @@ export function TrashPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-2xl px-page py-8">
       <header className="mb-6">
         <h1 className="text-heading">Papierkorb</h1>
         <p className="mt-2 text-text-muted">
