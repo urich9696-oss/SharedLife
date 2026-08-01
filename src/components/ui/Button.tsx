@@ -15,7 +15,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'bg-primary text-surface hover:bg-primary-hover active:bg-primary-active shadow-xs',
   secondary:
-    'bg-surface text-text border border-border hover:bg-bg active:bg-sand/30 shadow-xs',
+    'bg-surface text-text border border-border/80 hover:bg-bg active:bg-surface-soft shadow-xs',
   accent:
     'bg-accent text-surface hover:bg-accent-hover active:bg-accent-active shadow-xs',
   ghost: 'text-text hover:bg-sand/25 active:bg-sand/40',
@@ -24,9 +24,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'h-9 px-4 text-sm rounded-[14px] gap-1.5',
-  md: 'h-11 px-5 text-base rounded-[16px] gap-2',
-  lg: 'h-12 px-6 text-lg rounded-[18px] gap-2.5',
+  sm: 'h-10 px-4 text-sm rounded-[14px] gap-2',
+  md: 'h-12 px-6 text-[17px] rounded-[20px] gap-2',
+  lg: 'h-14 px-8 text-lg rounded-[24px] gap-2',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -50,8 +50,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled ?? loading}
       aria-busy={loading}
       className={cn(
-        'inline-flex items-center justify-center font-medium transition-colors duration-200 ease-out',
+        'inline-flex items-center justify-center font-medium transition-[colors,transform,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
         'focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-disabled-bg disabled:text-disabled',
+        'active:scale-[0.98]',
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && 'w-full',

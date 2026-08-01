@@ -65,11 +65,11 @@ function SettingsHome() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="mb-2 font-serif text-3xl text-text">Einstellungen</h1>
-      <p className="mb-6 text-sm text-text-muted">
+      <h1 className="mb-2 text-3xl font-bold tracking-[-0.03em] text-text">Einstellungen</h1>
+      <p className="mb-8 text-[17px] text-text-muted">
         Angemeldet als {profile?.displayName ?? 'Dennis'} — nur privater Zugang.
       </p>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <Switch
           label="Push-Benachrichtigungen"
           description={

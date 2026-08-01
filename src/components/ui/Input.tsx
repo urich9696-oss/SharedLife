@@ -7,14 +7,15 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
 }
 
+/** Einstellungszeile — kein klassisches Formularfeld */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, hint, error, id, disabled, ...props }, ref) => {
     const inputId = id ?? (label ? `input-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
 
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col">
         {label ? (
-          <label htmlFor={inputId} className="text-sm font-medium text-text">
+          <label htmlFor={inputId} className="text-label px-0 pb-2">
             {label}
           </label>
         ) : null}
@@ -27,24 +28,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
           }
           className={cn(
-            // text-base (16px) verhindert iOS-Zoom beim Fokussieren
-            'h-12 w-full rounded-lg border border-border bg-surface px-4 text-base text-text',
-            'placeholder:text-text-muted transition-[border-color,box-shadow] duration-200',
-            'hover:border-border focus-visible:border-focus focus-visible:shadow-focus',
-            'disabled:cursor-not-allowed disabled:bg-disabled-bg disabled:text-disabled',
+            'w-full border-0 border-b border-border/90 bg-transparent px-0 pb-4 pt-0 text-[17px] font-normal text-text',
+            'placeholder:text-text-muted/70 transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
+            'rounded-none shadow-none outline-none',
+            'focus-visible:border-primary focus-visible:shadow-[0_1px_0_0_var(--color-primary)]',
+            'disabled:cursor-not-allowed disabled:text-disabled',
             'appearance-none',
-            error && 'border-error focus-visible:border-error',
+            error && 'border-error focus-visible:border-error focus-visible:shadow-[0_1px_0_0_var(--color-error)]',
             className,
           )}
           {...props}
         />
         {hint && !error ? (
-          <p id={`${inputId}-hint`} className="text-sm text-text-muted">
+          <p id={`${inputId}-hint`} className="pt-2 text-sm text-text-muted">
             {hint}
           </p>
         ) : null}
         {error ? (
-          <p id={`${inputId}-error`} className="text-sm text-error" role="alert">
+          <p id={`${inputId}-error`} className="pt-2 text-sm text-error" role="alert">
             {error}
           </p>
         ) : null}

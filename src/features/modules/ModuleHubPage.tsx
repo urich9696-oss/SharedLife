@@ -91,7 +91,7 @@ export function ModuleHubPage() {
             return (
               <li key={entity.id}>
                 <Link to={entityDetailPath(entity.entity_type, entity.id)}>
-                  <Card interactive padding="md" className="h-full transition duration-280 hover:-translate-y-0.5">
+                  <Card interactive padding="md" className="h-full transition duration-[var(--duration-normal)] hover:-translate-y-0.5">
                     <p className="text-xs font-medium text-primary">{meta.label}</p>
                     <CardTitle className="mt-1">{entity.title || 'Ohne Titel'}</CardTitle>
                     <CardDescription>

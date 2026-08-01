@@ -9,8 +9,8 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const paddingStyles = {
   none: '',
   sm: 'p-4',
-  md: 'p-5',
-  lg: 'p-6',
+  md: 'p-6',
+  lg: 'p-8',
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -18,9 +18,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-[28px] border border-border/80 bg-surface',
+        'rounded-lg border border-border/70 bg-surface',
         interactive &&
-          'cursor-pointer shadow-sm transition-[box-shadow,transform,border-color] duration-280 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-md hover:border-sand/80 active:scale-[0.985]',
+          'cursor-pointer shadow-sm transition-[box-shadow,transform,border-color] duration-[var(--duration-normal)] ease-[var(--ease-out)] hover:shadow-md hover:border-border active:scale-[0.985]',
         !interactive && 'shadow-xs',
         paddingStyles[padding],
         className,
@@ -38,7 +38,7 @@ export function CardHeader({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('mb-3', className)} {...props} />
+  return <div className={cn('mb-4', className)} {...props} />
 }
 
 export function CardTitle({
@@ -47,7 +47,10 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn('font-serif text-xl leading-tight text-text', className)}
+      className={cn(
+        'font-sans text-xl font-bold leading-tight tracking-[-0.025em] text-text',
+        className,
+      )}
       {...props}
     />
   )
@@ -57,5 +60,5 @@ export function CardDescription({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-text-muted', className)} {...props} />
+  return <p className={cn('mt-1 text-sm font-medium text-text-muted', className)} {...props} />
 }

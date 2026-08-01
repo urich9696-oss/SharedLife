@@ -117,7 +117,7 @@ export function RecipesPage() {
                   type="button"
                   onClick={() => setSelectedId(recipe.id)}
                   className={cn(
-                    'flex w-full overflow-hidden rounded-[28px] border bg-surface text-left shadow-xs transition',
+                    'flex w-full overflow-hidden rounded-lg border bg-surface text-left shadow-xs transition',
                     activeId === recipe.id ? 'border-primary/40' : 'border-border/80',
                   )}
                 >
@@ -143,9 +143,9 @@ export function RecipesPage() {
           </ul>
 
           {active && spaceId ? (
-            <section className="rounded-[32px] border border-border/80 bg-surface p-5 shadow-sm">
+            <section className="rounded-lg border border-border/80 bg-surface p-5 shadow-sm">
               {covers[active.id] ? (
-                <div className="mb-4 overflow-hidden rounded-[24px]">
+                <div className="mb-4 overflow-hidden rounded-lg">
                   <MediaImage
                     storagePath={covers[active.id]}
                     spaceId={spaceId}
@@ -154,7 +154,7 @@ export function RecipesPage() {
                   />
                 </div>
               ) : (
-                <div className="mb-4 aspect-[16/10] rounded-[24px] bg-pastel-1" />
+                <div className="mb-4 aspect-[16/10] rounded-lg bg-pastel-1" />
               )}
               <div className="flex items-start justify-between gap-3">
                 <h2 className="font-serif text-3xl text-text">{active.title}</h2>

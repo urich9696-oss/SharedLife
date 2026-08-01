@@ -11,11 +11,13 @@ Ziel: ein Premium-Produkt „aus einem Guss“ für Alltag, Organisation, Erinne
 
 ## Designsystem
 
-- Stil: Apple Premium, minimalistisch, luftig, warm, emotional
-- Farben: gebrochenes Weiß `#F5F4F2`, warme Grautöne, Pastelltöne, dezentes Sage
-- Typografie: Instrument Serif (emotionale Titles) + Instrument Sans (UI)
-- Karten: große Radien (24–32px), feine Schatten, viel Bildfläche
-- Motion: Fade/Scale, sanfte Übergänge, Swipe-Gesten bei Momenten
+- Stil: Premium UI, minimalistisch, luftig, warm, emotional
+- Farben: gebrochenes Weiß `#F5F4F2`, warme Grautöne, Pastelltöne, dezentes Sage (**unverändert**)
+- Typografie: **Geist** exclusively (Bold Headlines, Regular Body, Medium Labels, SemiBold Zahlen)
+- Karten: 28px Radius, mehrschichtige feine Schatten, viel Bildfläche
+- Eingaben: Einstellungszeilen (keine klassischen Formularboxen)
+- Motion: Fade/Scale/Slide · 140–240 ms · Detail-`PageEnter`
+- Details: `docs/v4-design-system.md`
 
 ## Informationsarchitektur (unverändert)
 

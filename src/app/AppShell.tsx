@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { BookOpen, CalendarDays, Ellipsis, Home, Plus } from 'lucide-react'
 import { AppLogo } from '@/components/shared/AppLogo'
 import { OnlineStatusBanner } from '@/components/shared/OnlineStatusBanner'
 import { SyncStatusIndicator } from '@/components/shared/SyncStatusIndicator'
@@ -13,24 +14,12 @@ import { MediaImage } from '@/features/media/MediaImage'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { cn } from '@/lib/utilities/cn'
 
+const ICON_STROKE = 1.75
+
 const mobileIcons: Record<string, ReactNode> = {
-  home: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" strokeLinejoin="round" />
-    </svg>
-  ),
-  planen: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
-    </svg>
-  ),
-  erinnerungen: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" strokeLinecap="round" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-    </svg>
-  ),
+  home: <Home size={22} strokeWidth={ICON_STROKE} />,
+  planen: <CalendarDays size={22} strokeWidth={ICON_STROKE} />,
+  erinnerungen: <BookOpen size={22} strokeWidth={ICON_STROKE} />,
 }
 
 function NavItem({
@@ -52,8 +41,8 @@ function NavItem({
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex min-h-11 items-center gap-3 rounded-[16px] px-3 py-2.5 text-sm font-medium transition duration-200',
-          dense ? 'flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight' : '',
+          'flex min-h-11 items-center gap-4 rounded-[20px] px-4 py-2 text-sm font-medium transition duration-[var(--duration-fast)]',
+          dense ? 'flex-col gap-1 px-1 py-2 text-[10px] leading-tight' : '',
           isActive
             ? 'bg-primary/10 text-primary'
             : 'text-text-muted hover:bg-surface-soft hover:text-text',
@@ -90,13 +79,13 @@ export function AppShell() {
           'pt-[var(--space-safe-top)] pb-[var(--space-safe-bottom)]',
         )}
       >
-        <div className="px-6 py-5">
+        <div className="px-6 py-8">
           <AppLogo />
-          <p className="mt-2 text-xs text-text-muted">Unser gemeinsames Leben</p>
+          <p className="mt-2 text-sm font-medium text-text-muted">Unser gemeinsames Leben</p>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3" aria-label="Hauptnavigation">
-          <div className="flex flex-col gap-0.5">
+        <nav className="flex flex-1 flex-col gap-8 overflow-y-auto px-4" aria-label="Hauptnavigation">
+          <div className="flex flex-col gap-1">
             {PRIMARY_NAV.map((item) => (
               <NavItem
                 key={item.key}
@@ -109,10 +98,10 @@ export function AppShell() {
 
           {groups.map((group) => (
             <div key={group.key}>
-              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+              <p className="mb-2 px-4 text-[11px] font-medium uppercase tracking-[0.12em] text-text-muted">
                 {group.label}
               </p>
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                 {group.modules.map((mod) => (
                   <NavItem key={mod.key} to={mod.path} label={mod.label} />
                 ))}
@@ -121,15 +110,13 @@ export function AppShell() {
           ))}
         </nav>
 
-        <div className="space-y-3 border-t border-border px-4 py-4">
+        <div className="space-y-4 border-t border-border px-4 py-6">
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="flex w-full min-h-11 items-center justify-center gap-2 rounded-[20px] bg-primary px-4 py-3 text-sm font-medium text-surface shadow-sm transition duration-280 hover:bg-primary-hover active:scale-[0.98]"
+            className="flex w-full min-h-12 items-center justify-center gap-2 rounded-[20px] bg-primary px-4 py-3 text-[17px] font-medium text-surface shadow-sm transition duration-[var(--duration-fast)] hover:bg-primary-hover active:scale-[0.98]"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-            </svg>
+            <Plus size={20} strokeWidth={ICON_STROKE} />
             Neu erstellen
           </button>
 
@@ -177,7 +164,7 @@ export function AppShell() {
         <OnlineStatusBanner />
         <header
           className={cn(
-            'flex items-center justify-between gap-3 border-b border-border/80 bg-bg/90 backdrop-blur-sm lg:hidden',
+            'flex items-center justify-between gap-4 border-b border-border/60 bg-bg/75 backdrop-blur-xl lg:hidden',
             'min-h-[var(--header-height)] pt-[var(--space-safe-top)]',
             'px-[max(1rem,var(--space-safe-left))] pr-[max(1rem,var(--space-safe-right))]',
           )}
@@ -225,7 +212,7 @@ export function AppShell() {
 
         <nav
           className={cn(
-            'fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t border-border bg-surface/95 backdrop-blur-md lg:hidden',
+            'fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t border-border/70 bg-surface/80 backdrop-blur-xl lg:hidden',
             'pb-[var(--space-safe-bottom)]',
           )}
           aria-label="Hauptnavigation"
@@ -247,12 +234,8 @@ export function AppShell() {
                 label="Neu erstellen"
                 size="lg"
                 variant="accent"
-                className="relative -top-3 min-h-[52px] min-w-[52px] shadow-md transition duration-200 active:scale-95"
-                icon={
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-                  </svg>
-                }
+                className="relative -top-3 min-h-[52px] min-w-[52px] shadow-md transition duration-[var(--duration-fast)] active:scale-95"
+                icon={<Plus size={24} strokeWidth={ICON_STROKE} />}
                 onClick={() => setCreateOpen(true)}
               />
             </div>
@@ -268,7 +251,7 @@ export function AppShell() {
               type="button"
               onClick={() => setMoreOpen(true)}
               className={cn(
-                'flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[16px] px-1 py-1.5 text-[10px] font-medium leading-tight transition duration-200',
+                'flex min-h-11 flex-col items-center justify-center gap-1 rounded-[20px] px-1 py-2 text-[10px] font-medium leading-tight transition duration-[var(--duration-fast)]',
                 moreOpen ||
                   location.pathname.startsWith('/module') ||
                   location.pathname.startsWith('/settings') ||
@@ -279,11 +262,7 @@ export function AppShell() {
                   : 'text-text-muted',
               )}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                <circle cx="5" cy="12" r="1.5" />
-                <circle cx="12" cy="12" r="1.5" />
-                <circle cx="19" cy="12" r="1.5" />
-              </svg>
+              <Ellipsis size={22} strokeWidth={ICON_STROKE} />
               <span>Mehr</span>
             </button>
           </div>

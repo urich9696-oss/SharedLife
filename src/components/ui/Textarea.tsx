@@ -8,14 +8,14 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, label, hint, error, id, disabled, rows = 4, ...props }, ref) => {
+  ({ className, label, hint, error, id, disabled, rows = 3, ...props }, ref) => {
     const textareaId =
       id ?? (label ? `textarea-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
 
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col">
         {label ? (
-          <label htmlFor={textareaId} className="text-sm font-medium text-text">
+          <label htmlFor={textareaId} className="text-label px-0 pb-2">
             {label}
           </label>
         ) : null}
@@ -29,22 +29,23 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             error ? `${textareaId}-error` : hint ? `${textareaId}-hint` : undefined
           }
           className={cn(
-            'w-full resize-y rounded-lg border border-border bg-surface px-4 py-3 text-base text-text',
-            'placeholder:text-text-muted transition-[border-color,box-shadow] duration-200',
-            'hover:border-border focus-visible:border-focus focus-visible:shadow-focus',
-            'disabled:cursor-not-allowed disabled:bg-disabled-bg disabled:text-disabled',
-            error && 'border-error focus-visible:border-error',
+            'w-full resize-none border-0 border-b border-border/90 bg-transparent px-0 pb-4 pt-0 text-[17px] text-text',
+            'placeholder:text-text-muted/70 transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
+            'rounded-none shadow-none outline-none',
+            'focus-visible:border-primary focus-visible:shadow-[0_1px_0_0_var(--color-primary)]',
+            'disabled:cursor-not-allowed disabled:text-disabled',
+            error && 'border-error focus-visible:border-error focus-visible:shadow-[0_1px_0_0_var(--color-error)]',
             className,
           )}
           {...props}
         />
         {hint && !error ? (
-          <p id={`${textareaId}-hint`} className="text-sm text-text-muted">
+          <p id={`${textareaId}-hint`} className="pt-2 text-sm text-text-muted">
             {hint}
           </p>
         ) : null}
         {error ? (
-          <p id={`${textareaId}-error`} className="text-sm text-error" role="alert">
+          <p id={`${textareaId}-error`} className="pt-2 text-sm text-error" role="alert">
             {error}
           </p>
         ) : null}

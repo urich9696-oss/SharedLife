@@ -32,17 +32,17 @@ export function ProgressCard({
     <Link
       to={href}
       className={cn(
-        'block min-w-[11.5rem] snap-start rounded-[24px] border border-border/70 p-4 shadow-xs',
-        'transition duration-280 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] hover:-translate-y-0.5',
+        'block min-w-[11.5rem] snap-start rounded-lg border border-border/60 p-6 shadow-xs',
+        'transition duration-[var(--duration-normal)] ease-[var(--ease-out)] active:scale-[0.985] hover:shadow-sm',
         tones[tone],
         className,
       )}
     >
-      <p className="font-serif text-lg leading-tight text-text">{title}</p>
-      {subtitle ? <p className="mt-1 text-xs text-text-muted">{subtitle}</p> : null}
-      <div className="mt-4">
+      <p className="text-lg font-bold leading-tight tracking-[-0.025em] text-text">{title}</p>
+      {subtitle ? <p className="mt-2 text-sm font-medium text-text-muted">{subtitle}</p> : null}
+      <div className="mt-6">
         <ProgressBar value={value} />
-        <p className="mt-2 text-xs font-medium text-text-secondary">{value}%</p>
+        <p className="font-numeric mt-2 text-sm text-text-secondary">{value}%</p>
       </div>
     </Link>
   )

@@ -1,4 +1,5 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utilities/cn'
 
 export interface SelectOption {
@@ -34,9 +35,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       id ?? (label ? `select-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined)
 
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col">
         {label ? (
-          <label htmlFor={selectId} className="text-sm font-medium text-text">
+          <label htmlFor={selectId} className="text-label px-0 pb-2">
             {label}
           </label>
         ) : null}
@@ -50,10 +51,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined
             }
             className={cn(
-              'h-12 w-full appearance-none rounded-lg border border-border bg-surface px-4 pr-10 text-base text-text',
-              'transition-[border-color,box-shadow] duration-200',
-              'hover:border-border focus-visible:border-focus focus-visible:shadow-focus',
-              'disabled:cursor-not-allowed disabled:bg-disabled-bg disabled:text-disabled',
+              'h-auto w-full appearance-none border-0 border-b border-border/90 bg-transparent py-0 pb-4 pr-8 pt-0 text-[17px] text-text',
+              'transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
+              'rounded-none shadow-none outline-none',
+              'focus-visible:border-primary focus-visible:shadow-[0_1px_0_0_var(--color-primary)]',
+              'disabled:cursor-not-allowed disabled:text-disabled',
               error && 'border-error focus-visible:border-error',
               className,
             )}
@@ -74,24 +76,19 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <svg
-            className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-text-muted"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+          <ChevronDown
+            className="pointer-events-none absolute right-0 top-1 size-5 text-text-muted"
+            strokeWidth={1.75}
             aria-hidden="true"
-          >
-            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          />
         </div>
         {hint && !error ? (
-          <p id={`${selectId}-hint`} className="text-sm text-text-muted">
+          <p id={`${selectId}-hint`} className="pt-2 text-sm text-text-muted">
             {hint}
           </p>
         ) : null}
         {error ? (
-          <p id={`${selectId}-error`} className="text-sm text-error" role="alert">
+          <p id={`${selectId}-error`} className="pt-2 text-sm text-error" role="alert">
             {error}
           </p>
         ) : null}

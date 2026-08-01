@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utilities/cn'
 import { IconButton } from '@/components/ui/IconButton'
 
@@ -73,36 +74,32 @@ export function Modal({
         tabIndex={-1}
         className={cn(
           'relative z-10 flex w-full max-w-md flex-col',
-          'max-h-[min(90dvh,100%)] overflow-hidden rounded-t-xl border border-border bg-surface shadow-lg sm:rounded-xl',
+          'max-h-[min(90dvh,100%)] overflow-hidden rounded-t-lg border border-border/80 bg-surface shadow-lg sm:rounded-lg',
           'motion-safe:animate-[slideUp_var(--duration-normal)_var(--ease-out)]',
           'focus:outline-none',
           className,
         )}
       >
-        <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-2 pt-5 sm:px-6">
+        <div className="flex shrink-0 items-start justify-between gap-4 px-6 pb-2 pt-6">
           <div className="min-w-0">
             {title ? (
-              <h2 id={titleId} className="font-serif text-xl text-text">
+              <h2 id={titleId} className="text-xl font-bold tracking-[-0.025em] text-text">
                 {title}
               </h2>
             ) : null}
             {description ? (
-              <p id={descriptionId} className="mt-1 text-sm text-text-muted">
+              <p id={descriptionId} className="mt-2 text-sm font-medium text-text-muted">
                 {description}
               </p>
             ) : null}
           </div>
           <IconButton
             label="Schliessen"
-            icon={
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
-              </svg>
-            }
+            icon={<X size={20} strokeWidth={1.75} />}
             onClick={onClose}
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6">
           {children}
         </div>
       </div>

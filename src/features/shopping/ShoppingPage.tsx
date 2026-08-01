@@ -219,7 +219,7 @@ export function ShoppingPage() {
           onAction={() => inputRef.current?.focus()}
         />
       ) : (
-        <ul className="overflow-hidden rounded-[24px] border border-border/80 bg-surface shadow-xs">
+        <ul className="overflow-hidden rounded-lg border border-border/80 bg-surface shadow-xs">
           {active.map((item) => {
             const isExiting = Boolean(exiting[item.id])
             return (

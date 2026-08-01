@@ -14,12 +14,20 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
       <label
         htmlFor={switchId}
         className={cn(
-          'flex cursor-pointer items-start gap-3',
+          'flex cursor-pointer items-center justify-between gap-6',
           disabled && 'cursor-not-allowed opacity-50',
           className,
         )}
       >
-        <span className="relative mt-0.5 inline-flex shrink-0">
+        {(label || description) && (
+          <span className="flex min-w-0 flex-col gap-1">
+            {label ? <span className="text-[17px] font-normal text-text">{label}</span> : null}
+            {description ? (
+              <span className="text-sm font-medium text-text-muted">{description}</span>
+            ) : null}
+          </span>
+        )}
+        <span className="relative inline-flex shrink-0">
           <input
             ref={ref}
             id={switchId}
@@ -32,7 +40,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
           <span
             aria-hidden="true"
             className={cn(
-              'block h-6 w-11 rounded-full bg-sand/60 transition-colors duration-200',
+              'block h-8 w-[52px] rounded-full bg-sand/70 transition-colors duration-[var(--duration-fast)]',
               'peer-checked:bg-primary peer-focus-visible:shadow-focus',
               'peer-disabled:bg-disabled-bg',
             )}
@@ -40,20 +48,12 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
           <span
             aria-hidden="true"
             className={cn(
-              'absolute left-0.5 top-0.5 size-5 rounded-full bg-surface shadow-sm',
-              'transition-transform duration-200 ease-out motion-reduce:transition-none',
+              'absolute left-1 top-1 size-6 rounded-full bg-surface shadow-sm',
+              'transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out)] motion-reduce:transition-none',
               'peer-checked:translate-x-5',
             )}
           />
         </span>
-        {(label || description) && (
-          <span className="flex flex-col gap-0.5">
-            {label ? <span className="text-sm font-medium text-text">{label}</span> : null}
-            {description ? (
-              <span className="text-sm text-text-muted">{description}</span>
-            ) : null}
-          </span>
-        )}
       </label>
     )
   },

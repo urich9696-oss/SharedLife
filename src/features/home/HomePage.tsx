@@ -62,7 +62,7 @@ const QUICK_ACTIONS = [
 ] as const
 
 const fadeUp = {
-  initial: { opacity: 0, y: 10, scale: 0.99 },
+  initial: { opacity: 0, y: 8, scale: 0.985 },
   animate: { opacity: 1, y: 0, scale: 1 },
 }
 
@@ -211,8 +211,8 @@ export function HomePage() {
     entities.length > 0 || reminders.some((r) => !r.deleted_at) || recentMoments.length > 0
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-4 lg:py-8">
-      <motion.section className="mb-6" {...fadeUp} transition={{ duration: 0.4 }}>
+    <div className="mx-auto max-w-5xl px-4 py-6 lg:py-8">
+      <motion.section className="mb-8" {...fadeUp} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
         <HeroCard
           title={hero.title}
           subtitle={hero.subtitle}
@@ -235,28 +235,32 @@ export function HomePage() {
       ) : (
         <>
           {todayItems.length > 0 ? (
-            <section className="mb-7">
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-2xl text-text">Heute</h2>
+            <section className="mb-8">
+              <div className="mb-4 flex items-end justify-between">
+                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Heute</h2>
                 <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
                   Kalender
                 </Link>
               </div>
-              <ul className="overflow-hidden rounded-[28px] border border-border/80 bg-surface shadow-xs">
+              <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
                 {todayItems.map((item) => (
                   <li key={item.id} className="border-b border-border/60 last:border-b-0">
                     {item.href ? (
                       <Link
                         to={item.href}
-                        className="flex min-h-12 items-center justify-between gap-3 px-4 py-3.5"
+                        className="flex min-h-14 items-center justify-between gap-4 px-6 py-4"
                       >
-                        <span className="text-sm text-text">{item.label}</span>
-                        <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
+                        <span className="text-[17px] text-text">{item.label}</span>
+                        <span className="shrink-0 text-sm font-medium text-text-muted">
+                          {item.meta}
+                        </span>
                       </Link>
                     ) : (
-                      <div className="flex min-h-12 items-center justify-between gap-3 px-4 py-3.5">
-                        <span className="text-sm text-text">{item.label}</span>
-                        <span className="shrink-0 text-xs text-text-muted">{item.meta}</span>
+                      <div className="flex min-h-14 items-center justify-between gap-4 px-6 py-4">
+                        <span className="text-[17px] text-text">{item.label}</span>
+                        <span className="shrink-0 text-sm font-medium text-text-muted">
+                          {item.meta}
+                        </span>
                       </div>
                     )}
                   </li>
@@ -265,28 +269,28 @@ export function HomePage() {
             </section>
           ) : null}
 
-          <section className="mb-7">
-            <h2 className="mb-3 font-serif text-2xl text-text">Schnellzugriffe</h2>
-            <div className="grid grid-cols-2 gap-3">
+          <section className="mb-8">
+            <h2 className="mb-4 text-2xl font-bold tracking-[-0.025em] text-text">Schnellzugriffe</h2>
+            <div className="grid grid-cols-2 gap-4">
               {QUICK_ACTIONS.map((action) => (
                 <Link
                   key={action.key}
                   to={action.path}
                   className={cn(
-                    'flex min-h-[5.75rem] flex-col justify-end rounded-[24px] border border-border/80 bg-surface p-4',
-                    'shadow-xs transition duration-280 active:scale-[0.98]',
+                    'flex min-h-[5.75rem] flex-col justify-end rounded-lg border border-border/70 bg-surface p-6',
+                    'shadow-xs transition duration-[var(--duration-normal)] active:scale-[0.98]',
                   )}
                 >
-                  <span className="font-serif text-xl text-text">{action.label}</span>
+                  <span className="text-xl font-bold tracking-[-0.025em] text-text">{action.label}</span>
                 </Link>
               ))}
             </div>
           </section>
 
           {activeGoals.length > 0 ? (
-            <section className="mb-7">
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-2xl text-text">Aktive Ziele</h2>
+            <section className="mb-8">
+              <div className="mb-4 flex items-end justify-between">
+                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktive Ziele</h2>
                 <Link to="/planen?tab=vorhaben&filter=goal" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
@@ -307,9 +311,9 @@ export function HomePage() {
           ) : null}
 
           {activeTrips.length > 0 ? (
-            <section className="mb-7">
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-2xl text-text">Aktuelle Reisen</h2>
+            <section className="mb-8">
+              <div className="mb-4 flex items-end justify-between">
+                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktuelle Reisen</h2>
                 <Link to="/planen?tab=vorhaben&filter=trip" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
@@ -319,7 +323,7 @@ export function HomePage() {
                   <li key={trip.id}>
                     <Link
                       to={entityDetailPath('trip', trip.id)}
-                      className="flex overflow-hidden rounded-[24px] border border-border/80 bg-surface shadow-xs"
+                      className="flex overflow-hidden rounded-lg border border-border/80 bg-surface shadow-xs"
                     >
                       <div className="w-24 shrink-0">
                         {mediaByEntityId[trip.id] && spaceId ? (
@@ -351,13 +355,13 @@ export function HomePage() {
 
           {recentMoments.length > 0 && spaceId ? (
             <section className="mb-2">
-              <div className="mb-3 flex items-end justify-between">
-                <h2 className="font-serif text-2xl text-text">Letzte Momente</h2>
+              <div className="mb-4 flex items-end justify-between">
+                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Letzte Momente</h2>
                 <Link to="/erinnerungen" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
               </div>
-              <div className="flex snap-x gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex snap-x gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {recentMoments.map((moment) => (
                   <Link
                     key={moment.id}
@@ -366,7 +370,7 @@ export function HomePage() {
                         ? `/entities/${moment.entityType}/${moment.entityId}`
                         : '/erinnerungen'
                     }
-                    className="min-w-[14rem] snap-start overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-xs"
+                    className="min-w-[14rem] snap-start overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs"
                   >
                     {moment.storagePath ? (
                       <MediaImage
@@ -378,9 +382,11 @@ export function HomePage() {
                     ) : (
                       <div className="aspect-[4/5] bg-pastel-2" />
                     )}
-                    <div className="p-3.5">
-                      <p className="font-serif text-lg leading-tight text-text">{moment.title}</p>
-                      <p className="mt-1 text-xs text-text-muted">
+                    <div className="p-4">
+                      <p className="text-lg font-bold leading-tight tracking-[-0.025em] text-text">
+                        {moment.title}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-text-muted">
                         {format(parseISO(moment.occurredAt), 'd. MMM yyyy', { locale: de })}
                       </p>
                     </div>

@@ -35,8 +35,8 @@ export function HeroCard({
   const content = (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[32px] border border-border/70 bg-surface shadow-md',
-        'transition-transform duration-420 ease-[cubic-bezier(0.22,1,0.36,1)]',
+        'relative overflow-hidden rounded-lg border border-border/60 bg-surface shadow-md',
+        'transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)]',
         className,
       )}
     >
@@ -49,23 +49,28 @@ export function HeroCard({
             alt={title}
             className={cn(
               'absolute inset-0 rounded-none',
-              parallax && 'scale-[1.04] transition-transform duration-560 ease-out will-change-transform',
+              parallax &&
+                'scale-[1.03] transition-transform duration-[var(--duration-slower)] ease-out will-change-transform',
             )}
             aspectRatio={4 / 5}
             lazy={false}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-text/60 via-text/15 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-5 text-surface sm:p-6">
+        <div className="absolute inset-0 bg-gradient-to-t from-text/55 via-text/12 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-6 text-surface">
           {eyebrow ? (
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-surface/75">
               {eyebrow}
             </p>
           ) : null}
-          <p className="mt-1 font-serif text-[1.75rem] leading-tight sm:text-3xl">{title}</p>
-          {subtitle ? <p className="mt-1.5 text-sm text-surface/90">{subtitle}</p> : null}
+          <p className="mt-2 text-[1.75rem] font-bold leading-tight tracking-[-0.03em] sm:text-3xl">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="mt-2 text-[15px] font-medium text-surface/90">{subtitle}</p>
+          ) : null}
           {ctaLabel ? (
-            <span className="mt-4 inline-flex min-h-10 items-center rounded-[16px] bg-surface/95 px-4 text-sm font-medium text-text shadow-xs">
+            <span className="mt-6 inline-flex min-h-10 items-center rounded-[20px] bg-surface/95 px-4 text-sm font-medium text-text shadow-xs">
               {ctaLabel}
             </span>
           ) : null}

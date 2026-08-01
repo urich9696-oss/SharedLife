@@ -1,7 +1,6 @@
 /**
  * SharedLife V4 — Base styles
- *
- * Fonts: Instrument Serif + Instrument Sans via Google Fonts CDN.
+ * Font: Geist Variable
  */
 
 *,
@@ -36,6 +35,7 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
 }
 
 img,
@@ -55,7 +55,7 @@ select {
   color: inherit;
 }
 
-/* iOS: native date/time controls remain usable at 16px */
+/* iOS: native controls remain usable at ≥16px */
 input[type='date'],
 input[type='time'],
 input[type='datetime-local'],
@@ -70,7 +70,7 @@ input[type='text'],
 input[type='password'],
 textarea,
 select {
-  font-size: max(1rem, 16px);
+  font-size: max(1.0625rem, 17px);
 }
 
 button {
@@ -111,34 +111,53 @@ ol {
 
 /* ── Typography utilities ──────────────────────────────── */
 
-.font-serif {
-  font-family: var(--font-serif);
+.font-serif,
+.font-display {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.025em;
 }
 
 .font-sans {
   font-family: var(--font-sans);
 }
 
+.font-numeric {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
 .text-hero {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-hero);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.02em;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
 }
 
 .text-heading {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.025em;
 }
 
 .text-subheading {
   font-family: var(--font-sans);
   font-size: var(--text-lg);
-  line-height: var(--leading-normal);
+  line-height: var(--leading-snug);
   font-weight: var(--weight-medium);
+}
+
+.text-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
 }
 
 .text-muted {
@@ -168,6 +187,19 @@ ol {
   padding-left: var(--space-safe-left);
 }
 
+/* Settings-style form surface */
+.form-surface {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.form-surface > * + * {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -180,11 +212,22 @@ ol {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(8px) scale(0.985);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

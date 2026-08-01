@@ -9,8 +9,8 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-sand/40 text-text',
-  primary: 'bg-primary/15 text-primary',
-  accent: 'bg-accent/15 text-accent',
+  primary: 'bg-primary/12 text-primary',
+  accent: 'bg-accent/12 text-accent',
   success: 'bg-success-subtle text-success',
   warning: 'bg-warning-subtle text-warning',
   error: 'bg-error-subtle text-error',
@@ -25,7 +25,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full px-4 py-1 text-xs font-medium',
         variantStyles[variant],
         className,
       )}

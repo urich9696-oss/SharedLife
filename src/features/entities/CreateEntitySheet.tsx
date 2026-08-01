@@ -213,7 +213,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
             <li key={action.key}>
               <button
                 type="button"
-                className="flex min-h-14 w-full items-center gap-3 rounded-[22px] border border-border/80 bg-bg px-4 py-4 text-left transition duration-280 hover:border-sand hover:bg-surface active:scale-[0.99]"
+                className="flex min-h-14 w-full items-center gap-3 rounded-[22px] border border-border/80 bg-bg px-4 py-4 text-left transition duration-[var(--duration-normal)] hover:border-sand hover:bg-surface active:scale-[0.99]"
                 onClick={() => {
                   if (action.kind === 'route') {
                     handleClose()

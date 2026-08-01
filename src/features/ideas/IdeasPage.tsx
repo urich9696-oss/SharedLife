@@ -53,8 +53,8 @@ export function IdeasPage() {
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
             Inspiration
           </p>
-          <h1 className="mt-1 font-serif text-3xl text-text">Date Ideen</h1>
-          <p className="mt-2 text-sm text-text-muted">
+          <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-text">Date Ideen</h1>
+          <p className="mt-4 text-[17px] text-text-muted">
             Orte und Ideen für gemeinsame Dates.
           </p>
         </div>

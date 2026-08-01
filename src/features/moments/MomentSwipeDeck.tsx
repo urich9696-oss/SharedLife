@@ -91,7 +91,7 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
             <motion.div
               key={item.id}
               className={cn(
-                'absolute inset-0 overflow-hidden rounded-[32px] border border-border/70 bg-surface shadow-lg',
+                'absolute inset-0 overflow-hidden rounded-lg border border-border/70 bg-surface shadow-lg',
                 !isTop && 'pointer-events-none',
               )}
               style={
@@ -112,7 +112,7 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
                   ? { x: exitDir === 'left' ? -420 : 420, opacity: 0 }
                   : undefined
               }
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
               onClick={isTop ? openCurrent : undefined}
             >
               <div className="absolute inset-0 bg-[linear-gradient(145deg,#eceae6,#e7ebf0)]" />
@@ -127,9 +127,9 @@ export function MomentSwipeDeck({ items, spaceId, onOpen }: MomentSwipeDeckProps
                 />
               ) : null}
               <div className="absolute inset-0 bg-gradient-to-t from-text/65 via-text/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5 text-surface sm:p-6">
-                <p className="font-serif text-3xl leading-tight">{item.title}</p>
-                <p className="mt-2 text-sm text-surface/90">
+              <div className="absolute inset-x-0 bottom-0 p-6 text-surface">
+                <p className="text-3xl font-bold leading-tight tracking-[-0.03em]">{item.title}</p>
+                <p className="mt-2 text-sm font-medium text-surface/90">
                   {format(parseISO(item.occurredAt), 'd. MMMM yyyy', { locale: de })}
                   {item.location ? ` · ${item.location}` : ''}
                 </p>

@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { HeroCard } from '@/components/ui/HeroCard'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
+import { PageEnter } from '@/components/ui/PageEnter'
 import { saveDateAsMoment } from '@/features/dates/save-as-moment'
 import { EntityLinksSection } from '@/features/entity-links/EntityLinksSection'
 import { EntityForm, entityFormDefaultsFromRow } from '@/features/entities/EntityForm'
@@ -245,34 +246,36 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   const alreadyConverted = Boolean(entity.metadata?.convertedToMomentId)
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-5 sm:py-8">
-      <div className="mb-5">
+    <PageEnter className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-8 origin-top">
         <HeroCard
           title={entity.title}
           subtitle={dateLabel || entity.subtitle || meta.label}
           eyebrow={meta.label}
           mediaPath={coverPath}
           spaceId={spaceId}
-          aspectClassName="aspect-[16/10] max-h-72"
+          aspectClassName="aspect-[16/10] max-h-80"
           ctaLabel={undefined}
         />
       </div>
 
-      <header className="mb-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <header className="mb-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             {assigneeLabel ? (
-              <p className="text-sm text-text-muted">Zuständig: {assigneeLabel}</p>
+              <p className="text-sm font-medium text-text-muted">Zuständig: {assigneeLabel}</p>
             ) : null}
           </div>
           <Badge variant="primary">{getStatusLabel(type, entity.status)}</Badge>
         </div>
         {entity.description ? (
-          <p className="mt-4 text-text whitespace-pre-wrap">{entity.description}</p>
+          <p className="mt-6 whitespace-pre-wrap text-[17px] leading-relaxed text-text">
+            {entity.description}
+          </p>
         ) : null}
       </header>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-8 flex flex-wrap gap-4">
         <Button variant="secondary" size="sm" onClick={handleEditOpen}>
           Bearbeiten
         </Button>
@@ -298,9 +301,9 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
       {recipeMsg ? <p className="mb-4 text-sm text-text-muted">{recipeMsg}</p> : null}
 
       {spaceId ? (
-        <section className="mb-6">
-          <h2 className="mb-1 font-serif text-xl text-text">Fotos</h2>
-          <p className="mb-3 text-sm text-text-muted">
+        <section className="mb-8">
+          <h2 className="mb-2 text-xl font-bold tracking-[-0.025em] text-text">Fotos</h2>
+          <p className="mb-4 text-sm font-medium text-text-muted">
             Fotos jederzeit hinzufügen — auch wenn der Eintrag noch geplant ist.
           </p>
           <MediaPicker spaceId={spaceId} entityId={id} userId={session?.userId ?? null} />
@@ -308,7 +311,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
       ) : null}
 
       {spaceId ? (
-        <section className="mb-6">
+        <section className="mb-8">
           <WidgetBoard spaceId={spaceId} entityId={id} entityType={type} editable />
         </section>
       ) : null}
@@ -316,16 +319,16 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
       {type === 'list' ? <ListDetail entityId={id} /> : null}
 
       {['trip', 'date', 'moment', 'event'].includes(type) ? (
-        <div className="mt-6">
+        <div className="mt-8">
           <LocationAttach entityId={id} />
         </div>
       ) : null}
 
-      <div className="mt-6">
+      <div className="mt-8">
         <NotesSection entityId={id} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <EntityLinksSection entityId={id} />
       </div>
 
@@ -352,7 +355,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
         title="Eintrag löschen?"
         description="Der Eintrag wird in den Papierkorb verschoben und kann dort wiederhergestellt werden."
       >
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <Button variant="secondary" fullWidth onClick={() => setConfirmDelete(false)}>
             Abbrechen
           </Button>
@@ -361,6 +364,6 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
           </Button>
         </div>
       </Modal>
-    </div>
+    </PageEnter>
   )
 }

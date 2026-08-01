@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormProvider, useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
+import { FormRow, FormSection } from '@/components/ui/FormSection'
 import { Input } from '@/components/ui/Input'
 import { entityFormSchema, type EntityFormValues } from '@/features/entities/entity-form-schema'
 import { entityToFormValues } from '@/features/entities/entity-date-utils'
@@ -53,22 +54,32 @@ export function EntityForm({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-3.5">
+      <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-6">
         {showTitle ? (
-          <Input
-            label="Titel"
-            {...register('title')}
-            error={errors.title?.message}
-            placeholder={`${meta.label} benennen…`}
-            autoComplete="off"
-          />
+          <FormSection>
+            <FormRow>
+              <Input
+                label="Titel"
+                {...register('title')}
+                error={errors.title?.message}
+                placeholder={`${meta.label} benennen…`}
+                autoComplete="off"
+              />
+            </FormRow>
+          </FormSection>
         ) : (
           <input type="hidden" {...register('title')} />
         )}
 
-        {children}
+        {children ? (
+          <FormSection>
+            <div className="flex flex-col divide-y divide-border/80 [&>*]:px-6 [&>*]:py-4">
+              {children}
+            </div>
+          </FormSection>
+        ) : null}
 
-        <div className="flex gap-3 pt-1">
+        <div className="flex gap-4 pt-2">
           {onCancel ? (
             <Button type="button" variant="secondary" onClick={onCancel} fullWidth>
               Abbrechen

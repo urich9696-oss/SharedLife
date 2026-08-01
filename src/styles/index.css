@@ -1,3 +1,4 @@
+@import '@fontsource-variable/geist/index.css';
 @import './tokens.css';
 @import './base.css';
 @import 'tailwindcss';
@@ -59,7 +60,7 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-focus: var(--shadow-focus);
 
-  /* Spacing */
+  /* Spacing — prefer 2/4/6/8/12 (= 8/16/24/32/48px) in UI code */
   --spacing-safe-top: var(--space-safe-top);
   --spacing-safe-bottom: var(--space-safe-bottom);
   --spacing-nav-bottom: var(--nav-bottom-height);

@@ -167,7 +167,9 @@ export function FinanceDashboardPage() {
               {showBudgetEdit ? 'Schließen' : 'Ändern'}
             </button>
           </div>
-          <p className="mt-2 font-serif text-3xl text-text">{money(budgetLimit)}</p>
+          <p className="font-numeric mt-4 text-3xl tracking-[-0.03em] text-text">
+            {money(budgetLimit)}
+          </p>
           {showBudgetEdit ? (
             <form
               className="mt-3 flex gap-2"
@@ -195,7 +197,9 @@ export function FinanceDashboardPage() {
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-text-muted">
             Restbudget
           </p>
-          <p className="mt-2 font-serif text-3xl text-text">{money(remaining)}</p>
+          <p className="font-numeric mt-4 text-3xl tracking-[-0.03em] text-text">
+            {money(remaining)}
+          </p>
           <CardDescription className="mt-2">
             Einnahmen {money(totalIncome)} · Ausgaben {money(totalExpense)}
           </CardDescription>
@@ -211,13 +215,15 @@ export function FinanceDashboardPage() {
         ].map((item) => (
           <Card key={item.label} padding="md">
             <p className="text-xs text-text-muted">{item.label}</p>
-            <p className="mt-1 font-serif text-xl text-text">{money(item.value)}</p>
+            <p className="font-numeric mt-2 text-xl tracking-[-0.02em] text-text">
+              {money(item.value)}
+            </p>
           </Card>
         ))}
       </section>
 
       {byCategory.length > 0 ? (
-        <section className="mb-6 rounded-[32px] border border-border/80 bg-surface p-5 shadow-xs">
+        <section className="mb-6 rounded-lg border border-border/80 bg-surface p-5 shadow-xs">
           <h2 className="font-serif text-2xl text-text">Ausgaben nach Kategorien</h2>
           <div className="mt-5 flex justify-center">
             <CategoryPie total={totalExpense} slices={byCategory} />

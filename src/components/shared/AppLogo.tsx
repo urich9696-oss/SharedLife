@@ -7,8 +7,8 @@ export interface AppLogoProps {
 }
 
 const sizeStyles = {
-  sm: { icon: 'size-8 text-lg', wordmark: 'text-lg' },
-  md: { icon: 'size-10 text-xl', wordmark: 'text-xl' },
+  sm: { icon: 'size-8 text-base', wordmark: 'text-lg' },
+  md: { icon: 'size-10 text-lg', wordmark: 'text-xl' },
   lg: { icon: 'size-14 text-2xl', wordmark: 'text-3xl' },
 }
 
@@ -20,10 +20,10 @@ export function AppLogo({
   const styles = sizeStyles[size]
 
   return (
-    <div className={cn('flex items-center gap-3', className)}>
+    <div className={cn('flex items-center gap-4', className)}>
       <div
         className={cn(
-          'flex shrink-0 items-center justify-center rounded-xl bg-primary font-serif text-surface shadow-sm',
+          'flex shrink-0 items-center justify-center rounded-[14px] bg-primary font-bold tracking-[-0.03em] text-surface shadow-xs',
           styles.icon,
         )}
         aria-hidden="true"
@@ -31,7 +31,12 @@ export function AppLogo({
         S
       </div>
       {showWordmark ? (
-        <span className={cn('font-serif leading-none text-text', styles.wordmark)}>
+        <span
+          className={cn(
+            'font-bold leading-none tracking-[-0.03em] text-text',
+            styles.wordmark,
+          )}
+        >
           SharedLife
         </span>
       ) : null}
