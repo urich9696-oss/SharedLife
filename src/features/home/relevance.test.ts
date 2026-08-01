@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { EntityRow } from '@/lib/indexed-db/schema'
 import {
+  getActiveTrip,
   getCountdownTarget,
   getGreeting,
   getGoalProgressFromPayload,
@@ -88,5 +89,32 @@ describe('relevance', () => {
 
   it('builds greeting with display name', () => {
     expect(getGreeting(now, 'Lea')).toBe('Guten Tag, Lea')
+  })
+
+  it('picks the soonest upcoming trip over undated drafts', () => {
+    const entities = [
+      makeEntity({
+        id: 'later',
+        entity_type: 'trip',
+        status: 'draft',
+        starts_at: '2026-09-01T10:00:00.000Z',
+        updated_at: '2026-07-29T00:00:00.000Z',
+      }),
+      makeEntity({
+        id: 'soon',
+        entity_type: 'trip',
+        status: 'draft',
+        starts_at: '2026-08-05T10:00:00.000Z',
+        updated_at: '2026-07-01T00:00:00.000Z',
+      }),
+      makeEntity({
+        id: 'undated',
+        entity_type: 'trip',
+        status: 'draft',
+        starts_at: null,
+        updated_at: '2026-07-30T00:00:00.000Z',
+      }),
+    ]
+    expect(getActiveTrip(entities, now)?.id).toBe('soon')
   })
 })

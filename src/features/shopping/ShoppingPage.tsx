@@ -299,8 +299,9 @@ export function ShoppingPage() {
                           <input
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
-                            className="min-h-10 flex-1 rounded-xl border border-border bg-bg px-3 text-sm"
+                            className="min-h-11 flex-1 rounded-xl border border-border bg-bg px-3 text-base text-text"
                             autoFocus
+                            enterKeyHint="done"
                           />
                           <Button type="submit" size="sm">
                             OK

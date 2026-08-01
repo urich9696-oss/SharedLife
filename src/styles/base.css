@@ -55,6 +55,24 @@ select {
   color: inherit;
 }
 
+/* iOS: native date/time controls remain usable at 16px */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='week'],
+input[type='number'],
+input[type='search'],
+input[type='email'],
+input[type='tel'],
+input[type='url'],
+input[type='text'],
+input[type='password'],
+textarea,
+select {
+  font-size: max(1rem, 16px);
+}
+
 button {
   cursor: pointer;
   background: none;

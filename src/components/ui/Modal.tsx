@@ -51,7 +51,13 @@ export function Modal({
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+    <div
+      className={cn(
+        'fixed inset-0 z-[var(--z-modal)] flex items-end justify-center sm:items-center',
+        'px-[max(1rem,var(--space-safe-left))] pr-[max(1rem,var(--space-safe-right))]',
+        'pt-[max(1rem,var(--space-safe-top))] pb-[max(1rem,var(--space-safe-bottom))]',
+      )}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-overlay motion-safe:animate-[fadeIn_var(--duration-normal)_var(--ease-out)]"
@@ -66,14 +72,15 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          'relative z-10 w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-lg',
+          'relative z-10 flex w-full max-w-md flex-col',
+          'max-h-[min(90dvh,100%)] overflow-hidden rounded-t-xl border border-border bg-surface shadow-lg sm:rounded-xl',
           'motion-safe:animate-[slideUp_var(--duration-normal)_var(--ease-out)]',
           'focus:outline-none',
           className,
         )}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
+        <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-2 pt-5 sm:px-6">
+          <div className="min-w-0">
             {title ? (
               <h2 id={titleId} className="font-serif text-xl text-text">
                 {title}
@@ -95,7 +102,9 @@ export function Modal({
             onClick={onClose}
           />
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 sm:px-6">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

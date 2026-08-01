@@ -51,7 +51,9 @@ export function EntityForm({
   })
 
   const allDay = watch('allDay')
-  const showDates = ['event', 'trip', 'date', 'task', 'moment', 'project'].includes(entityType)
+  const showDates = ['event', 'trip', 'date', 'task', 'moment', 'project', 'gift', 'leisure'].includes(
+    entityType,
+  )
 
   return (
     <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-4">

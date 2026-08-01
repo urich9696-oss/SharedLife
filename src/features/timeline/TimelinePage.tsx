@@ -6,7 +6,9 @@ import { de } from 'date-fns/locale'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { Textarea } from '@/components/ui/Textarea'
 import { MediaImage } from '@/features/media/MediaImage'
 import { TimelineBrowser } from '@/features/timeline/TimelineBrowser'
 import {
@@ -91,16 +93,16 @@ export function TimelinePage() {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <header className="mb-8 flex items-start justify-between gap-4">
-        <div>
+    <div className="mx-auto max-w-3xl px-4 py-5 sm:py-8">
+      <header className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Unsere Geschichte</p>
-          <h1 className="font-serif text-3xl text-text">Timeline</h1>
-          <p className="mt-2 text-text-muted">
+          <h1 className="font-serif text-[1.75rem] text-text sm:text-3xl">Timeline</h1>
+          <p className="mt-2 text-sm text-text-muted sm:text-base">
             Die gemeinsame Geschichte von euch beiden — bildorientiert und chronologisch.
           </p>
         </div>
-        <Button type="button" size="sm" onClick={() => setComposeOpen(true)}>
+        <Button type="button" size="sm" className="shrink-0" onClick={() => setComposeOpen(true)}>
           Ereignis
         </Button>
       </header>
@@ -114,31 +116,33 @@ export function TimelinePage() {
           }}
         >
           <h2 className="font-medium text-text">Manuelles Ereignis</h2>
-          <input
-            className="min-h-11 w-full rounded-[14px] border border-border bg-bg px-3"
+          <Input
+            label="Titel"
             placeholder="Titel"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+            autoComplete="off"
           />
-          <input
+          <Input
+            label="Datum"
             type="date"
-            className="min-h-11 w-full rounded-[14px] border border-border bg-bg px-3"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
           />
-          <textarea
-            className="min-h-24 w-full rounded-[14px] border border-border bg-bg px-3 py-2"
+          <Textarea
+            label="Beschreibung"
             placeholder="Kurze Beschreibung"
+            rows={3}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-          <div className="flex gap-2">
-            <Button type="submit" loading={createEntry.isPending}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button type="submit" fullWidth loading={createEntry.isPending}>
               Speichern
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setComposeOpen(false)}>
+            <Button type="button" variant="secondary" fullWidth onClick={() => setComposeOpen(false)}>
               Abbrechen
             </Button>
           </div>

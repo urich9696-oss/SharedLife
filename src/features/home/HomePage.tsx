@@ -12,7 +12,6 @@ import { useEntities, useEntityDetailPayload, useReminders } from '@/features/en
 import {
   getActiveGoal,
   getActiveTrip,
-  getGreeting,
   getGoalProgressFromPayload,
   getNextDate,
   getNextEvent,
@@ -61,16 +60,15 @@ function GoalMini({ goalId }: { goalId: string }) {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { profile, spaceId } = useAuth()
+  const { spaceId } = useAuth()
   const { data: pair } = usePairProfile()
   const { data: entities = [], isLoading } = useEntities()
   const { data: reminders = [] } = useReminders()
   const now = new Date()
-  const greeting = getGreeting(now, profile?.displayName)
   const together = daysTogether(pair?.togetherSince ?? null, now)
 
   const nextEvent = getNextEvent(entities, now)
-  const activeTrip = getActiveTrip(entities)
+  const activeTrip = getActiveTrip(entities, now)
   const activeGoal = getActiveGoal(entities)
   const tasksThisWeek = getTasksThisWeek(entities, now)
   const nextDate = getNextDate(entities, now)
@@ -145,6 +143,21 @@ export function HomePage() {
     },
   })
 
+  const { data: tripCoverPath } = useQuery({
+    queryKey: ['trip-cover', activeTrip?.id],
+    enabled: Boolean(activeTrip?.id),
+    queryFn: async () => {
+      const links = await db.entityMedia.where('entity_id').equals(activeTrip!.id).sortBy('sort_order')
+      for (const link of links) {
+        const asset = await db.mediaAssets.get(link.media_id)
+        if (asset && !asset.deleted_at && asset.variant === 'display') {
+          return asset.storage_path
+        }
+      }
+      return null
+    },
+  })
+
   if (isLoading) return <LoadingState />
 
   const heroTrip = activeTrip
@@ -156,13 +169,13 @@ export function HomePage() {
     entities.find((e) => e.entity_type === 'moment' && !e.deleted_at) ??
     entities.find((e) => e.entity_type === 'goal' && e.status === 'completed' && !e.deleted_at) ??
     null
+  const heroImagePath = tripCoverPath ?? pair?.coverMediaPath ?? null
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-5 lg:py-8">
-      {/* 1. Header */}
-      <header className="mb-5">
-        <p className="text-sm font-medium text-primary">{greeting}</p>
-        <h1 className="mt-1 font-serif text-3xl text-text">
+    <div className="mx-auto max-w-5xl px-4 py-4 lg:py-8">
+      {/* 1. Header — compact on phone (shell already greets) */}
+      <header className="mb-4 lg:mb-5">
+        <h1 className="font-serif text-[1.75rem] leading-tight text-text sm:text-3xl">
           {pair?.partnerAName ?? 'Dennis'} & {pair?.partnerBName ?? 'Lea'}
         </h1>
         <p className="mt-1 text-sm text-text-muted">
@@ -175,11 +188,11 @@ export function HomePage() {
       <section className="mb-5 overflow-hidden rounded-[22px] border border-border bg-surface shadow-sm">
         {heroTrip ? (
           <Link to={entityDetailPath(heroTrip.entity_type, heroTrip.id)} className="block">
-            <div className="relative aspect-[16/10] max-h-64 w-full">
+            <div className="relative aspect-[16/10] max-h-56 w-full sm:max-h-64">
               <div className="absolute inset-0 bg-[linear-gradient(135deg,#d7e4ef,#f1ece5_55%,#f3e4df)]" />
-              {pair?.coverMediaPath ? (
+              {heroImagePath ? (
                 <MediaImage
-                  storagePath={pair.coverMediaPath}
+                  storagePath={heroImagePath}
                   alt={heroTrip.title}
                   className="absolute inset-0 rounded-none"
                   aspectRatio={16 / 10}

@@ -104,11 +104,11 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   const dateLabel = formatEntityDateRange(entity)
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="mb-6">
+    <div className="mx-auto max-w-2xl px-4 py-5 sm:py-8">
+      <header className="mb-5">
         <div className="mb-2 flex items-center gap-2 text-primary">{meta.icon}</div>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-text-muted">{meta.label}</p>
             <h1 className="text-heading text-balance">{entity.title}</h1>
           </div>
@@ -120,7 +120,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
         ) : null}
       </header>
 
-      <div className="mb-8 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" onClick={handleEditOpen}>
           Bearbeiten
         </Button>
@@ -129,17 +129,19 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
         </Button>
       </div>
 
-      {/* Widgets */}
       {spaceId ? (
         <section className="mb-6">
-          <WidgetBoard spaceId={spaceId} entityId={id} entityType={type} editable />
+          <h2 className="mb-1 font-medium text-text">Medien</h2>
+          <p className="mb-3 text-sm text-text-muted">
+            Fotos jederzeit hinzufügen — auch wenn der Eintrag noch geplant ist.
+          </p>
+          <MediaPicker spaceId={spaceId} entityId={id} userId={session?.userId ?? null} />
         </section>
       ) : null}
 
       {spaceId ? (
         <section className="mb-6">
-          <h2 className="mb-3 font-medium text-text">Medien</h2>
-          <MediaPicker spaceId={spaceId} entityId={id} userId={session?.userId ?? null} />
+          <WidgetBoard spaceId={spaceId} entityId={id} entityType={type} editable />
         </section>
       ) : null}
 

@@ -27,10 +27,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
           }
           className={cn(
-            'h-11 w-full rounded-lg border border-border bg-surface px-4 text-text',
+            // text-base (16px) verhindert iOS-Zoom beim Fokussieren
+            'h-12 w-full rounded-lg border border-border bg-surface px-4 text-base text-text',
             'placeholder:text-text-muted transition-[border-color,box-shadow] duration-200',
             'hover:border-border focus-visible:border-focus focus-visible:shadow-focus',
             'disabled:cursor-not-allowed disabled:bg-disabled-bg disabled:text-disabled',
+            'appearance-none',
             error && 'border-error focus-visible:border-error',
             className,
           )}

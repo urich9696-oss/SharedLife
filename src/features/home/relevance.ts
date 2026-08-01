@@ -92,15 +92,27 @@ export function getNextEvent(entities: EntityRow[], now: Date): EntityRow | null
   return events[0]?.entity ?? null
 }
 
-export function getActiveTrip(entities: EntityRow[]): EntityRow | null {
-  return (
-    entities.find(
+export function getActiveTrip(entities: EntityRow[], now: Date = new Date()): EntityRow | null {
+  const trips = entities
+    .filter(
       (e) =>
         e.entity_type === 'trip' &&
         !e.deleted_at &&
         (e.status === 'active' || e.status === 'draft'),
-    ) ?? null
-  )
+    )
+    .map((entity) => ({ entity, start: entityStartDate(entity) }))
+    .sort((a, b) => {
+      // Prefer upcoming dated trips, then undated, then past
+      const aUpcoming = a.start && !isBefore(a.start, now)
+      const bUpcoming = b.start && !isBefore(b.start, now)
+      if (aUpcoming && !bUpcoming) return -1
+      if (!aUpcoming && bUpcoming) return 1
+      if (a.start && b.start) return a.start.getTime() - b.start.getTime()
+      if (a.start) return -1
+      if (b.start) return 1
+      return b.entity.updated_at.localeCompare(a.entity.updated_at)
+    })
+  return trips[0]?.entity ?? null
 }
 
 export function getActiveGoal(entities: EntityRow[]): EntityRow | null {

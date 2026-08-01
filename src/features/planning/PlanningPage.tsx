@@ -183,12 +183,19 @@ export function PlanningPage() {
               ? 'Budget erstellen'
               : segment === 'reminders'
                 ? 'Erinnerung erstellen'
-                : 'Kalender anzeigen'
+                : segment === 'lists'
+                  ? 'Einkauf öffnen'
+                  : activeSegment.entityType
+                    ? `${getEntityTypeMeta(activeSegment.entityType).label} erstellen`
+                    : 'Eintrag erstellen'
           }
           onAction={() => {
             if (segment === 'budgets') setBudgetOpen(true)
             else if (segment === 'reminders') setReminderOpen(true)
-            else void navigate('/calendar')
+            else if (segment === 'lists') void navigate('/einkauf?focus=1')
+            else if (activeSegment.entityType)
+              void navigate(`/planen/neu?type=${activeSegment.entityType}`)
+            else void navigate('/planen/neu')
           }}
         />
       ) : (

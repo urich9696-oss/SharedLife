@@ -53,7 +53,7 @@ function NavItem({
       className={({ isActive }) =>
         cn(
           'flex min-h-11 items-center gap-3 rounded-[16px] px-3 py-2.5 text-sm font-medium transition duration-200',
-          dense ? 'flex-col gap-1 px-2 py-2 text-[11px]' : '',
+          dense ? 'flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight' : '',
           isActive
             ? 'bg-primary/10 text-primary'
             : 'text-text-muted hover:bg-surface-soft hover:text-text',
@@ -61,7 +61,7 @@ function NavItem({
       }
     >
       {icon}
-      <span className={cn(dense && 'max-w-[4.5rem] truncate text-center')}>{label}</span>
+      <span className={cn(dense && 'max-w-[4.25rem] truncate text-center')}>{label}</span>
     </NavLink>
   )
 }
@@ -83,8 +83,6 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh bg-bg">
-      <OnlineStatusBanner />
-
       <aside
         className={cn(
           'hidden lg:flex lg:w-[var(--nav-side-width)] lg:flex-col',
@@ -176,20 +174,22 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-h-dvh flex-1 flex-col">
+        <OnlineStatusBanner />
         <header
           className={cn(
-            'flex items-center justify-between gap-3 border-b border-border/80 bg-bg/90 px-4 backdrop-blur-sm lg:hidden',
+            'flex items-center justify-between gap-3 border-b border-border/80 bg-bg/90 backdrop-blur-sm lg:hidden',
             'min-h-[var(--header-height)] pt-[var(--space-safe-top)]',
+            'px-[max(1rem,var(--space-safe-left))] pr-[max(1rem,var(--space-safe-right))]',
           )}
         >
-          <div className="min-w-0">
+          <div className="min-w-0 py-2">
             <p className="truncate text-sm font-medium text-text">{greeting}</p>
             <p className="truncate text-xs text-text-muted">
               {pair ? `${pair.partnerAName} & ${pair.partnerBName}` : 'SharedLife'}
               {togetherDays !== null ? ` · ${togetherDays} Tage` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <SyncStatusIndicator compact />
             <NavLink
               to="/settings/pair"
@@ -213,8 +213,11 @@ export function AppShell() {
 
         <main
           className={cn(
-            'flex-1 overflow-y-auto',
-            'pb-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+0.5rem)] lg:pb-[var(--space-safe-bottom)]',
+            'mx-auto w-full flex-1 overflow-y-auto',
+            'max-w-[var(--phone-content-max)] lg:max-w-none',
+            // Extra space so FAB/home-indicator nicht den letzten Inhalt verdecken
+            'pb-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+var(--nav-fab-overlap)+0.75rem)] lg:pb-[var(--space-safe-bottom)]',
+            'px-[max(0px,var(--space-safe-left))] pr-[max(0px,var(--space-safe-right))]',
           )}
         >
           <Outlet />
@@ -227,7 +230,7 @@ export function AppShell() {
           )}
           aria-label="Hauptnavigation"
         >
-          <div className="relative mx-auto grid h-[var(--nav-bottom-height)] max-w-lg grid-cols-5 items-end px-1">
+          <div className="relative mx-auto grid h-[var(--nav-bottom-height)] max-w-[var(--phone-content-max)] grid-cols-5 items-end px-1">
             {PRIMARY_NAV.slice(0, 2).map((item) => (
               <NavItem
                 key={item.key}
@@ -244,7 +247,7 @@ export function AppShell() {
                 label="Neu erstellen"
                 size="lg"
                 variant="accent"
-                className="relative -top-4 min-h-14 min-w-14 shadow-md transition duration-200 active:scale-95"
+                className="relative -top-3 min-h-[52px] min-w-[52px] shadow-md transition duration-200 active:scale-95"
                 icon={
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 5v14M5 12h14" strokeLinecap="round" />
@@ -256,7 +259,7 @@ export function AppShell() {
 
             <NavItem
               to={PRIMARY_NAV[2].path}
-              label={PRIMARY_NAV[2].label}
+              label="Momente"
               icon={mobileIcons.erinnerungen}
               dense
             />
@@ -265,7 +268,7 @@ export function AppShell() {
               type="button"
               onClick={() => setMoreOpen(true)}
               className={cn(
-                'flex min-h-11 flex-col items-center justify-center gap-1 rounded-[16px] px-2 py-2 text-[11px] font-medium transition duration-200',
+                'flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[16px] px-1 py-1.5 text-[10px] font-medium leading-tight transition duration-200',
                 moreOpen ||
                   location.pathname.startsWith('/module') ||
                   location.pathname.startsWith('/settings') ||

@@ -116,6 +116,7 @@ export function CreatePlanningPage() {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          autoComplete="off"
         />
         {needsDate ? (
           <Input
@@ -133,11 +134,17 @@ export function CreatePlanningPage() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
-        <div className="flex gap-3 pt-2">
+        {entityType === 'trip' || entityType === 'date' || entityType === 'moment' ? (
+          <p className="text-sm text-text-muted">
+            Nach dem Speichern kannst du Fotos direkt am Eintrag hinzufügen — auch im Status
+            „Geplant“.
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <Button type="submit" fullWidth loading={createEntity.isPending}>
             Speichern
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate(-1)}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => void navigate(-1)}>
             Abbrechen
           </Button>
         </div>
