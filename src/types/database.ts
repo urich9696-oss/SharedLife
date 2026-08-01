@@ -734,6 +734,7 @@ export interface Database {
           space_id: string
           created_by: string
           invitee_label: string | null
+          invitee_email: string | null
           status: 'draft' | 'ready' | 'revoked'
           note: string | null
           created_at: string
@@ -745,6 +746,7 @@ export interface Database {
           space_id: string
           created_by: string
           invitee_label?: string | null
+          invitee_email?: string | null
           status?: 'draft' | 'ready' | 'revoked'
           note?: string | null
           created_at?: string

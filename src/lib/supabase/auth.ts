@@ -56,6 +56,14 @@ export async function sendOtp(email: string): Promise<AuthResult> {
     })
 
     if (error) {
+      const raw = error.message.toLowerCase()
+      if (raw.includes('signups not allowed') || raw.includes('user not found')) {
+        return {
+          success: false,
+          error:
+            'Für diese E-Mail gibt es noch keinen Zugang. Bitte zuerst unter Einstellungen → Lea einladen freischalten.',
+        }
+      }
       return { success: false, error: toUserMessage(toAppError('auth', 'OTP_SEND_FAILED', error.message)) }
     }
 

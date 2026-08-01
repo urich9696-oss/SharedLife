@@ -10,6 +10,7 @@ export interface SpaceInvite {
   spaceId: string
   createdBy: string
   inviteeLabel: string | null
+  inviteeEmail: string | null
   status: InviteStatus
   note: string | null
   createdAt: string
@@ -17,11 +18,23 @@ export interface SpaceInvite {
   sentAt: string | null
 }
 
+export interface InvitePartnerResult {
+  ok: boolean
+  email?: string
+  inviteeLabel?: string
+  userId?: string
+  createdUser?: boolean
+  alreadyMember?: boolean
+  message?: string
+  error?: string
+}
+
 function mapInvite(row: {
   id: string
   space_id: string
   created_by: string
   invitee_label: string | null
+  invitee_email?: string | null
   status: string
   note: string | null
   created_at: string
@@ -33,6 +46,7 @@ function mapInvite(row: {
     spaceId: row.space_id,
     createdBy: row.created_by,
     inviteeLabel: row.invitee_label,
+    inviteeEmail: row.invitee_email ?? null,
     status: row.status as InviteStatus,
     note: row.note,
     createdAt: row.created_at,
@@ -53,65 +67,56 @@ export async function listSpaceInvites(spaceId: string): Promise<SpaceInvite[]> 
   return (data ?? []).map(mapInvite)
 }
 
-export async function createLeaInvite(
-  spaceId: string,
-  userId: string,
-  note?: string,
-): Promise<SpaceInvite> {
+/** Schaltet Partner-Zugang frei: Auth-User + Space-Mitgliedschaft. */
+export async function invitePartner(input: {
+  spaceId: string
+  email: string
+  inviteeLabel?: string
+}): Promise<InvitePartnerResult> {
   if (DEMO_MODE) {
-    throw new Error('Im Demo-Modus können keine Einladungen angelegt werden.')
+    return { ok: false, error: 'Im Demo-Modus nicht verfügbar.' }
   }
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('space_invites')
-    .insert({
-      space_id: spaceId,
-      created_by: userId,
-      invitee_label: 'Lea',
-      status: 'draft',
-      note: note ?? 'Privater zweiter Zugang für Lea',
-      sent_at: null,
-    })
-    .select('*')
-    .single()
-  if (error) throw new Error(error.message)
-  return mapInvite(data)
+  const { data, error } = await supabase.functions.invoke('invite-partner', {
+    body: {
+      action: 'invite',
+      spaceId: input.spaceId,
+      email: input.email.trim(),
+      inviteeLabel: input.inviteeLabel ?? 'Lea',
+    },
+  })
+  const result = (data ?? {}) as InvitePartnerResult
+  if (error) {
+    return {
+      ok: false,
+      error: result.error ?? error.message ?? 'Einladung fehlgeschlagen.',
+    }
+  }
+  if (!result.ok) {
+    return { ok: false, error: result.error ?? 'Einladung fehlgeschlagen.' }
+  }
+  return result
 }
 
-export async function markInviteReady(inviteId: string): Promise<SpaceInvite> {
+export async function revokePartnerAccess(input: {
+  spaceId: string
+  email?: string
+}): Promise<InvitePartnerResult> {
   if (DEMO_MODE) {
-    throw new Error('Im Demo-Modus nicht verfügbar.')
+    return { ok: false, error: 'Im Demo-Modus nicht verfügbar.' }
   }
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('space_invites')
-    .update({
-      status: 'ready',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', inviteId)
-    .select('*')
-    .single()
-  if (error) throw new Error(error.message)
-  return mapInvite(data)
-}
-
-export async function revokeInvite(inviteId: string): Promise<SpaceInvite> {
-  if (DEMO_MODE) {
-    throw new Error('Im Demo-Modus nicht verfügbar.')
-  }
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from('space_invites')
-    .update({
-      status: 'revoked',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', inviteId)
-    .select('*')
-    .single()
-  if (error) throw new Error(error.message)
-  return mapInvite(data)
+  const { data, error } = await supabase.functions.invoke('invite-partner', {
+    body: {
+      action: 'revoke',
+      spaceId: input.spaceId,
+      email: input.email,
+    },
+  })
+  if (error) return { ok: false, error: error.message }
+  const result = (data ?? {}) as InvitePartnerResult & { ok?: boolean }
+  if (result.ok === false) return { ok: false, error: result.error }
+  return { ok: true, message: 'Einladung zurückgezogen.' }
 }
 
 export function useSpaceInvites() {
@@ -123,36 +128,35 @@ export function useSpaceInvites() {
   })
 }
 
-export function useCreateLeaInvite() {
+export function useInvitePartner() {
   const queryClient = useQueryClient()
-  const { spaceId, session } = useAuth()
+  const { spaceId } = useAuth()
   return useMutation({
-    mutationFn: (note?: string) => {
-      if (!spaceId || !session?.userId) throw new Error('Nicht angemeldet.')
-      return createLeaInvite(spaceId, session.userId, note)
+    mutationFn: (input: { email: string; inviteeLabel?: string }) => {
+      if (!spaceId) throw new Error('Nicht angemeldet.')
+      return invitePartner({
+        spaceId,
+        email: input.email,
+        inviteeLabel: input.inviteeLabel,
+      })
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['space-invites', spaceId] })
+    onSuccess: async (result) => {
+      if (result.ok) {
+        await queryClient.invalidateQueries({ queryKey: ['space-invites', spaceId] })
+        await queryClient.invalidateQueries({ queryKey: ['pair-profile'] })
+      }
     },
   })
 }
 
-export function useMarkInviteReady() {
+export function useRevokePartnerAccess() {
   const queryClient = useQueryClient()
   const { spaceId } = useAuth()
   return useMutation({
-    mutationFn: (inviteId: string) => markInviteReady(inviteId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['space-invites', spaceId] })
+    mutationFn: (email?: string) => {
+      if (!spaceId) throw new Error('Nicht angemeldet.')
+      return revokePartnerAccess({ spaceId, email })
     },
-  })
-}
-
-export function useRevokeInvite() {
-  const queryClient = useQueryClient()
-  const { spaceId } = useAuth()
-  return useMutation({
-    mutationFn: (inviteId: string) => revokeInvite(inviteId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['space-invites', spaceId] })
     },

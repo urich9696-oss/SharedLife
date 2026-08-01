@@ -1,32 +1,34 @@
-# SharedLife vorbereiten: leeren & Lea einladen
+# SharedLife: Lea einladen (nur PWA + Login)
 
-## 1. Testdaten entfernen
+## Für Dennis
 
-In der App unter **Einstellungen → Alle Einträge entfernen**.
+1. App leeren / mit echten Daten füllen
+2. **Einstellungen → Lea einladen**
+3. Leas E-Mail eintragen → **Zugang freischalten**
 
-Das löscht Inhalte (Reisen, Momente, Aufgaben, Finanzen, Medien, …). Erhalten bleiben:
+Damit passiert serverseitig:
 
-- Space & Mitgliedschaften
-- Paarprofil
-- Geräte / Auth
+- Auth-User für Lea (falls noch nicht vorhanden)
+- Space-Mitgliedschaft
+- Einladung auf Status „freigeschaltet“
 
-Optional remote (mit Credentials):
+## Für Lea
+
+1. https://shared-life-theta.vercel.app öffnen (oder „Zum Home-Bildschirm“ / PWA)
+2. E-Mail eingeben → **Code senden**
+3. 6-stelligen Code aus der Mail eingeben → fertig
+
+Kein Passwort, kein Dashboard, kein manueller Membership-Schritt.
+
+## Deploy-Voraussetzung
 
 ```bash
-node --env-file=.env.remote.local scripts/clear-space-data.mjs
+supabase db push   # inkl. Migration invitee_email
+supabase functions deploy invite-partner
 ```
 
-Migration `20260801000015_clear_space_content.sql` stellt die RPC `clear_space_content` bereit.
+`SUPABASE_SERVICE_ROLE_KEY` muss für Edge Functions gesetzt sein (Standard bei Supabase).
 
-## 2. Mit echten Daten füllen
+## Login
 
-App neu laden, eigene Einträge anlegen. Musterdaten-Button ist entfernt.
-
-## 3. Lea einladen
-
-1. **Paarprofil** prüfen (Partner B = Lea)
-2. **Einstellungen → Lea einladen** → Entwurf anlegen → „Als bereit markieren“
-3. In Supabase Auth den User für Lea anlegen (kein öffentlicher Signup)
-4. `space_members`-Eintrag für Lea setzen (Service-Role / Dashboard — Client darf Memberships nicht selbst schreiben)
-
-Details: `docs/setup.md`.
+Standard: **E-Mail + OTP-Code**. Optional weiterhin „Mit Passwort anmelden“ (z. B. für Dennis).

@@ -9,9 +9,8 @@ import { clearSpaceContent } from '@/features/settings/clear-space-content'
 import { ExportPage } from '@/features/settings/ExportPage'
 import { PairProfilePage } from '@/features/settings/PairProfilePage'
 import {
-  useCreateLeaInvite,
-  useMarkInviteReady,
-  useRevokeInvite,
+  useInvitePartner,
+  useRevokePartnerAccess,
   useSpaceInvites,
   type SpaceInvite,
 } from '@/features/settings/space-invites'
@@ -221,7 +220,7 @@ function SettingsProfile() {
 }
 
 function inviteStatusLabel(status: SpaceInvite['status']): string {
-  if (status === 'ready') return 'Bereit'
+  if (status === 'ready') return 'Freigeschaltet'
   if (status === 'revoked') return 'Zurückgezogen'
   return 'Entwurf'
 }
@@ -229,18 +228,42 @@ function inviteStatusLabel(status: SpaceInvite['status']): string {
 function SettingsInvite() {
   const { data: pair } = usePairProfile()
   const { data: invites = [], isLoading, error } = useSpaceInvites()
-  const createInvite = useCreateLeaInvite()
-  const markReady = useMarkInviteReady()
-  const revoke = useRevokeInvite()
+  const invitePartner = useInvitePartner()
+  const revokeAccess = useRevokePartnerAccess()
+  const [email, setEmail] = useState('')
   const [message, setMessage] = useState<string | null>(null)
 
   const activeInvite =
-    invites.find((i) => i.status === 'ready' && i.inviteeLabel === 'Lea') ??
-    invites.find((i) => i.status === 'draft' && i.inviteeLabel === 'Lea') ??
-    invites.find((i) => i.inviteeLabel === 'Lea') ??
+    invites.find((i) => i.status === 'ready') ??
+    invites.find((i) => i.status === 'draft') ??
     null
 
   const partnerB = pair?.partnerBName ?? 'Lea'
+
+  useEffect(() => {
+    if (activeInvite?.inviteeEmail) setEmail(activeInvite.inviteeEmail)
+  }, [activeInvite?.inviteeEmail])
+
+  const handleInvite = () => {
+    setMessage(null)
+    invitePartner.mutate(
+      { email, inviteeLabel: partnerB },
+      {
+        onSuccess: (result) => {
+          if (!result.ok) {
+            setMessage(result.error ?? 'Freischalten fehlgeschlagen')
+            return
+          }
+          setMessage(
+            result.message ??
+              `${partnerB} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
+          )
+        },
+        onError: (err) =>
+          setMessage(err instanceof Error ? err.message : 'Freischalten fehlgeschlagen'),
+      },
+    )
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
@@ -250,19 +273,17 @@ function SettingsInvite() {
       <header className="mt-4 mb-6">
         <h1 className="font-serif text-3xl text-text">{partnerB} einladen</h1>
         <p className="mt-2 text-sm text-text-muted">
-          Privater zweiter Zugang für euren gemeinsamen Space. Kein öffentlicher Link — nur
-          vorbereitete Einladung, dann Auth-Zugang für {partnerB}.
+          {partnerB} braucht nur die PWA (App zum Home-Bildschirm) und meldet sich mit E-Mail +
+          Code an. Kein Passwort, kein Supabase-Dashboard.
         </p>
       </header>
 
       <ol className="mb-8 list-decimal space-y-3 pl-5 text-sm text-text-muted">
-        <li>App leeren und mit euren echten Daten füllen</li>
-        <li>Paarprofil prüfen (Namen Dennis &amp; {partnerB})</li>
-        <li>Hier Einladung als Entwurf anlegen und auf „Bereit“ setzen</li>
+        <li>E-Mail von {partnerB} hier eintragen und Zugang freischalten</li>
         <li>
-          In Supabase Auth den User für {partnerB} anlegen und als Space-Mitglied verknüpfen
-          (siehe Setup-Doku)
+          {partnerB} öffnet shared-life-theta.vercel.app (oder installiert die PWA)
         </li>
+        <li>{partnerB} gibt ihre E-Mail ein und den Code aus der Mail</li>
       </ol>
 
       {DEMO_MODE ? (
@@ -278,77 +299,62 @@ function SettingsInvite() {
         </p>
       ) : null}
 
-      {activeInvite ? (
-        <div className="rounded-[16px] border border-border bg-bg px-4 py-4">
-          <p className="text-sm font-medium text-text">
-            Einladung für {activeInvite.inviteeLabel ?? partnerB}
-          </p>
-          <p className="mt-1 text-sm text-text-muted">
-            Status: {inviteStatusLabel(activeInvite.status)}
-            {activeInvite.note ? ` — ${activeInvite.note}` : ''}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {activeInvite.status === 'draft' ? (
-              <Button
-                type="button"
-                size="sm"
-                loading={markReady.isPending}
-                onClick={() => {
-                  setMessage(null)
-                  markReady.mutate(activeInvite.id, {
-                    onSuccess: () => setMessage('Einladung ist bereit. Als Nächstes Auth-Zugang für Lea anlegen.'),
-                    onError: (err) =>
-                      setMessage(err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen'),
-                  })
-                }}
-              >
-                Als bereit markieren
-              </Button>
-            ) : null}
-            {activeInvite.status !== 'revoked' ? (
+      <div className="space-y-4 rounded-[16px] border border-border bg-bg px-4 py-4">
+        <Input
+          label={`E-Mail von ${partnerB}`}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="lea@beispiel.ch"
+          disabled={DEMO_MODE}
+        />
+        <Button
+          type="button"
+          loading={invitePartner.isPending}
+          disabled={DEMO_MODE || !email.includes('@') || invitePartner.isPending}
+          onClick={handleInvite}
+        >
+          {activeInvite?.status === 'ready' ? 'Zugang erneut freischalten' : 'Zugang freischalten'}
+        </Button>
+
+        {activeInvite ? (
+          <div className="border-t border-border pt-3 text-sm text-text-muted">
+            <p>
+              Status: {inviteStatusLabel(activeInvite.status)}
+              {activeInvite.inviteeEmail ? ` · ${activeInvite.inviteeEmail}` : ''}
+            </p>
+            {activeInvite.status === 'ready' ? (
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                loading={revoke.isPending}
+                className="mt-3"
+                loading={revokeAccess.isPending}
                 onClick={() => {
                   setMessage(null)
-                  revoke.mutate(activeInvite.id, {
-                    onSuccess: () => setMessage('Einladung zurückgezogen.'),
+                  revokeAccess.mutate(activeInvite.inviteeEmail ?? email, {
+                    onSuccess: (result) =>
+                      setMessage(result.message ?? 'Einladung zurückgezogen.'),
                     onError: (err) =>
                       setMessage(err instanceof Error ? err.message : 'Zurückziehen fehlgeschlagen'),
                   })
                 }}
               >
-                Zurückziehen
+                Freischaltung zurückziehen
               </Button>
             ) : null}
           </div>
-        </div>
-      ) : (
-        <Button
-          type="button"
-          loading={createInvite.isPending}
-          disabled={DEMO_MODE || createInvite.isPending}
-          onClick={() => {
-            setMessage(null)
-            createInvite.mutate(undefined, {
-              onSuccess: () =>
-                setMessage(`Entwurf für ${partnerB} angelegt. Als Nächstes „Als bereit markieren“.`),
-              onError: (err) =>
-                setMessage(err instanceof Error ? err.message : 'Anlegen fehlgeschlagen'),
-            })
-          }}
-        >
-          Einladung für {partnerB} vorbereiten
-        </Button>
-      )}
+        ) : null}
+      </div>
 
       {message ? <p className="mt-4 text-sm text-text-muted">{message}</p> : null}
 
       <p className="mt-8 text-xs text-text-muted">
-        Hinweis: „Bereit“ speichert die Absicht im Space. Der echte Login für {partnerB} entsteht
-        erst, wenn der Auth-User und die Space-Mitgliedschaft angelegt sind.
+        Nach dem Freischalten legt SharedLife den Login für {partnerB} an und fügt sie dem Space
+        hinzu. Sie sieht danach dieselben gemeinsamen Daten wie du.
       </p>
     </div>
   )

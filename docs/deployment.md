@@ -29,6 +29,7 @@ SharedLife ist eine Vite-SPA. Client-Routing erfordert einen Rewrite auf `index.
    supabase functions deploy manage-push-subscription
    supabase functions deploy dispatch-reminders
    supabase functions deploy export-data
+   supabase functions deploy invite-partner
    ```
 3. Secrets setzen:
    ```bash

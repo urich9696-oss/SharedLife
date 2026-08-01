@@ -8,10 +8,11 @@ Clients nutzen ausschließlich den **anon/authenticated** Key. Die **Service Rol
 
 ## Auth
 
-- **E-Mail OTP** (6-stellig, 3600 s Gültigkeit)
-- **Kein öffentlicher Signup** (`enable_signup = false`) – Benutzer werden manuell angelegt
-- Site URL: `http://127.0.0.1:5173`; Redirects auch für `localhost:5173`
+- **E-Mail OTP** (6-stellig, 3600 s Gültigkeit) — Standard-Login in der PWA
+- Optional Passwort-Login
+- **Kein öffentlicher Signup** (`enable_signup = false`)
 - OTP-Login mit `shouldCreateUser: false` im Client (kein Auto-Signup)
+- Partner-Zugang: Edge Function `invite-partner` (Service Role) legt Auth-User + Membership an
 
 ## Mitgliedschaft
 
@@ -20,7 +21,7 @@ Clients nutzen ausschließlich den **anon/authenticated** Key. Die **Service Rol
 | SELECT | Mitglieder des Space |
 | INSERT / UPDATE / DELETE | **Verweigert** für `authenticated` |
 
-Mitgliedschaften werden nur über Service Role, Seeds oder Admin-Tools gesetzt. So kann kein Client sich selbst oder Dritte in den Space einladen.
+Mitgliedschaften werden nur über Service Role gesetzt: Seed, Admin oder **`invite-partner`** (nur Space-Owner).
 
 ## Profile
 
