@@ -1,8 +1,9 @@
+import { Textarea } from '@/components/ui/Textarea'
 import { EntityNoteField } from '@/features/entities/SharedFormFields'
 
 export interface RecipeDetailValues {
-  // Platzhalter – Zutaten werden als Checkliste geführt
   servings: string
+  ingredientsText: string
 }
 
 interface RecipeFormFieldsProps {
@@ -10,7 +11,7 @@ interface RecipeFormFieldsProps {
   onChange: (values: RecipeDetailValues) => void
 }
 
-export function RecipeFormFields(_props: RecipeFormFieldsProps) {
+export function RecipeFormFields({ values, onChange }: RecipeFormFieldsProps) {
   return (
     <>
       <EntityNoteField
@@ -18,8 +19,16 @@ export function RecipeFormFields(_props: RecipeFormFieldsProps) {
         placeholder="Zubereitung, Tipps, Portionen…"
         rows={6}
       />
+      <Textarea
+        label="Zutaten"
+        value={values.ingredientsText}
+        onChange={(e) => onChange({ ...values, ingredientsText: e.target.value })}
+        placeholder={'Eine Zutat pro Zeile, z. B.\nMehl\n2 EL Butter\nSalz'}
+        rows={5}
+      />
       <p className="text-xs text-text-muted">
-        Hero-Bild und Zutaten (wie Einkaufsliste) nach dem Speichern im Rezept-Modul ergänzen.
+        Hero-Bild nach dem Speichern ergänzen. Zutaten kannst du jederzeit in der Detailansicht
+        erweitern.
       </p>
     </>
   )
@@ -27,4 +36,5 @@ export function RecipeFormFields(_props: RecipeFormFieldsProps) {
 
 export const defaultRecipeDetail: RecipeDetailValues = {
   servings: '',
+  ingredientsText: '',
 }

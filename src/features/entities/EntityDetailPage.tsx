@@ -46,8 +46,10 @@ import {
 } from '@/features/entities/useEntities'
 import { ListDetail } from '@/features/lists/ListDetail'
 import { CompactNotes } from '@/features/notes/CompactNotes'
+import { RecipeIngredientsEditor } from '@/features/recipes/RecipeIngredientsEditor'
 import {
   addRecipeIngredientsToShopping,
+  copyRecipeIngredients,
   getRecipeIngredients,
 } from '@/features/recipes/recipe-service'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
@@ -295,6 +297,13 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
       metadata: { ...entity.metadata, duplicatedFrom: entity.id },
       sort_order: 0,
     })
+    if (type === 'recipe') {
+      await copyRecipeIngredients({
+        spaceId,
+        fromEntityId: id,
+        toEntityId: newId,
+      })
+    }
     flash('Dupliziert')
     void navigate(`/entities/${type}/${newId}`)
   }
@@ -453,7 +462,7 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
             <MetaRow label="Datum" value={dateLabel} />
             <MetaRow label="Bezahlt von" value={String(entity.metadata?.paidBy || '')} last />
           </MetaList>
-        ) : (
+        ) : type === 'recipe' || type === 'list' ? null : (
           <MetaList className="mb-8">
             {type === 'trip' ? (
               <>
@@ -558,7 +567,6 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
                 <MetaRow label="Status" value={getStatusLabel(type, entity.status)} last />
               </>
             ) : null}
-            {type === 'recipe' ? <MetaRow label="Rezept" value="Zutaten unten" last /> : null}
           </MetaList>
         )}
 
@@ -566,6 +574,10 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
           <p className="mb-8 whitespace-pre-wrap text-[17px] leading-relaxed text-text">
             {entity.description}
           </p>
+        ) : null}
+
+        {type === 'recipe' ? (
+          <RecipeIngredientsEditor entityId={id} className="mb-8" />
         ) : null}
 
         {/* Kontext-Aktionen */}
