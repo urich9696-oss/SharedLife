@@ -11,6 +11,7 @@ import {
 } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { motion } from 'motion/react'
+import { AppHeaderHome } from '@/components/shared/AppHeader'
 import { HeroCard } from '@/components/ui/HeroCard'
 import { ProgressCard } from '@/components/ui/ProgressCard'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -197,35 +198,44 @@ export function HomePage() {
     },
   })
 
-  if (isLoading) return <LoadingState />
-
   const hasAnyContent =
     entities.length > 0 || reminders.some((r) => !r.deleted_at) || recentMoments.length > 0
 
   return (
-    <div className="mx-auto max-w-5xl px-page py-6 lg:py-8">
-      <motion.section className="mb-8" {...fadeUp} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
-        <HeroCard
-          title={hero.title}
-          subtitle={hero.subtitle}
-          eyebrow={hero.kind === 'emotional_fallback' ? 'SharedLife' : 'Heute relevant'}
-          ctaLabel={hero.ctaLabel}
-          href={hero.href}
-          mediaPath={hero.mediaPath}
-          spaceId={spaceId}
-          aspectClassName="aspect-[4/5] max-h-[26rem] sm:aspect-[16/10] sm:max-h-[22rem]"
-        />
-      </motion.section>
+    <div className="mx-auto max-w-5xl">
+      <AppHeaderHome />
 
-      {!hasAnyContent ? (
-        <EmptyState
-          title="Willkommen zu Hause"
-          description="Startet mit einem Moment, einem Termin oder dem gemeinsamen Einkauf."
-          actionLabel="Einkauf öffnen"
-          onAction={() => void navigate('/einkauf')}
-        />
-      ) : (
-        <>
+      <div className="px-page pt-[26px] pb-6 lg:pb-8">
+        {isLoading ? (
+          <LoadingState className="min-h-[40dvh] py-10" />
+        ) : (
+          <>
+            <motion.section
+              className="mb-[var(--section-gap)]"
+              {...fadeUp}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <HeroCard
+                title={hero.title}
+                subtitle={hero.subtitle}
+                eyebrow={hero.kind === 'emotional_fallback' ? 'SharedLife' : 'Heute relevant'}
+                ctaLabel={hero.ctaLabel}
+                href={hero.href}
+                mediaPath={hero.mediaPath}
+                spaceId={spaceId}
+                aspectClassName="aspect-[4/5] max-h-[26rem] sm:aspect-[16/10] sm:max-h-[22rem]"
+              />
+            </motion.section>
+
+            {!hasAnyContent ? (
+              <EmptyState
+                title="Willkommen zu Hause"
+                description="Startet mit einem Moment, einem Termin oder dem gemeinsamen Einkauf."
+                actionLabel="Einkauf öffnen"
+                onAction={() => void navigate('/einkauf')}
+              />
+            ) : (
+              <>
           {todayItems.length > 0 ? (
             <section className="mb-[var(--section-gap)]">
               <div className="mb-3 flex items-end justify-between gap-4">
@@ -369,8 +379,11 @@ export function HomePage() {
               </div>
             </section>
           ) : null}
-        </>
-      )}
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

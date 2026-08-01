@@ -12,6 +12,27 @@ const sizeStyles = {
   lg: { icon: 'size-14', wordmark: 'text-3xl' },
 }
 
+/** Schwarzes Outline-Herz — Markenmarke ohne Kartenhintergrund */
+export function OutlineHeart({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16 25.2c0 0-8.2-5.4-8.2-11.2C7.8 10.6 10.2 8.4 13 8.4c1.55 0 2.62.84 3 1.92.38-1.08 1.45-1.92 3-1.92 2.8 0 5.2 2.2 5.2 5.6 0 5.8-8.2 11.2-8.2 11.2Z"
+      />
+    </svg>
+  )
+}
+
 function HeartMark({ className }: { className?: string }) {
   return (
     <svg

@@ -195,7 +195,7 @@ export function getRecentWishes(entities: EntityRow[]): EntityRow[] {
 
 export function getGreeting(now: Date, displayName?: string | null): string {
   const hour = now.getHours()
-  const base =
-    hour < 12 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend'
-  return displayName ? `${base}, ${displayName}` : base
+  const base = hour < 12 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend'
+  const name = displayName?.trim()
+  return name ? `${base}, ${name}` : base
 }

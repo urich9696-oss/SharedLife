@@ -14,6 +14,7 @@ import {
 } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { toZonedTime } from 'date-fns-tz'
+import { AppHeaderMain } from '@/components/shared/AppHeader'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -249,17 +250,18 @@ export function PlanningPage() {
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd })
 
-  if (isLoading) return <LoadingState />
-
   return (
-    <div className="mx-auto max-w-2xl px-page py-6 lg:py-8">
-      <header className="mb-[var(--section-gap)]">
-        <h1 className="font-serif text-3xl text-text">Planen</h1>
-        <p className="mt-[var(--heading-content-gap)] text-sm text-text-muted">
-          Kalender, Vorhaben und Aufgaben — ohne doppelte Module.
-        </p>
-      </header>
+    <div className="mx-auto max-w-2xl">
+      <AppHeaderMain
+        title="Planen"
+        description="Kalender, Vorhaben und Aufgaben — ohne doppelte Module."
+      />
 
+      <div className="px-page pt-[26px] pb-6 lg:pb-8">
+        {isLoading ? <LoadingState className="min-h-[40dvh] py-10" /> : null}
+
+        {!isLoading ? (
+          <>
       <div
         className="mb-[var(--section-gap)] grid grid-cols-3 gap-1 rounded-[18px] border border-border bg-surface-soft/70 p-1"
         role="tablist"
@@ -450,6 +452,9 @@ export function PlanningPage() {
       {tab === 'aufgaben' ? (
         <AufgabenSection tasks={tasks} />
       ) : null}
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }

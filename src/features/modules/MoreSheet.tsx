@@ -17,7 +17,16 @@ export function MoreSheet({ open, onClose }: MoreSheetProps) {
   const b = pair?.partnerBName ?? 'Lea'
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Mehr">
+    <BottomSheet open={open} onClose={onClose}>
+      <header className="mb-[var(--section-gap)]">
+        <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.03em] text-text">
+          Mehr
+        </h2>
+        <p className="mt-2 text-[15px] font-normal text-text-muted">
+          Module, Einstellungen und euer gemeinsames Zuhause.
+        </p>
+      </header>
+
       <Link
         to="/settings/pair"
         onClick={onClose}

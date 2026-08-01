@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { BookOpen, CalendarDays, Ellipsis, Home, Plus } from 'lucide-react'
 import { AppLogo } from '@/components/shared/AppLogo'
@@ -7,10 +7,8 @@ import { SyncStatusIndicator } from '@/components/shared/SyncStatusIndicator'
 import { IconButton } from '@/components/ui/IconButton'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { CreateEntitySheet } from '@/features/entities/CreateEntitySheet'
-import { getGreeting } from '@/features/home/relevance'
 import { MoreSheet } from '@/features/modules/MoreSheet'
 import { getGroupedModules, PRIMARY_NAV } from '@/features/modules/module-registry'
-import { MediaImage } from '@/features/media/MediaImage'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { cn } from '@/lib/utilities/cn'
 
@@ -59,12 +57,17 @@ export function AppShell() {
   const [createOpen, setCreateOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
-  const { profile, signOut } = useAuth()
+  const { signOut } = useAuth()
   const { data: pair } = usePairProfile()
-  const greeting = useMemo(() => getGreeting(new Date(), profile?.displayName), [profile?.displayName])
   const togetherDays = daysTogether(pair?.togetherSince ?? null)
   const isAuthRoute = location.pathname.startsWith('/login')
   const groups = getGroupedModules({ includeSystem: false })
+  // Home / Planen / Momente / Entity-Detail bringen eigenen Top-Chrome inkl. Safe-Area
+  const ownsTopChrome =
+    location.pathname === '/' ||
+    location.pathname === '/planen' ||
+    location.pathname === '/erinnerungen' ||
+    location.pathname.startsWith('/entities/')
 
   if (isAuthRoute) {
     return <Outlet />
@@ -162,41 +165,6 @@ export function AppShell() {
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip">
         <OnlineStatusBanner />
-        <header
-          className={cn(
-            'flex items-center justify-between gap-4 border-b border-border/60 bg-bg/75 backdrop-blur-xl lg:hidden',
-            'min-h-[var(--header-height)] pt-[var(--space-safe-top)]',
-            'px-[max(var(--page-gutter),var(--space-safe-left))] pr-[max(var(--page-gutter),var(--space-safe-right))]',
-          )}
-        >
-          <div className="min-w-0 py-2">
-            <p className="truncate text-sm font-medium text-text">{greeting}</p>
-            <p className="truncate text-xs text-text-muted">
-              {pair ? `${pair.partnerAName} & ${pair.partnerBName}` : 'SharedLife'}
-              {togetherDays !== null ? ` · ${togetherDays} Tage` : ''}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <SyncStatusIndicator compact />
-            <NavLink
-              to="/settings/pair"
-              className="flex size-11 items-center justify-center overflow-hidden rounded-full border border-border bg-surface"
-              aria-label="Paarprofil"
-            >
-              {pair?.coverMediaPath || pair?.partnerAAvatarPath ? (
-                <MediaImage
-                  storagePath={pair.coverMediaPath ?? pair.partnerAAvatarPath}
-                  alt="Paarprofil"
-                  aspectRatio={1}
-                  className="rounded-full"
-                  lazy={false}
-                />
-              ) : (
-                <span className="text-xs font-semibold text-primary">SL</span>
-              )}
-            </NavLink>
-          </div>
-        </header>
 
         <main
           className={cn(
@@ -205,6 +173,7 @@ export function AppShell() {
             // Extra space so FAB/home-indicator nicht den letzten Inhalt verdecken
             'pb-[calc(var(--nav-bottom-height)+var(--space-safe-bottom)+var(--nav-fab-overlap)+0.75rem)] lg:pb-[var(--space-safe-bottom)]',
             'px-[max(0px,var(--space-safe-left))] pr-[max(0px,var(--space-safe-right))]',
+            !ownsTopChrome && 'pt-[var(--space-safe-top)]',
           )}
         >
           <Outlet />

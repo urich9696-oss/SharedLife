@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { format, getYear, parseISO } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { useAuth } from '@/app/providers'
+import { AppHeaderMain } from '@/components/shared/AppHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -151,25 +152,26 @@ export function MemoriesPage() {
     return [...map.entries()].sort((a, b) => b[0] - a[0])
   }, [yearItems])
 
-  if (isLoading) return <LoadingState />
-
   const hasContent = (data?.items.length ?? 0) > 0 || (data?.gallery.length ?? 0) > 0
   const timelineItems = data?.items ?? []
 
   return (
-    <div className="mx-auto max-w-3xl px-page py-6 lg:py-8">
-      <header className="mb-[var(--section-gap)] flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl text-text">Momente</h1>
-          <p className="mt-[var(--heading-content-gap)] text-sm text-text-muted">
-            Große Bilder. Eure gemeinsame Geschichte.
-          </p>
-        </div>
-        <Button type="button" size="sm" onClick={() => void navigate('/erinnerungen/neu')}>
-          Neu
-        </Button>
-      </header>
+    <div className="mx-auto max-w-3xl">
+      <AppHeaderMain
+        title="Momente"
+        description="Große Bilder. Eure gemeinsame Geschichte."
+        action={
+          <Button type="button" size="sm" onClick={() => void navigate('/erinnerungen/neu')}>
+            Neu
+          </Button>
+        }
+      />
 
+      <div className="px-page pt-[26px] pb-6 lg:pb-8">
+        {isLoading ? <LoadingState className="min-h-[40dvh] py-10" /> : null}
+
+        {!isLoading ? (
+          <>
       <div
         className="mb-[var(--section-gap)] grid grid-cols-5 gap-1 rounded-[20px] border border-border/80 bg-surface-soft/70 p-1"
         role="tablist"
@@ -370,6 +372,9 @@ export function MemoriesPage() {
           onClose={() => setBrowserIndex(null)}
         />
       ) : null}
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }
