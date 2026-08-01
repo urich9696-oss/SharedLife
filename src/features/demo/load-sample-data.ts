@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { createEntity } from '@/lib/indexed-db/repositories/entities'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
+import { createBudget, listBudgets } from '@/lib/indexed-db/repositories/budgets'
 import { db } from '@/lib/indexed-db/db'
 import { ensureShoppingList } from '@/features/shopping/shopping-service'
 import type { CreateEntityPayload } from '@/lib/validation/entity'
@@ -612,32 +613,28 @@ export async function loadSampleData(spaceId: string, userId: string | null): Pr
     })
   }
 
-  // Monatsbudget
-  const budgets = await db.budgets.where('space_id').equals(spaceId).toArray()
-  const hasMonthly = budgets.some((b) => !b.deleted_at && b.name.toLowerCase() === 'monatsbudget')
+  // Monatsbudget (über Repository → Sync-Outbox)
+  const budgets = await listBudgets(spaceId)
+  const hasMonthly = budgets.some((b) => b.name.toLowerCase() === 'monatsbudget')
   if (!hasMonthly) {
     const now = new Date()
     const start = new Date(now.getFullYear(), now.getMonth(), 1)
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
     const fmt = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    const nowIso = new Date().toISOString()
-    await db.budgets.put({
-      id: uuidv4(),
-      space_id: spaceId,
-      entity_id: null,
-      name: 'Monatsbudget',
-      description: 'Gemeinsames Monatsbudget (Musterdaten)',
-      currency: 'CHF',
-      amount_limit: '3500',
-      amount_spent: '0',
-      period_start: fmt(start),
-      period_end: fmt(end),
-      created_by: userId,
-      created_at: nowIso,
-      updated_at: nowIso,
-      deleted_at: null,
-    })
+    await createBudget(
+      {
+        id: uuidv4(),
+        space_id: spaceId,
+        name: 'Monatsbudget',
+        description: 'Gemeinsames Monatsbudget (Musterdaten)',
+        currency: 'CHF',
+        amount_limit: '3500.00',
+        period_start: fmt(start),
+        period_end: fmt(end),
+      },
+      userId,
+    )
   }
 
   return created
