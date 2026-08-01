@@ -1,13 +1,18 @@
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { MomentBelongingSelect } from '@/features/entities/detail/BelongingSelect'
 import { EntityDateFields, EntityNoteField } from '@/features/entities/SharedFormFields'
 
 export interface MomentDetailValues {
   place: string
   category: string
   highlight: boolean
+  /** Legacy category string */
   belonging: string
+  /** Konkrete Entity-ID (Reise / Date / Ziel) */
+  belongsToEntityId: string
   capturedAt: string
   mood: string
   weather: string
@@ -22,20 +27,14 @@ const categoryOptions = [
   { value: 'sonstiges', label: 'Sonstiges' },
 ]
 
-const belongingOptions = [
-  { value: '', label: 'Keine' },
-  { value: 'reise', label: 'Reise' },
-  { value: 'date', label: 'Date' },
-  { value: 'ziel', label: 'Ziel' },
-  { value: 'sonstiges', label: 'Sonstiges' },
-]
-
 interface MomentFormFieldsProps {
   values: MomentDetailValues
   onChange: (values: MomentDetailValues) => void
 }
 
 export function MomentFormFields({ values, onChange }: MomentFormFieldsProps) {
+  const { spaceId } = useAuth()
+
   return (
     <>
       <EntityDateFields showEnd={false} showAllDay={false} showTime={false} startLabel="Datum" />
@@ -57,15 +56,13 @@ export function MomentFormFields({ values, onChange }: MomentFormFieldsProps) {
         checked={values.highlight}
         onChange={(e) => onChange({ ...values, highlight: e.target.checked })}
       />
-      <Select
-        label="Zugehörigkeit"
-        options={belongingOptions}
-        value={values.belonging}
-        onChange={(e) => onChange({ ...values, belonging: e.target.value })}
-      />
-      <p className="text-xs text-text-muted">
-        Hero-Bild und weitere Fotos nach dem Speichern unter Fotos hinzufügen.
-      </p>
+      {spaceId ? (
+        <MomentBelongingSelect
+          spaceId={spaceId}
+          value={values.belongsToEntityId}
+          onChange={(id) => onChange({ ...values, belongsToEntityId: id })}
+        />
+      ) : null}
     </>
   )
 }
@@ -75,6 +72,7 @@ export const defaultMomentDetail: MomentDetailValues = {
   category: '',
   highlight: false,
   belonging: '',
+  belongsToEntityId: '',
   capturedAt: '',
   mood: '',
   weather: '',

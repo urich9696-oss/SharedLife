@@ -1,10 +1,8 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { v4 as uuidv4 } from 'uuid'
 import { useAuth } from '@/features/auth/AuthProvider'
-import {
-  defaultDetailForType,
-} from '@/features/entities/detail-payload-utils'
+import { defaultDetailForType } from '@/features/entities/detail-payload-utils'
 import { metadataFromDetail } from '@/features/entities/detail-metadata'
 import { EntityForm } from '@/features/entities/EntityForm'
 import { EntityTypeDetailFields } from '@/features/entities/EntityTypeDetailFields'
@@ -17,10 +15,26 @@ import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details
 
 export function CreateMemoryPage() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const belongsTo = params.get('belongsTo') || ''
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
-  const [detailValues, setDetailValues] = useState(() => defaultDetailForType('moment'))
+  const [detailValues, setDetailValues] = useState(() => {
+    const base = defaultDetailForType('moment') as MomentDetailValues
+    return { ...base, belongsToEntityId: belongsTo }
+  })
   const [error, setError] = useState<string | null>(null)
+
+  const initialDates = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      status: 'active' as const,
+      allDay: true,
+      startDate: '',
+    }),
+    [],
+  )
 
   const handleSubmit = async (values: EntityFormValues) => {
     if (!spaceId) {
@@ -29,9 +43,10 @@ export function CreateMemoryPage() {
     }
     setError(null)
     const id = uuidv4()
-    const dates = formValuesToEntityDates(values)
+    const dates = formValuesToEntityDates({ ...values, allDay: true })
     const moment = detailValues as MomentDetailValues
     const metadata = metadataFromDetail('moment', detailValues)
+    const parentId = moment.belongsToEntityId || belongsTo || null
 
     try {
       await createEntity.mutateAsync({
@@ -42,8 +57,12 @@ export function CreateMemoryPage() {
         description: values.description?.trim() || null,
         status: 'active',
         ...dates,
+        parent_entity_id: parentId,
         sort_order: 0,
-        metadata,
+        metadata: {
+          ...metadata,
+          belongsToEntityId: parentId || '',
+        },
       })
       await upsertEntityDetail({
         entityId: id,
@@ -67,20 +86,21 @@ export function CreateMemoryPage() {
     <div className="mx-auto max-w-lg px-4 py-6 lg:py-8">
       <header className="mb-6">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Momente</p>
-        <h1 className="mt-1 font-serif text-3xl text-text">Neuer Moment</h1>
-        <p className="mt-2 text-sm text-text-muted">
+        <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-text">Neuer Moment</h1>
+        <p className="mt-4 text-[17px] text-text-muted">
           Haltet einen Augenblick fest — mit Foto, Ort und Geschichte.
         </p>
       </header>
 
       {error ? (
-        <p className="mb-4 rounded-[16px] bg-error-subtle px-3 py-2 text-sm text-error" role="alert">
+        <p className="mb-4 rounded-lg bg-error-subtle px-4 py-2 text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}
 
       <EntityForm
         entityType="moment"
+        defaultValues={initialDates}
         onSubmit={handleSubmit}
         onCancel={() => void navigate('/erinnerungen')}
         submitLabel="Festhalten"
@@ -89,7 +109,7 @@ export function CreateMemoryPage() {
         <EntityTypeDetailFields
           entityType="moment"
           values={detailValues}
-          onChange={setDetailValues}
+          onChange={(v) => setDetailValues(v as MomentDetailValues)}
         />
       </EntityForm>
     </div>

@@ -1,5 +1,7 @@
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { TripBelongingSelect } from '@/features/entities/detail/BelongingSelect'
 import { ASSIGNEE_OPTIONS, EntityDateFields, EntityNoteField } from '@/features/entities/SharedFormFields'
 
 export type DatePhase = 'idea' | 'planned' | 'done'
@@ -13,6 +15,7 @@ export interface DateDetailValues {
   reservationReference: string
   assigneeRole: string
   occasion: string
+  belongsToEntityId: string
 }
 
 const reservationOptions = [
@@ -27,6 +30,8 @@ interface DateFormFieldsProps {
 }
 
 export function DateFormFields({ values, onChange }: DateFormFieldsProps) {
+  const { spaceId } = useAuth()
+
   return (
     <>
       <EntityDateFields showEnd={false} showAllDay={false} showTime startLabel="Datum" />
@@ -68,10 +73,14 @@ export function DateFormFields({ values, onChange }: DateFormFieldsProps) {
         value={values.assigneeRole}
         onChange={(e) => onChange({ ...values, assigneeRole: e.target.value })}
       />
+      {spaceId ? (
+        <TripBelongingSelect
+          spaceId={spaceId}
+          value={values.belongsToEntityId}
+          onChange={(id) => onChange({ ...values, belongsToEntityId: id })}
+        />
+      ) : null}
       <EntityNoteField />
-      <p className="text-xs text-text-muted">
-        Hero-Bild nach dem Speichern unter Fotos hinzufügen. Nach dem Date: „Als Moment speichern“.
-      </p>
     </>
   )
 }
@@ -84,4 +93,5 @@ export const defaultDateDetail: DateDetailValues = {
   reservationReference: '',
   assigneeRole: 'gemeinsam',
   occasion: '',
+  belongsToEntityId: '',
 }

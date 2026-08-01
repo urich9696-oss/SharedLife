@@ -1,5 +1,7 @@
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { TaskAssignmentSelect } from '@/features/entities/detail/BelongingSelect'
 import {
   ASSIGNEE_OPTIONS,
   EntityDateFields,
@@ -27,6 +29,8 @@ export interface TaskDetailValues {
   dueTime: string
   category: string
   assignment: TaskAssignment
+  /** Konkrete Entity-ID (Reise / Ziel / Date) */
+  assignmentEntityId: string
   recurrenceRule: string
   note: string
   subtasksText: string
@@ -36,16 +40,6 @@ const priorityOptions = [
   { value: 'low', label: 'Niedrig' },
   { value: 'medium', label: 'Normal' },
   { value: 'high', label: 'Hoch' },
-]
-
-const assignmentOptions = [
-  { value: '', label: 'Keine' },
-  { value: 'reise', label: 'Reise' },
-  { value: 'ziel', label: 'Ziel' },
-  { value: 'date', label: 'Date' },
-  { value: 'termin', label: 'Termin' },
-  { value: 'finanzen', label: 'Finanzen' },
-  { value: 'sonstiges', label: 'Sonstiges' },
 ]
 
 const statusOptions = [
@@ -59,6 +53,8 @@ interface TaskFormFieldsProps {
 }
 
 export function TaskFormFields({ values, onChange }: TaskFormFieldsProps) {
+  const { spaceId } = useAuth()
+
   return (
     <>
       <EntityDateFields
@@ -94,19 +90,15 @@ export function TaskFormFields({ values, onChange }: TaskFormFieldsProps) {
         value={values.recurrenceRule || 'none'}
         onChange={(e) => onChange({ ...values, recurrenceRule: e.target.value })}
       />
-      <Select
-        label="Zuordnung"
-        options={assignmentOptions}
-        value={values.assignment}
-        onChange={(e) =>
-          onChange({ ...values, assignment: e.target.value as TaskAssignment })
-        }
-      />
+      {spaceId ? (
+        <TaskAssignmentSelect
+          spaceId={spaceId}
+          value={values.assignmentEntityId}
+          onChange={(id) => onChange({ ...values, assignmentEntityId: id })}
+        />
+      ) : null}
       <EntityStatusSelect options={statusOptions} />
       <EntityNoteField />
-      <p className="text-xs text-text-muted">
-        Bild und Datei nach dem Speichern in der Detailansicht hinzufügen.
-      </p>
     </>
   )
 }
@@ -119,6 +111,7 @@ export const defaultTaskDetail: TaskDetailValues = {
   dueTime: '',
   category: '',
   assignment: '',
+  assignmentEntityId: '',
   recurrenceRule: 'none',
   note: '',
   subtasksText: '',

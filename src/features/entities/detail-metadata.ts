@@ -23,6 +23,8 @@ export function metadataFromDetail(
       meta.assigneeRole = d.assigneeRole || ''
       meta.taskCategory = d.category || ''
       meta.taskAssignment = d.assignment || ''
+      meta.taskAssignmentEntityId = d.assignmentEntityId || ''
+      meta.belongsToEntityId = d.assignmentEntityId || ''
       meta.recurrenceRule = d.recurrenceRule || 'none'
       meta.subtasksText = d.subtasksText || ''
       break
@@ -37,6 +39,7 @@ export function metadataFromDetail(
       const d = detail as DateDetailValues
       meta.assigneeRole = d.assigneeRole || ''
       meta.reservationStatus = d.reservationStatus || 'none'
+      meta.belongsToEntityId = d.belongsToEntityId || ''
       break
     }
     case 'moment': {
@@ -44,6 +47,7 @@ export function metadataFromDetail(
       meta.place = d.place || ''
       meta.momentCategory = d.category || ''
       meta.belonging = d.belonging || ''
+      meta.belongsToEntityId = d.belongsToEntityId || ''
       break
     }
     case 'trip': {

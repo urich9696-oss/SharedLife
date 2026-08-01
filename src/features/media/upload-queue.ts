@@ -43,6 +43,8 @@ export async function enqueueMediaUpload(input: {
   file: File
   userId?: string | null
   caption?: string | null
+  /** cover | gallery — Default gallery */
+  role?: 'cover' | 'gallery'
 }): Promise<{ mediaId: string; storagePath: string }> {
   const processed = await processImageFile(input.file)
   const mediaId = uuidv4()
@@ -130,14 +132,18 @@ export async function enqueueMediaUpload(input: {
       )
 
       if (input.entityId) {
+        const existing = await db.entityMedia.where('entity_id').equals(input.entityId).toArray()
+        const role = input.role ?? 'gallery'
+        const sortOrder =
+          role === 'cover' ? 0 : existing.length === 0 ? 0 : Math.max(...existing.map((e) => e.sort_order)) + 1
         const linkId = uuidv4()
         await db.entityMedia.put({
           id: linkId,
           space_id: input.spaceId,
           entity_id: input.entityId,
           media_id: mediaId,
-          role: 'gallery',
-          sort_order: 0,
+          role,
+          sort_order: sortOrder,
           caption: input.caption ?? null,
           created_at: now,
         })

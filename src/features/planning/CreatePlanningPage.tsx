@@ -28,11 +28,21 @@ export function CreatePlanningPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const entityType = useMemo(() => resolveType(params.get('type')), [params])
+  const parentId = params.get('parent') || ''
   const meta = getEntityTypeMeta(entityType)
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
   const { data: budgets = [] } = useBudgets()
-  const [detailValues, setDetailValues] = useState(() => defaultDetailForType(entityType))
+  const [detailValues, setDetailValues] = useState(() => {
+    const base = defaultDetailForType(entityType)
+    if (entityType === 'task' && parentId) {
+      return { ...base, assignmentEntityId: parentId }
+    }
+    if ((entityType === 'date' || entityType === 'moment') && parentId) {
+      return { ...base, belongsToEntityId: parentId }
+    }
+    return base
+  })
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -42,8 +52,15 @@ export function CreatePlanningPage() {
   }, [entityType, navigate])
 
   useEffect(() => {
-    setDetailValues(defaultDetailForType(entityType))
-  }, [entityType])
+    const base = defaultDetailForType(entityType)
+    if (entityType === 'task' && parentId) {
+      setDetailValues({ ...base, assignmentEntityId: parentId })
+    } else if ((entityType === 'date' || entityType === 'moment') && parentId) {
+      setDetailValues({ ...base, belongsToEntityId: parentId })
+    } else {
+      setDetailValues(base)
+    }
+  }, [entityType, parentId])
 
   const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
 
@@ -58,6 +75,10 @@ export function CreatePlanningPage() {
       entityType === 'leisure' ? { ...values, allDay: true } : values,
     )
     const metadata = metadataFromDetail(entityType, detailValues)
+    const resolvedParent =
+      parentId ||
+      String(metadata.belongsToEntityId || metadata.taskAssignmentEntityId || '') ||
+      null
 
     try {
       await createEntity.mutateAsync({
@@ -68,6 +89,7 @@ export function CreatePlanningPage() {
         description: values.description?.trim() || null,
         status: values.status,
         ...dates,
+        parent_entity_id: resolvedParent,
         sort_order: 0,
         metadata,
       })
