@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useId,
   useRef,
@@ -30,16 +29,17 @@ export function Modal({
   const titleId = useId()
   const descriptionId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    },
-    [onClose],
-  )
-
+  // Only re-run when `open` changes. Callers pass unstable onClose lambdas;
+  // including them would re-focus the dialog and dismiss the mobile keyboard
+  // after every controlled-input keystroke.
   useEffect(() => {
     if (!open) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current()
+    }
     document.addEventListener('keydown', handleKeyDown)
     document.body.style.overflow = 'hidden'
     dialogRef.current?.focus()
@@ -47,7 +47,7 @@ export function Modal({
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
     }
-  }, [open, handleKeyDown])
+  }, [open])
 
   if (!open) return null
 
