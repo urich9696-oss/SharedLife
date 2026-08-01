@@ -5,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const MAX_SPACE_MEMBERS = 2
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -20,6 +22,19 @@ function isUuid(value: string): boolean {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
+}
+
+async function findUserIdByEmail(
+  admin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string | null> {
+  const { data: listed, error } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 200,
+  })
+  if (error) throw new Error(error.message)
+  const existing = listed.users.find((u) => normalizeEmail(u.email ?? '') === email)
+  return existing?.id ?? null
 }
 
 Deno.serve(async (req) => {
@@ -72,7 +87,7 @@ Deno.serve(async (req) => {
     .maybeSingle()
   if (!membership) return json({ error: 'Forbidden' }, 403)
   if (membership.role !== 'owner') {
-    return json({ error: 'Nur der Space-Owner kann Partner einladen.' }, 403)
+    return json({ error: 'Nur der Space-Owner kann Partner einladen oder entfernen.' }, 403)
   }
 
   const inviteeLabel = (body.inviteeLabel ?? 'Lea').trim() || 'Lea'
@@ -84,9 +99,49 @@ Deno.serve(async (req) => {
       .select('id, invitee_email')
       .eq('space_id', spaceId)
       .in('status', ['draft', 'ready'])
+
     const targets = (invites ?? []).filter((row) =>
       email ? normalizeEmail(row.invitee_email ?? '') === email : true,
     )
+
+    const emails = new Set(
+      targets
+        .map((t) => normalizeEmail(t.invitee_email ?? ''))
+        .filter((e) => e.includes('@')),
+    )
+    if (email) emails.add(email)
+
+    let removedMembers = 0
+    for (const targetEmail of emails) {
+      try {
+        const partnerUserId = await findUserIdByEmail(admin, targetEmail)
+        if (!partnerUserId || partnerUserId === user.id) continue
+
+        const { data: partnerMembership } = await admin
+          .from('space_members')
+          .select('id, role')
+          .eq('space_id', spaceId)
+          .eq('user_id', partnerUserId)
+          .maybeSingle()
+
+        // Owner nie entfernen
+        if (partnerMembership && partnerMembership.role !== 'owner') {
+          const { error: delErr } = await admin
+            .from('space_members')
+            .delete()
+            .eq('id', partnerMembership.id)
+          if (!delErr) removedMembers += 1
+        }
+
+        // Auth-User bannt Login (OTP/Passwort) — Profil bleibt für Historie
+        await admin.auth.admin.updateUserById(partnerUserId, {
+          ban_duration: '876000h', // ~100 Jahre
+        })
+      } catch {
+        // weiter mit Invite-Status
+      }
+    }
+
     for (const invite of targets) {
       await admin
         .from('space_invites')
@@ -96,7 +151,16 @@ Deno.serve(async (req) => {
         })
         .eq('id', invite.id)
     }
-    return json({ ok: true, revoked: targets.length })
+
+    return json({
+      ok: true,
+      revoked: targets.length,
+      removedMembers,
+      message:
+        removedMembers > 0
+          ? 'Zugang entzogen: Mitgliedschaft entfernt und Login gesperrt.'
+          : 'Einladung zurückgezogen.',
+    })
   }
 
   const email = body.email ? normalizeEmail(body.email) : ''
@@ -108,15 +172,18 @@ Deno.serve(async (req) => {
   let partnerUserId: string | null = null
   let createdUser = false
 
-  const { data: listed, error: listError } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 200,
-  })
-  if (listError) return json({ error: listError.message }, 500)
+  try {
+    partnerUserId = await findUserIdByEmail(admin, email)
+  } catch (err) {
+    return json({ error: err instanceof Error ? err.message : 'User-Suche fehlgeschlagen' }, 500)
+  }
 
-  const existing = listed.users.find((u) => normalizeEmail(u.email ?? '') === email)
-  if (existing) {
-    partnerUserId = existing.id
+  if (partnerUserId) {
+    // Falls zuvor gebannt: wieder freigeben
+    await admin.auth.admin.updateUserById(partnerUserId, {
+      ban_duration: 'none',
+      user_metadata: { display_name: inviteeLabel },
+    })
   } else {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
@@ -149,6 +216,21 @@ Deno.serve(async (req) => {
 
   let alreadyMember = Boolean(existingMember)
   if (!existingMember) {
+    const { count, error: countError } = await admin
+      .from('space_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+    if (countError) return json({ error: countError.message }, 500)
+    if ((count ?? 0) >= MAX_SPACE_MEMBERS) {
+      return json(
+        {
+          error:
+            'Dieser Space hat bereits zwei Personen. Entferne zuerst den bestehenden Partner-Zugang.',
+        },
+        409,
+      )
+    }
+
     const { error: memberError } = await admin.from('space_members').insert({
       space_id: spaceId,
       user_id: partnerUserId,
@@ -194,7 +276,6 @@ Deno.serve(async (req) => {
     if (insertError) return json({ error: insertError.message }, 500)
   }
 
-  // Paarprofil: Partner-B-Name setzen, falls leer
   const { data: space } = await admin
     .from('spaces')
     .select('partner_b_name')

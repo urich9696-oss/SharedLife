@@ -337,7 +337,10 @@ function SettingsInvite() {
                   setMessage(null)
                   revokeAccess.mutate(activeInvite.inviteeEmail ?? email, {
                     onSuccess: (result) =>
-                      setMessage(result.message ?? 'Einladung zurückgezogen.'),
+                      setMessage(
+                        result.message ??
+                          'Zugang entzogen: Mitgliedschaft entfernt und Login gesperrt.',
+                      ),
                     onError: (err) =>
                       setMessage(err instanceof Error ? err.message : 'Zurückziehen fehlgeschlagen'),
                   })

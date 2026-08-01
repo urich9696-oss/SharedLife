@@ -13,6 +13,8 @@ Clients nutzen ausschließlich den **anon/authenticated** Key. Die **Service Rol
 - **Kein öffentlicher Signup** (`enable_signup = false`)
 - OTP-Login mit `shouldCreateUser: false` im Client (kein Auto-Signup)
 - Partner-Zugang: Edge Function `invite-partner` (Service Role) legt Auth-User + Membership an
+- Max. **2 Mitglieder** pro Space; Revoke entfernt Membership und bannt den Auth-User
+- `VITE_DEMO_MODE` ist in Production-Builds ignoriert
 
 ## Mitgliedschaft
 
@@ -22,6 +24,8 @@ Clients nutzen ausschließlich den **anon/authenticated** Key. Die **Service Rol
 | INSERT / UPDATE / DELETE | **Verweigert** für `authenticated` |
 
 Mitgliedschaften werden nur über Service Role gesetzt: Seed, Admin oder **`invite-partner`** (nur Space-Owner).
+
+`clear_space_content` und Partner-Invite/Revoke: nur **Owner**.
 
 ## Profile
 
