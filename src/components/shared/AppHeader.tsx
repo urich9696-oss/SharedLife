@@ -1,9 +1,11 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, MoreHorizontal } from 'lucide-react'
 import { OutlineHeart } from '@/components/shared/AppLogo'
@@ -205,28 +207,97 @@ export function AppHeaderDetail({
 }) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setMenuPos(null)
+      return
+    }
+    const rect = buttonRef.current.getBoundingClientRect()
+    setMenuPos({
+      top: rect.bottom + 4,
+      right: Math.max(8, window.innerWidth - rect.right),
+    })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setOpen(false)
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node
+      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return
+      setOpen(false)
     }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    const onReposition = () => {
+      if (!buttonRef.current) return
+      const rect = buttonRef.current.getBoundingClientRect()
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: Math.max(8, window.innerWidth - rect.right),
+      })
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onReposition)
+    // Scroll-Container (main) verschiebt den Sticky-Header
+    window.addEventListener('scroll', onReposition, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onReposition)
+      window.removeEventListener('scroll', onReposition, true)
+    }
   }, [open])
+
+  const menu =
+    open && menuPos && menuActions.length > 0
+      ? createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-[var(--z-overlay)] min-w-[12rem] overflow-hidden rounded-lg border border-border/80 bg-surface shadow-md"
+            style={{ top: menuPos.top, right: menuPos.right }}
+          >
+            {menuActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                role="menuitem"
+                className={cn(
+                  'flex w-full items-center gap-3 px-4 py-3.5 text-left text-[17px]',
+                  action.danger ? 'text-error' : 'text-text',
+                  'hover:bg-bg active:bg-bg',
+                )}
+                onClick={() => {
+                  setOpen(false)
+                  action.onSelect()
+                }}
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )
+      : null
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-[var(--z-sticky)]',
+        'sticky top-0 z-[var(--z-sticky)] overflow-visible',
         'bg-bg/80 backdrop-blur-xl',
         'pt-[calc(var(--space-safe-top)+0.25rem)]',
         pageGutter,
         className,
       )}
     >
-      <div className="mx-auto flex h-12 max-w-[var(--phone-content-max)] items-center gap-2 lg:max-w-none">
+      <div className="mx-auto flex h-12 max-w-[var(--phone-content-max)] items-center gap-2 overflow-visible lg:max-w-none">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -240,50 +311,27 @@ export function AppHeaderDetail({
           {title ?? ''}
         </p>
 
-        <div className="relative flex size-11 shrink-0 items-center justify-center" ref={menuRef}>
+        <div className="relative flex size-11 shrink-0 items-center justify-center overflow-visible">
           {trailing}
           {!trailing && menuActions.length > 0 ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                className="inline-flex size-11 items-center justify-center rounded-full text-text transition hover:bg-surface-soft"
-                aria-label="Mehr Optionen"
-                aria-expanded={open}
-              >
-                <MoreHorizontal size={22} strokeWidth={1.75} />
-              </button>
-              {open ? (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-20 mt-1 min-w-[12rem] overflow-hidden rounded-lg border border-border/80 bg-surface shadow-md"
-                >
-                  {menuActions.map((action) => (
-                    <button
-                      key={action.key}
-                      type="button"
-                      role="menuitem"
-                      className={cn(
-                        'flex w-full items-center gap-3 px-4 py-3.5 text-left text-[17px]',
-                        action.danger ? 'text-error' : 'text-text',
-                        'hover:bg-bg',
-                      )}
-                      onClick={() => {
-                        setOpen(false)
-                        action.onSelect()
-                      }}
-                    >
-                      {action.icon}
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </>
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="inline-flex size-11 items-center justify-center rounded-full text-text transition hover:bg-surface-soft"
+              aria-label="Mehr Optionen"
+              aria-expanded={open}
+              aria-haspopup="menu"
+            >
+              <MoreHorizontal size={22} strokeWidth={1.75} />
+            </button>
           ) : null}
-          {!trailing && menuActions.length === 0 ? <span className="size-11" aria-hidden="true" /> : null}
+          {!trailing && menuActions.length === 0 ? (
+            <span className="size-11" aria-hidden="true" />
+          ) : null}
         </div>
       </div>
+      {menu}
     </header>
   )
 }

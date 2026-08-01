@@ -263,9 +263,14 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   }
 
   const handleDelete = async () => {
-    await softDelete.mutateAsync(id)
-    setConfirmDelete(false)
-    void navigate(-1)
+    try {
+      await softDelete.mutateAsync(id)
+      setConfirmDelete(false)
+      flash('In den Papierkorb verschoben')
+      void navigate(-1)
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Löschen fehlgeschlagen')
+    }
   }
 
   const handleArchive = async () => {
