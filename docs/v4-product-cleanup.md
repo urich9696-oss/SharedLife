@@ -36,7 +36,7 @@ EntityForm zeigt nur noch Titel + typische Felder (keine generische Titel/Datum/
 
 ## Home
 
-1 Hero · 2 Heute · 3 Schnellzugriffe · 4 Aktive Ziele · 5 Aktuelle Reisen · 6 Letzte Momente  
+1 Hero · 2 Heute · 3 Aktive Ziele · 4 Aktuelle Reisen · 5 Letzte Momente  
 Leere Sektionen werden ausgeblendet.
 
 ## Momente

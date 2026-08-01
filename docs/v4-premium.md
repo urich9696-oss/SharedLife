@@ -28,9 +28,7 @@ Bottom-Nav: **Home · Planen · Plus · Momente · Mehr**
 ### Home
 - Großer Hero (nächster Urlaub / Date / Ziel / Moment / emotionaler Fallback)
 - Heute (max. 4)
-- Schnellzugriffe 2×2 (Einkauf, Date, Ziel, Reise)
-- Gemeinsamer Fortschritt (horizontale Progress Cards)
-- Letzte Momente (große Bilder, horizontal)
+- Aktive Ziele · Aktuelle Reisen · Letzte Momente
 
 ### Momente
 - Neuer Default-Tab **Erleben**: Tinder-ähnliches Swipe-Deck (Vollflächen-Hero)

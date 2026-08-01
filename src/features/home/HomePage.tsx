@@ -24,7 +24,6 @@ import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { deriveTimelineItems } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
 import type { EntityRow } from '@/lib/indexed-db/schema'
-import { cn } from '@/lib/utilities/cn'
 
 function entityStart(entity: EntityRow): Date | null {
   if (entity.starts_at) return parseISO(entity.starts_at)
@@ -53,13 +52,6 @@ function isTodayRelevant(entity: EntityRow, now: Date): boolean {
 
   return false
 }
-
-const QUICK_ACTIONS = [
-  { key: 'einkauf', label: 'Einkauf', path: '/einkauf?focus=1' },
-  { key: 'date', label: 'Date', path: '/planen/neu?type=date' },
-  { key: 'aufgabe', label: 'Aufgabe', path: '/planen/neu?type=task' },
-  { key: 'moment', label: 'Moment', path: '/erinnerungen/neu' },
-] as const
 
 const fadeUp = {
   initial: { opacity: 0, y: 8, scale: 0.985 },
@@ -268,24 +260,6 @@ export function HomePage() {
               </ul>
             </section>
           ) : null}
-
-          <section className="mb-8">
-            <h2 className="mb-4 text-2xl font-bold tracking-[-0.025em] text-text">Schnellzugriffe</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {QUICK_ACTIONS.map((action) => (
-                <Link
-                  key={action.key}
-                  to={action.path}
-                  className={cn(
-                    'flex min-h-[5.75rem] flex-col justify-end rounded-lg border border-border/70 bg-surface p-6',
-                    'shadow-xs transition duration-[var(--duration-normal)] active:scale-[0.98]',
-                  )}
-                >
-                  <span className="text-xl font-bold tracking-[-0.025em] text-text">{action.label}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
 
           {activeGoals.length > 0 ? (
             <section className="mb-8">

@@ -1,7 +1,7 @@
 # SharedLife V4 – Manuelle QA
 
 ## Smoke
-- [ ] Login → Home zeigt Hero + Schnellzugriffe
+- [ ] Login → Home zeigt Hero (+ Heute / Ziele / Reisen / Momente wenn vorhanden)
 - [ ] Plus-Sheet listet Moment/Termin/Aufgabe/Einkauf/Ausgabe/Rezept/Wunsch/Idee/Reise/Ziel
 - [ ] Planen: Kalender / Vorhaben / Aufgaben
 - [ ] Momente → Tab „Erleben“: Swipe links/rechts, Tap öffnet Profil
