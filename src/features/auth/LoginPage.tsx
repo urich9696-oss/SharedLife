@@ -140,7 +140,10 @@ export function LoginPage() {
             </Button>
           </form>
         ) : step === 'email' ? (
-          <form className="mt-8 flex flex-col gap-5" onSubmit={(e) => void handleSendOtp(e)}>
+          <form
+            className="mt-[var(--section-gap)] flex flex-col gap-5"
+            onSubmit={(e) => void handleSendOtp(e)}
+          >
             <Input
               label="E-Mail"
               type="email"
@@ -160,7 +163,7 @@ export function LoginPage() {
             </Button>
           </form>
         ) : (
-          <div className="mt-8 flex flex-col gap-5">
+          <div className="mt-[var(--section-gap)] flex flex-col gap-5">
             <OtpInput
               value={otp}
               onChange={setOtp}
