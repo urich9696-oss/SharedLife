@@ -3,12 +3,18 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/app/providers'
 import { Button } from '@/components/ui/Button'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
-import { loadSampleData } from '@/features/demo/load-sample-data'
+import { clearSpaceContent } from '@/features/settings/clear-space-content'
 import { ExportPage } from '@/features/settings/ExportPage'
 import { PairProfilePage } from '@/features/settings/PairProfilePage'
+import {
+  useCreateLeaInvite,
+  useMarkInviteReady,
+  useRevokeInvite,
+  useSpaceInvites,
+  type SpaceInvite,
+} from '@/features/settings/space-invites'
 import {
   getPushPermissionState,
   isPushSupported,
@@ -18,6 +24,7 @@ import {
 } from '@/features/reminders/push-subscription'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DEMO_MODE } from '@/lib/demo'
+import { usePairProfile } from '@/features/space/pair-profile'
 
 function SettingsHome() {
   const queryClient = useQueryClient()
@@ -25,8 +32,8 @@ function SettingsHome() {
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushMessage, setPushMessage] = useState<string | null>(null)
   const [pushLoading, setPushLoading] = useState(false)
-  const [sampleLoading, setSampleLoading] = useState(false)
-  const [sampleMessage, setSampleMessage] = useState<string | null>(null)
+  const [clearLoading, setClearLoading] = useState(false)
+  const [clearMessage, setClearMessage] = useState<string | null>(null)
   const supported = isPushSupported()
   const permission = getPushPermissionState()
   const needsPwaNote =
@@ -63,6 +70,26 @@ function SettingsHome() {
     }
   }
 
+  const handleClear = () => {
+    if (!spaceId) return
+    const ok = window.confirm(
+      'Alle Einträge wirklich entfernen? Reisen, Momente, Aufgaben, Finanzen und Medien werden gelöscht. Paarprofil und Zugang bleiben.',
+    )
+    if (!ok) return
+
+    setClearLoading(true)
+    setClearMessage(null)
+    void clearSpaceContent(spaceId, session?.userId ?? null)
+      .then(async (result) => {
+        await queryClient.invalidateQueries()
+        setClearMessage(result.message)
+      })
+      .catch((err: unknown) => {
+        setClearMessage(err instanceof Error ? err.message : 'Leeren fehlgeschlagen')
+      })
+      .finally(() => setClearLoading(false))
+  }
+
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
       <h1 className="mb-2 text-3xl font-bold tracking-[-0.03em] text-text">Einstellungen</h1>
@@ -90,38 +117,23 @@ function SettingsHome() {
         {pushMessage ? <p className="text-sm text-text-muted">{pushMessage}</p> : null}
         <Switch label="Automatische Synchronisation" description="Änderungen im Hintergrund syncen" defaultChecked />
         <div className="rounded-[16px] border border-border bg-bg px-3 py-3">
-          <p className="text-sm font-medium text-text">Musterdaten</p>
+          <p className="text-sm font-medium text-text">App leeren</p>
           <p className="mt-1 text-xs text-text-muted">
-            Lädt fiktive Date Ideen, Reisen, Momente, Finanzen und mehr — zum Ausprobieren.
+            Entfernt Testdaten und alle bisherigen Einträge. Danach könnt ihr SharedLife mit euren
+            echten Momenten füllen — und Lea einladen.
           </p>
           <Button
             type="button"
             size="sm"
+            variant="danger"
             className="mt-3"
-            loading={sampleLoading}
-            disabled={!spaceId || sampleLoading}
-            onClick={() => {
-              if (!spaceId) return
-              setSampleLoading(true)
-              setSampleMessage(null)
-              void loadSampleData(spaceId, session?.userId ?? null)
-                .then(async (count) => {
-                  await queryClient.invalidateQueries()
-                  setSampleMessage(
-                    count > 0
-                      ? `${count} Einträge geladen.`
-                      : 'Musterdaten sind bereits vorhanden.',
-                  )
-                })
-                .catch((err: unknown) => {
-                  setSampleMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen')
-                })
-                .finally(() => setSampleLoading(false))
-            }}
+            loading={clearLoading}
+            disabled={!spaceId || clearLoading}
+            onClick={handleClear}
           >
-            Musterdaten laden
+            Alle Einträge entfernen
           </Button>
-          {sampleMessage ? <p className="mt-2 text-sm text-text-muted">{sampleMessage}</p> : null}
+          {clearMessage ? <p className="mt-2 text-sm text-text-muted">{clearMessage}</p> : null}
         </div>
       </div>
       <nav className="mt-8 flex flex-col gap-2 text-sm">
@@ -132,7 +144,7 @@ function SettingsHome() {
           Paarprofil
         </Link>
         <Link to="/settings/invite" className="min-h-11 rounded-[14px] px-1 py-2 text-primary hover:underline">
-          Zweiter Zugang (vorbereitet)
+          Lea einladen
         </Link>
         <Link to="/settings/export" className="min-h-11 rounded-[14px] px-1 py-2 text-primary hover:underline">
           Daten exportieren
@@ -208,16 +220,137 @@ function SettingsProfile() {
   )
 }
 
+function inviteStatusLabel(status: SpaceInvite['status']): string {
+  if (status === 'ready') return 'Bereit'
+  if (status === 'revoked') return 'Zurückgezogen'
+  return 'Entwurf'
+}
+
 function SettingsInvite() {
+  const { data: pair } = usePairProfile()
+  const { data: invites = [], isLoading, error } = useSpaceInvites()
+  const createInvite = useCreateLeaInvite()
+  const markReady = useMarkInviteReady()
+  const revoke = useRevokeInvite()
+  const [message, setMessage] = useState<string | null>(null)
+
+  const activeInvite =
+    invites.find((i) => i.status === 'ready' && i.inviteeLabel === 'Lea') ??
+    invites.find((i) => i.status === 'draft' && i.inviteeLabel === 'Lea') ??
+    invites.find((i) => i.inviteeLabel === 'Lea') ??
+    null
+
+  const partnerB = pair?.partnerBName ?? 'Lea'
+
   return (
-    <EmptyState
-      title="Zweiter Zugang vorbereitet"
-      description="Die Architektur unterstützt später eine private Einladung genau für diesen Workspace. Aktuell wird niemand eingeladen — Lea erhält noch keinen Zugang. Keine E-Mail, kein Link, kein neues Konto."
-      actionLabel="Zurück zu Einstellungen"
-      onAction={() => {
-        window.location.href = '/settings'
-      }}
-    />
+    <div className="mx-auto max-w-lg px-4 py-8">
+      <Link to="/settings" className="text-sm text-primary">
+        ← Einstellungen
+      </Link>
+      <header className="mt-4 mb-6">
+        <h1 className="font-serif text-3xl text-text">{partnerB} einladen</h1>
+        <p className="mt-2 text-sm text-text-muted">
+          Privater zweiter Zugang für euren gemeinsamen Space. Kein öffentlicher Link — nur
+          vorbereitete Einladung, dann Auth-Zugang für {partnerB}.
+        </p>
+      </header>
+
+      <ol className="mb-8 list-decimal space-y-3 pl-5 text-sm text-text-muted">
+        <li>App leeren und mit euren echten Daten füllen</li>
+        <li>Paarprofil prüfen (Namen Dennis &amp; {partnerB})</li>
+        <li>Hier Einladung als Entwurf anlegen und auf „Bereit“ setzen</li>
+        <li>
+          In Supabase Auth den User für {partnerB} anlegen und als Space-Mitglied verknüpfen
+          (siehe Setup-Doku)
+        </li>
+      </ol>
+
+      {DEMO_MODE ? (
+        <p className="rounded-[16px] border border-border bg-bg px-3 py-3 text-sm text-text-muted">
+          Demo-Modus: Einladungen brauchen echte Supabase-Credentials.
+        </p>
+      ) : null}
+
+      {isLoading ? <p className="text-sm text-text-muted">Lade Einladungen…</p> : null}
+      {error ? (
+        <p className="text-sm text-error">
+          {error instanceof Error ? error.message : 'Einladungen konnten nicht geladen werden.'}
+        </p>
+      ) : null}
+
+      {activeInvite ? (
+        <div className="rounded-[16px] border border-border bg-bg px-4 py-4">
+          <p className="text-sm font-medium text-text">
+            Einladung für {activeInvite.inviteeLabel ?? partnerB}
+          </p>
+          <p className="mt-1 text-sm text-text-muted">
+            Status: {inviteStatusLabel(activeInvite.status)}
+            {activeInvite.note ? ` — ${activeInvite.note}` : ''}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {activeInvite.status === 'draft' ? (
+              <Button
+                type="button"
+                size="sm"
+                loading={markReady.isPending}
+                onClick={() => {
+                  setMessage(null)
+                  markReady.mutate(activeInvite.id, {
+                    onSuccess: () => setMessage('Einladung ist bereit. Als Nächstes Auth-Zugang für Lea anlegen.'),
+                    onError: (err) =>
+                      setMessage(err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen'),
+                  })
+                }}
+              >
+                Als bereit markieren
+              </Button>
+            ) : null}
+            {activeInvite.status !== 'revoked' ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                loading={revoke.isPending}
+                onClick={() => {
+                  setMessage(null)
+                  revoke.mutate(activeInvite.id, {
+                    onSuccess: () => setMessage('Einladung zurückgezogen.'),
+                    onError: (err) =>
+                      setMessage(err instanceof Error ? err.message : 'Zurückziehen fehlgeschlagen'),
+                  })
+                }}
+              >
+                Zurückziehen
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          loading={createInvite.isPending}
+          disabled={DEMO_MODE || createInvite.isPending}
+          onClick={() => {
+            setMessage(null)
+            createInvite.mutate(undefined, {
+              onSuccess: () =>
+                setMessage(`Entwurf für ${partnerB} angelegt. Als Nächstes „Als bereit markieren“.`),
+              onError: (err) =>
+                setMessage(err instanceof Error ? err.message : 'Anlegen fehlgeschlagen'),
+            })
+          }}
+        >
+          Einladung für {partnerB} vorbereiten
+        </Button>
+      )}
+
+      {message ? <p className="mt-4 text-sm text-text-muted">{message}</p> : null}
+
+      <p className="mt-8 text-xs text-text-muted">
+        Hinweis: „Bereit“ speichert die Absicht im Space. Der echte Login für {partnerB} entsteht
+        erst, wenn der Auth-User und die Space-Mitgliedschaft angelegt sind.
+      </p>
+    </div>
   )
 }
 

@@ -728,9 +728,40 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['entity_links']['Insert']>
         Relationships: []
       }
+      space_invites: {
+        Row: {
+          id: string
+          space_id: string
+          created_by: string
+          invitee_label: string | null
+          status: 'draft' | 'ready' | 'revoked'
+          note: string | null
+          created_at: string
+          updated_at: string
+          sent_at: string | null
+        }
+        Insert: {
+          id?: string
+          space_id: string
+          created_by: string
+          invitee_label?: string | null
+          status?: 'draft' | 'ready' | 'revoked'
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+          sent_at?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['space_invites']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      clear_space_content: {
+        Args: { p_space_id: string }
+        Returns: Json
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
