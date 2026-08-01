@@ -12,7 +12,8 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useEntities } from '@/features/entities/useEntities'
 import { entityDetailPath } from '@/features/entities/entity-types'
-import { db } from '@/lib/indexed-db/db'
+import { createBudget, listBudgets } from '@/lib/indexed-db/repositories/budgets'
+import { normalizeMoneyInput, parseMoneyAmount } from '@/lib/money'
 import { cn } from '@/lib/utilities/cn'
 
 const CATEGORY_COLORS = [
@@ -23,11 +24,6 @@ const CATEGORY_COLORS = [
   'bg-green/70',
   'bg-sand',
 ]
-
-function amountOf(value: unknown) {
-  const n = Number(value ?? 0)
-  return Number.isFinite(n) ? n : 0
-}
 
 function money(value: number) {
   return value.toLocaleString('de-CH', { style: 'currency', currency: 'CHF' })
@@ -40,6 +36,7 @@ export function FinanceDashboardPage() {
   const { data: entities = [], isLoading } = useEntities()
   const [budgetDraft, setBudgetDraft] = useState('')
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
+  const [budgetError, setBudgetError] = useState<string | null>(null)
   const now = new Date()
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
@@ -48,47 +45,47 @@ export function FinanceDashboardPage() {
     queryKey: ['monthly-budget', spaceId],
     enabled: Boolean(spaceId),
     queryFn: async () => {
-      const budgets = await db.budgets.where('space_id').equals(spaceId!).toArray()
+      const budgets = await listBudgets(spaceId!)
       return (
-        budgets.find((b) => !b.deleted_at && b.name.toLowerCase() === 'monatsbudget') ??
-        budgets.find((b) => !b.deleted_at) ??
+        budgets.find((b) => b.name.toLowerCase() === 'monatsbudget') ??
+        budgets[0] ??
         null
       )
     },
   })
 
   const saveBudget = useMutation({
-    mutationFn: async (amount: string) => {
+    mutationFn: async (rawAmount: string) => {
       if (!spaceId) throw new Error('Kein Space')
-      const nowIso = new Date().toISOString()
-      if (budget) {
-        await db.budgets.update(budget.id, {
-          amount_limit: amount,
-          name: 'Monatsbudget',
-          updated_at: nowIso,
-        })
-        return
+      const amount = normalizeMoneyInput(rawAmount)
+      if (!amount) {
+        throw new Error('Ungültiger Betrag — z. B. 3500 oder 3500.50')
       }
-      await db.budgets.put({
-        id: uuidv4(),
-        space_id: spaceId,
-        entity_id: null,
-        name: 'Monatsbudget',
-        description: null,
-        currency: 'CHF',
-        amount_limit: amount,
-        amount_spent: '0',
-        period_start: monthStart.toISOString().slice(0, 10),
-        period_end: monthEnd.toISOString().slice(0, 10),
-        created_by: session?.userId ?? null,
-        created_at: nowIso,
-        updated_at: nowIso,
-        deleted_at: null,
-      })
+
+      // create = Upsert über Sync — auch wenn ein lokales Budget noch nie remote lag
+      await createBudget(
+        {
+          id: budget?.id ?? uuidv4(),
+          space_id: spaceId,
+          name: 'Monatsbudget',
+          currency: 'CHF',
+          amount_limit: amount,
+          period_start: format(monthStart, 'yyyy-MM-dd'),
+          period_end: format(monthEnd, 'yyyy-MM-dd'),
+        },
+        session?.userId ?? null,
+      )
     },
     onSuccess: async () => {
+      setBudgetError(null)
       setShowBudgetEdit(false)
-      await queryClient.invalidateQueries({ queryKey: ['monthly-budget', spaceId] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['monthly-budget', spaceId] }),
+        queryClient.invalidateQueries({ queryKey: ['budgets', spaceId] }),
+      ])
+    },
+    onError: (err) => {
+      setBudgetError(err instanceof Error ? err.message : 'Budget konnte nicht gespeichert werden')
     },
   })
 
@@ -103,26 +100,26 @@ export function FinanceDashboardPage() {
 
   const monthlyIncome = inMonth
     .filter((e) => e.metadata?.financeKind === 'income' && e.metadata?.recurrence === 'monthly')
-    .reduce((s, e) => s + amountOf(e.metadata?.amount), 0)
+    .reduce((s, e) => s + parseMoneyAmount(e.metadata?.amount), 0)
   const onceIncome = inMonth
     .filter((e) => e.metadata?.financeKind === 'income' && e.metadata?.recurrence !== 'monthly')
-    .reduce((s, e) => s + amountOf(e.metadata?.amount), 0)
+    .reduce((s, e) => s + parseMoneyAmount(e.metadata?.amount), 0)
   const monthlyExpense = inMonth
     .filter((e) => e.metadata?.financeKind !== 'income' && e.metadata?.recurrence === 'monthly')
-    .reduce((s, e) => s + amountOf(e.metadata?.amount), 0)
+    .reduce((s, e) => s + parseMoneyAmount(e.metadata?.amount), 0)
   const onceExpense = inMonth
     .filter((e) => e.metadata?.financeKind !== 'income' && e.metadata?.recurrence !== 'monthly')
-    .reduce((s, e) => s + amountOf(e.metadata?.amount), 0)
+    .reduce((s, e) => s + parseMoneyAmount(e.metadata?.amount), 0)
 
   const totalIncome = monthlyIncome + onceIncome
   const totalExpense = monthlyExpense + onceExpense
-  const budgetLimit = amountOf(budget?.amount_limit)
+  const budgetLimit = parseMoneyAmount(budget?.amount_limit)
   const remaining = budgetLimit - totalExpense + totalIncome
 
   const byCategoryMap = new Map<string, number>()
   for (const e of inMonth.filter((x) => x.metadata?.financeKind !== 'income')) {
     const key = String(e.metadata?.category || 'Sonstiges')
-    byCategoryMap.set(key, (byCategoryMap.get(key) ?? 0) + amountOf(e.metadata?.amount))
+    byCategoryMap.set(key, (byCategoryMap.get(key) ?? 0) + parseMoneyAmount(e.metadata?.amount))
   }
   const byCategory = [...byCategoryMap.entries()].sort((a, b) => b[1] - a[1])
 
@@ -161,6 +158,7 @@ export function FinanceDashboardPage() {
               className="text-xs font-medium text-primary"
               onClick={() => {
                 setBudgetDraft(budget?.amount_limit ?? '')
+                setBudgetError(null)
                 setShowBudgetEdit((v) => !v)
               }}
             >
@@ -172,23 +170,27 @@ export function FinanceDashboardPage() {
           </p>
           {showBudgetEdit ? (
             <form
-              className="mt-3 flex gap-2"
+              className="mt-3 flex flex-col gap-2"
               onSubmit={(e) => {
                 e.preventDefault()
                 if (!budgetDraft.trim()) return
                 saveBudget.mutate(budgetDraft.trim())
               }}
             >
-              <Input
-                label="Betrag"
-                value={budgetDraft}
-                onChange={(e) => setBudgetDraft(e.target.value)}
-                inputMode="decimal"
-              />
-              <div className="flex items-end">
-                <Button type="submit" loading={saveBudget.isPending}>
-                  OK
-                </Button>
+              <div className="flex gap-2">
+                <Input
+                  label="Betrag"
+                  value={budgetDraft}
+                  onChange={(e) => setBudgetDraft(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="z. B. 3500"
+                  error={budgetError ?? undefined}
+                />
+                <div className="flex items-end">
+                  <Button type="submit" loading={saveBudget.isPending}>
+                    OK
+                  </Button>
+                </div>
               </div>
             </form>
           ) : null}
@@ -279,7 +281,7 @@ export function FinanceDashboardPage() {
                     </p>
                   </div>
                   <p className="text-sm tabular-nums text-text">
-                    {money(amountOf(entity.metadata?.amount))}
+                    {money(parseMoneyAmount(entity.metadata?.amount))}
                   </p>
                 </Link>
               </li>

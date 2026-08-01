@@ -8,6 +8,7 @@ import type { MomentDetailValues } from '@/features/moments/MomentForm'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import type { TripDetailValues } from '@/features/trips/TripForm'
 import type { WishDetailValues } from '@/features/wishes/WishForm'
+import { normalizeMoneyInput } from '@/lib/money'
 
 /** Felder ohne eigene Detail-Tabelle (oder Pair-Rollen) → entities.metadata */
 export function metadataFromDetail(
@@ -74,7 +75,7 @@ export function metadataFromDetail(
     }
     case 'expense': {
       const d = detail as ExpenseDetailValues
-      meta.amount = d.amount || ''
+      meta.amount = normalizeMoneyInput(d.amount || '') ?? (d.amount || '')
       meta.category = d.category || ''
       meta.paidBy = d.paidBy || 'gemeinsam'
       meta.financeKind = d.kind || 'expense'
