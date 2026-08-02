@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     spaceId?: string
     email?: string
     inviteeLabel?: string
+    password?: string
     action?: 'invite' | 'revoke'
   }
   try {
@@ -168,9 +169,15 @@ Deno.serve(async (req) => {
     return json({ error: 'Bitte eine gültige E-Mail angeben.' }, 400)
   }
 
+  const password = typeof body.password === 'string' ? body.password : ''
+  if (password && password.length < 8) {
+    return json({ error: 'Passwort muss mindestens 8 Zeichen haben.' }, 400)
+  }
+
   // Auth-User finden oder anlegen (kein öffentlicher Signup nötig)
   let partnerUserId: string | null = null
   let createdUser = false
+  let passwordSet = false
 
   try {
     partnerUserId = await findUserIdByEmail(admin, email)
@@ -179,22 +186,28 @@ Deno.serve(async (req) => {
   }
 
   if (partnerUserId) {
-    // Falls zuvor gebannt: wieder freigeben
-    await admin.auth.admin.updateUserById(partnerUserId, {
+    // Falls zuvor gebannt: wieder freigeben; optional Passwort setzen
+    const { error: updateError } = await admin.auth.admin.updateUserById(partnerUserId, {
       ban_duration: 'none',
+      email_confirm: true,
       user_metadata: { display_name: inviteeLabel },
+      ...(password ? { password } : {}),
     })
+    if (updateError) return json({ error: updateError.message }, 500)
+    passwordSet = Boolean(password)
   } else {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
       user_metadata: { display_name: inviteeLabel },
+      ...(password ? { password } : {}),
     })
     if (createError || !created.user) {
       return json({ error: createError?.message ?? 'User konnte nicht angelegt werden.' }, 500)
     }
     partnerUserId = created.user.id
     createdUser = true
+    passwordSet = Boolean(password)
   }
 
   await admin
@@ -242,47 +255,47 @@ Deno.serve(async (req) => {
   }
 
   const now = new Date().toISOString()
-  const { data: existingInvite } = await admin
-    .from('space_invites')
-    .select('id')
-    .eq('space_id', spaceId)
-    .ilike('invitee_email', email)
-    .in('status', ['draft', 'ready'])
-    .maybeSingle()
+  const inviteNote = passwordSet
+    ? `${inviteeLabel} kann sich in der PWA mit E-Mail und Passwort anmelden.`
+    : `${inviteeLabel} kann sich in der PWA mit Code anmelden.`
 
-  if (existingInvite) {
-    const { error: updateError } = await admin
+  // Invite-Protokoll: wenn Tabelle fehlt (ältere DBs), Login trotzdem freischalten
+  try {
+    const { data: existingInvite, error: findInviteError } = await admin
       .from('space_invites')
-      .update({
-        invitee_label: inviteeLabel,
-        invitee_email: email,
-        status: 'ready',
-        note: `${inviteeLabel} kann sich in der PWA mit Code anmelden.`,
-        sent_at: now,
-        updated_at: now,
-      })
-      .eq('id', existingInvite.id)
-    if (updateError) return json({ error: updateError.message }, 500)
-  } else {
-    const { error: insertError } = await admin.from('space_invites').insert({
-      space_id: spaceId,
-      created_by: user.id,
-      invitee_label: inviteeLabel,
-      invitee_email: email,
-      status: 'ready',
-      note: `${inviteeLabel} kann sich in der PWA mit Code anmelden.`,
-      sent_at: now,
-    })
-    if (insertError) return json({ error: insertError.message }, 500)
-  }
+      .select('id')
+      .eq('space_id', spaceId)
+      .ilike('invitee_email', email)
+      .in('status', ['draft', 'ready'])
+      .maybeSingle()
 
-  const { data: space } = await admin
-    .from('spaces')
-    .select('partner_b_name')
-    .eq('id', spaceId)
-    .maybeSingle()
-  if (space && (!space.partner_b_name || space.partner_b_name.trim() === '')) {
-    await admin.from('spaces').update({ partner_b_name: inviteeLabel }).eq('id', spaceId)
+    if (!findInviteError) {
+      if (existingInvite) {
+        await admin
+          .from('space_invites')
+          .update({
+            invitee_label: inviteeLabel,
+            invitee_email: email,
+            status: 'ready',
+            note: inviteNote,
+            sent_at: now,
+            updated_at: now,
+          })
+          .eq('id', existingInvite.id)
+      } else {
+        await admin.from('space_invites').insert({
+          space_id: spaceId,
+          created_by: user.id,
+          invitee_label: inviteeLabel,
+          invitee_email: email,
+          status: 'ready',
+          note: inviteNote,
+          sent_at: now,
+        })
+      }
+    }
+  } catch {
+    // ignore missing space_invites
   }
 
   return json({
@@ -292,6 +305,9 @@ Deno.serve(async (req) => {
     userId: partnerUserId,
     createdUser,
     alreadyMember,
-    message: `${inviteeLabel} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
+    passwordSet,
+    message: passwordSet
+      ? `${inviteeLabel} ist freigeschaltet. Anmeldung mit E-Mail und Passwort in der PWA.`
+      : `${inviteeLabel} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
   })
 })

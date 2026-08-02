@@ -272,6 +272,7 @@ function SettingsInvite() {
   const invitePartner = useInvitePartner()
   const revokeAccess = useRevokePartnerAccess()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [message, setMessage] = useState<string | null>(null)
 
   const activeInvite =
@@ -287,8 +288,16 @@ function SettingsInvite() {
 
   const handleInvite = () => {
     setMessage(null)
+    if (password && password.length < 8) {
+      setMessage('Passwort muss mindestens 8 Zeichen haben.')
+      return
+    }
     invitePartner.mutate(
-      { email, inviteeLabel: partnerB },
+      {
+        email,
+        inviteeLabel: partnerB,
+        ...(password ? { password } : {}),
+      },
       {
         onSuccess: (result) => {
           if (!result.ok) {
@@ -297,7 +306,9 @@ function SettingsInvite() {
           }
           setMessage(
             result.message ??
-              `${partnerB} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
+              (result.passwordSet
+                ? `${partnerB} ist freigeschaltet. Anmeldung mit E-Mail und Passwort.`
+                : `${partnerB} ist freigeschaltet. Anmeldung mit E-Mail + Code.`),
           )
         },
         onError: (err) =>
@@ -314,17 +325,17 @@ function SettingsInvite() {
       <header className="mt-4 mb-6">
         <h1 className="font-serif text-3xl text-text">{partnerB} einladen</h1>
         <p className="mt-2 text-sm text-text-muted">
-          {partnerB} braucht nur die PWA (App zum Home-Bildschirm) und meldet sich mit E-Mail +
-          Code an. Kein Passwort, kein Supabase-Dashboard.
+          {partnerB} braucht die PWA und meldet sich mit E-Mail — wahlweise mit Passwort oder
+          Einmal-Code.
         </p>
       </header>
 
       <ol className="mb-8 list-decimal space-y-3 pl-5 text-sm text-text-muted">
-        <li>E-Mail von {partnerB} hier eintragen und Zugang freischalten</li>
+        <li>E-Mail von {partnerB} eintragen (optional Passwort setzen)</li>
+        <li>Zugang freischalten</li>
         <li>
-          {partnerB} öffnet shared-life-theta.vercel.app (oder installiert die PWA)
+          {partnerB} öffnet shared-life-theta.vercel.app → „Mit Passwort anmelden“ (oder Code)
         </li>
-        <li>{partnerB} gibt ihre E-Mail ein und den Code aus der Mail</li>
       </ol>
 
       {DEMO_MODE ? (
@@ -351,6 +362,16 @@ function SettingsInvite() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="lea@beispiel.ch"
           disabled={DEMO_MODE}
+        />
+        <Input
+          label="Passwort (optional)"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mind. 8 Zeichen — für Passwort-Login"
+          disabled={DEMO_MODE}
+          hint="Wenn gesetzt, kann sich Lea direkt mit E-Mail + Passwort anmelden."
         />
         <Button
           type="button"
