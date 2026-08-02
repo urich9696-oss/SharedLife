@@ -25,11 +25,14 @@ export function BottomSheet({
   const titleId = useId()
   const sheetRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
 
-  // Only re-run when `open` changes. Callers pass unstable onClose lambdas;
-  // including them would re-focus the sheet and dismiss the mobile keyboard
-  // after every controlled-input keystroke.
+  // Keep latest onClose without re-subscribing (unstable lambdas from callers).
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  // Only re-run when `open` changes. Including onClose would re-focus the sheet
+  // and dismiss the mobile keyboard after every controlled-input keystroke.
   useEffect(() => {
     if (!open) return
     const handleKeyDown = (event: KeyboardEvent) => {
