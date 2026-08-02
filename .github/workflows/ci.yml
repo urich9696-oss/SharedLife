@@ -55,5 +55,7 @@ jobs:
       - name: E2E smoke tests
         run: npm run test:e2e
         env:
+          # Secrets optional — leere Werte fallen in playwright.config auf Test-Defaults zurück
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}

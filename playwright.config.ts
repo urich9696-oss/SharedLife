@@ -1,9 +1,18 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// Leere CI-Secrets ("") dürfen die Fallbacks nicht überschreiben (?? greift nur bei null/undefined).
+const supabaseUrl =
+  process.env.VITE_SUPABASE_URL?.trim() || 'https://example.supabase.co'
+const supabaseAnon =
+  process.env.VITE_SUPABASE_ANON_KEY?.trim() || 'test-anon-key'
+const vapidPublic =
+  process.env.VITE_VAPID_PUBLIC_KEY?.trim() || 'test-vapid-key'
+
 const hasEnv = Boolean(
-  process.env.VITE_SUPABASE_URL &&
-    process.env.VITE_SUPABASE_ANON_KEY &&
-    process.env.VITE_SUPABASE_URL !== 'https://example.supabase.co',
+  supabaseUrl &&
+    supabaseAnon &&
+    supabaseUrl !== 'https://example.supabase.co' &&
+    supabaseAnon !== 'test-anon-key',
 )
 
 export default defineConfig({
@@ -23,9 +32,9 @@ export default defineConfig({
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     env: {
-      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? 'https://example.supabase.co',
-      VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY ?? 'test-anon-key',
-      VITE_VAPID_PUBLIC_KEY: process.env.VITE_VAPID_PUBLIC_KEY ?? 'test-vapid-key',
+      VITE_SUPABASE_URL: supabaseUrl,
+      VITE_SUPABASE_ANON_KEY: supabaseAnon,
+      VITE_VAPID_PUBLIC_KEY: vapidPublic,
     },
   },
   grepInvert: hasEnv ? undefined : /@requires-env/,
