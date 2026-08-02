@@ -32,7 +32,9 @@ export function invalidateSpaceQueries(
   void queryClient.invalidateQueries({ queryKey: ['pair-profile', spaceId] })
   void queryClient.invalidateQueries({ queryKey: ['activity-log', spaceId] })
   void queryClient.invalidateQueries({ queryKey: ['recipe-covers', spaceId] })
+  void queryClient.invalidateQueries({ queryKey: ['recipe-ingredients'] })
   void queryClient.invalidateQueries({ queryKey: ['date-ideas-covers', spaceId] })
+  void queryClient.invalidateQueries({ queryKey: ['recipes', spaceId] })
 
   if (entityId) {
     void queryClient.invalidateQueries({ queryKey: ['entity', entityId] })
@@ -40,6 +42,7 @@ export function invalidateSpaceQueries(
     void queryClient.invalidateQueries({ queryKey: ['entity-gallery', entityId] })
     void queryClient.invalidateQueries({ queryKey: ['entityDetail', entityId] })
     void queryClient.invalidateQueries({ queryKey: ['entity-detail', entityId] })
+    void queryClient.invalidateQueries({ queryKey: ['recipe-ingredients', entityId] })
     void queryClient.invalidateQueries({ queryKey: ['notes', entityId] })
     void queryClient.invalidateQueries({ queryKey: ['entityMedia', entityId] })
     void queryClient.invalidateQueries({ queryKey: ['related-tasks'] })

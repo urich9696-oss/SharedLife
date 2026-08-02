@@ -6,7 +6,6 @@ import {
   listChecklistsForEntity,
 } from '@/lib/indexed-db/repositories/checklists'
 import { ensureShoppingList } from '@/features/shopping/shopping-service'
-import { db } from '@/lib/indexed-db/db'
 
 export interface RecipeIngredient {
   name: string
@@ -180,9 +179,6 @@ export async function addRecipeIngredientsToShopping(input: {
     activeTitles.add(key)
     added += 1
   }
-
-  // Touch entity updated_at for UX freshness
-  await db.entities.update(input.entityId, { updated_at: new Date().toISOString() })
 
   return { added, skipped }
 }
