@@ -349,6 +349,29 @@ async function applyEntityMutation(
   })
 }
 
+async function recordNonEntityReceipt(
+  client: ReturnType<typeof createClient>,
+  mutation: OutboxMutation,
+  table: string,
+  operation: string,
+  serverRow: unknown,
+): Promise<void> {
+  // mutation_receipts.entity_id verweist auf entities — bei Checklisten/Notes null lassen.
+  const { error } = await client.rpc('record_mutation_receipt', {
+    p_mutation_id: mutation.mutationId,
+    p_space_id: mutation.spaceId,
+    p_entity_id: null,
+    p_operation: operation,
+    p_table_name: table,
+    p_result_version: null,
+    p_result_payload: serverRow,
+    p_device_id: mutation.deviceId,
+  })
+  if (error) {
+    console.error('record_mutation_receipt skipped', table, error.message)
+  }
+}
+
 async function applyChecklistItemMutation(
   client: ReturnType<typeof createClient>,
   mutation: OutboxMutation,
@@ -357,19 +380,11 @@ async function applyChecklistItemMutation(
   const payload = { id: mutation.resourceId, space_id: mutation.spaceId, ...mutation.payload }
 
   if (mutation.operation === 'create') {
-    const { data, error } = await client.from(table).insert(payload).select('*').single()
+    // Upsert: Retries nach erfolgreichem Insert + fehlgeschlagenem Receipt sollen nicht knallen.
+    const { data, error } = await client.from(table).upsert(payload).select('*').single()
     if (error) throw new Error(error.message)
 
-    await client.rpc('record_mutation_receipt', {
-      p_mutation_id: mutation.mutationId,
-      p_space_id: mutation.spaceId,
-      p_entity_id: mutation.resourceId,
-      p_operation: 'create',
-      p_table_name: table,
-      p_result_version: null,
-      p_result_payload: data,
-      p_device_id: mutation.deviceId,
-    })
+    await recordNonEntityReceipt(client, mutation, table, 'create', data)
 
     return jsonResponse({
       ok: true,
@@ -391,16 +406,7 @@ async function applyChecklistItemMutation(
       .single()
     if (error) throw new Error(error.message)
 
-    await client.rpc('record_mutation_receipt', {
-      p_mutation_id: mutation.mutationId,
-      p_space_id: mutation.spaceId,
-      p_entity_id: mutation.resourceId,
-      p_operation: 'update',
-      p_table_name: table,
-      p_result_version: null,
-      p_result_payload: data,
-      p_device_id: mutation.deviceId,
-    })
+    await recordNonEntityReceipt(client, mutation, table, 'update', data)
 
     return jsonResponse({
       ok: true,
@@ -421,6 +427,8 @@ async function applyChecklistItemMutation(
       .select('*')
       .single()
     if (error) throw new Error(error.message)
+
+    await recordNonEntityReceipt(client, mutation, table, 'soft_delete', data)
 
     return jsonResponse({
       ok: true,

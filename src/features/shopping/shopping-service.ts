@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
-import { createEntity, listEntitiesByType } from '@/lib/indexed-db/repositories/entities'
+import {
+  createEntity,
+  listEntitiesByType,
+  updateEntity,
+} from '@/lib/indexed-db/repositories/entities'
 import {
   createChecklist,
   listChecklistsForEntity,
@@ -7,16 +11,16 @@ import {
 } from '@/lib/indexed-db/repositories/checklists'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import type { ChecklistItemRow, EntityRow } from '@/lib/indexed-db/schema'
-import { db } from '@/lib/indexed-db/db'
 
 const SHOPPING_META_KEY = 'shoppingPrimary'
 
 export async function findPrimaryShoppingEntity(spaceId: string): Promise<EntityRow | null> {
   const lists = await listEntitiesByType(spaceId, 'list')
+  // Bevorzuge die gekennzeichnete Primärliste; sonst exakt „Einkauf“.
+  // Kein Fallback auf lists[0] — sonst landet jeder Partner auf einer anderen Liste.
   const primary =
     lists.find((e) => e.metadata?.[SHOPPING_META_KEY] === true) ??
-    lists.find((e) => e.title.toLowerCase() === 'einkauf') ??
-    lists[0] ??
+    lists.find((e) => e.title.trim().toLowerCase() === 'einkauf') ??
     null
   return primary
 }
@@ -49,11 +53,12 @@ export async function ensureShoppingList(spaceId: string, userId?: string | null
       payload: { listKind: 'shopping', isCheckable: true },
     })
   } else if (entity.metadata?.[SHOPPING_META_KEY] !== true) {
-    await db.entities.update(entity.id, {
-      metadata: { ...entity.metadata, [SHOPPING_META_KEY]: true },
-      updated_at: new Date().toISOString(),
-    })
-    entity = (await db.entities.get(entity.id)) ?? entity
+    entity = await updateEntity(
+      entity.id,
+      spaceId,
+      { metadata: { ...entity.metadata, [SHOPPING_META_KEY]: true } },
+      userId ?? null,
+    )
   }
 
   let checklists = await listChecklistsForEntity(entity.id)
