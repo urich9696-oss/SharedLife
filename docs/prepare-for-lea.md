@@ -1,34 +1,36 @@
-# SharedLife: Lea einladen (nur PWA + Login)
+# SharedLife: Lea einladen
 
-## Für Dennis
+## Für Dennis (in der App)
 
-1. App leeren / mit echten Daten füllen
-2. **Einstellungen → Lea einladen**
-3. Leas E-Mail eintragen → **Zugang freischalten**
+1. **Einstellungen → Lea einladen**
+2. E-Mail eintragen, z. B. `mariolas.lea@gmail.com`
+3. Optional **Passwort** setzen (mind. 8 Zeichen), z. B. `SharedLife-2026!`
+4. **Zugang freischalten**
 
 Damit passiert serverseitig:
 
 - Auth-User für Lea (falls noch nicht vorhanden)
+- Passwort (wenn angegeben)
 - Space-Mitgliedschaft
 - Einladung auf Status „freigeschaltet“
 
-## Für Lea
-
-1. https://shared-life-theta.vercel.app öffnen (oder „Zum Home-Bildschirm“ / PWA)
-2. E-Mail eingeben → **Code senden**
-3. 6-stelligen Code aus der Mail eingeben → fertig
-
-Kein Passwort, kein Dashboard, kein manueller Membership-Schritt.
-
-## Deploy-Voraussetzung
+### Edge Function deployen (wenn Passwort-Feld neu ist)
 
 ```bash
-supabase db push   # inkl. Migration invitee_email
 supabase functions deploy invite-partner
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` muss für Edge Functions gesetzt sein (Standard bei Supabase).
+## Für Lea
 
-## Login
+1. https://shared-life-theta.vercel.app öffnen (oder PWA installieren)
+2. **Mit Passwort anmelden** tippen
+3. E-Mail + Passwort eingeben → fertig
 
-Standard: **E-Mail + OTP-Code**. Optional weiterhin „Mit Passwort anmelden“ (z. B. für Dennis).
+Alternativ weiterhin: E-Mail → Code aus der Mail.
+
+## Manuell Passwort setzen (falls App noch kein Passwort-Feld hat)
+
+1. Dennis: Lea wie oben **ohne** Passwort freischalten
+2. Supabase Dashboard → **Authentication → Users** → User mit Leas E-Mail öffnen
+3. **Send password recovery** oder Passwort direkt setzen
+4. Lea meldet sich mit „Mit Passwort anmelden“ an

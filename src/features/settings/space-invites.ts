@@ -25,6 +25,7 @@ export interface InvitePartnerResult {
   userId?: string
   createdUser?: boolean
   alreadyMember?: boolean
+  passwordSet?: boolean
   message?: string
   error?: string
 }
@@ -72,6 +73,7 @@ export async function invitePartner(input: {
   spaceId: string
   email: string
   inviteeLabel?: string
+  password?: string
 }): Promise<InvitePartnerResult> {
   if (DEMO_MODE) {
     return { ok: false, error: 'Im Demo-Modus nicht verfügbar.' }
@@ -83,6 +85,7 @@ export async function invitePartner(input: {
       spaceId: input.spaceId,
       email: input.email.trim(),
       inviteeLabel: input.inviteeLabel ?? 'Lea',
+      ...(input.password ? { password: input.password } : {}),
     },
   })
   const result = (data ?? {}) as InvitePartnerResult
@@ -132,12 +135,13 @@ export function useInvitePartner() {
   const queryClient = useQueryClient()
   const { spaceId } = useAuth()
   return useMutation({
-    mutationFn: (input: { email: string; inviteeLabel?: string }) => {
+    mutationFn: (input: { email: string; inviteeLabel?: string; password?: string }) => {
       if (!spaceId) throw new Error('Nicht angemeldet.')
       return invitePartner({
         spaceId,
         email: input.email,
         inviteeLabel: input.inviteeLabel,
+        password: input.password,
       })
     },
     onSuccess: async (result) => {

@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     spaceId?: string
     email?: string
     inviteeLabel?: string
+    password?: string
     action?: 'invite' | 'revoke'
   }
   try {
@@ -168,9 +169,15 @@ Deno.serve(async (req) => {
     return json({ error: 'Bitte eine gültige E-Mail angeben.' }, 400)
   }
 
+  const password = typeof body.password === 'string' ? body.password : ''
+  if (password && password.length < 8) {
+    return json({ error: 'Passwort muss mindestens 8 Zeichen haben.' }, 400)
+  }
+
   // Auth-User finden oder anlegen (kein öffentlicher Signup nötig)
   let partnerUserId: string | null = null
   let createdUser = false
+  let passwordSet = false
 
   try {
     partnerUserId = await findUserIdByEmail(admin, email)
@@ -179,22 +186,28 @@ Deno.serve(async (req) => {
   }
 
   if (partnerUserId) {
-    // Falls zuvor gebannt: wieder freigeben
-    await admin.auth.admin.updateUserById(partnerUserId, {
+    // Falls zuvor gebannt: wieder freigeben; optional Passwort setzen
+    const { error: updateError } = await admin.auth.admin.updateUserById(partnerUserId, {
       ban_duration: 'none',
+      email_confirm: true,
       user_metadata: { display_name: inviteeLabel },
+      ...(password ? { password } : {}),
     })
+    if (updateError) return json({ error: updateError.message }, 500)
+    passwordSet = Boolean(password)
   } else {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
       user_metadata: { display_name: inviteeLabel },
+      ...(password ? { password } : {}),
     })
     if (createError || !created.user) {
       return json({ error: createError?.message ?? 'User konnte nicht angelegt werden.' }, 500)
     }
     partnerUserId = created.user.id
     createdUser = true
+    passwordSet = Boolean(password)
   }
 
   await admin
@@ -250,6 +263,10 @@ Deno.serve(async (req) => {
     .in('status', ['draft', 'ready'])
     .maybeSingle()
 
+  const inviteNote = passwordSet
+    ? `${inviteeLabel} kann sich in der PWA mit E-Mail und Passwort anmelden.`
+    : `${inviteeLabel} kann sich in der PWA mit Code anmelden.`
+
   if (existingInvite) {
     const { error: updateError } = await admin
       .from('space_invites')
@@ -257,7 +274,7 @@ Deno.serve(async (req) => {
         invitee_label: inviteeLabel,
         invitee_email: email,
         status: 'ready',
-        note: `${inviteeLabel} kann sich in der PWA mit Code anmelden.`,
+        note: inviteNote,
         sent_at: now,
         updated_at: now,
       })
@@ -270,7 +287,7 @@ Deno.serve(async (req) => {
       invitee_label: inviteeLabel,
       invitee_email: email,
       status: 'ready',
-      note: `${inviteeLabel} kann sich in der PWA mit Code anmelden.`,
+      note: inviteNote,
       sent_at: now,
     })
     if (insertError) return json({ error: insertError.message }, 500)
@@ -292,6 +309,9 @@ Deno.serve(async (req) => {
     userId: partnerUserId,
     createdUser,
     alreadyMember,
-    message: `${inviteeLabel} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
+    passwordSet,
+    message: passwordSet
+      ? `${inviteeLabel} ist freigeschaltet. Anmeldung mit E-Mail und Passwort in der PWA.`
+      : `${inviteeLabel} ist freigeschaltet. Sie öffnet die PWA und meldet sich mit E-Mail + Code an.`,
   })
 })
