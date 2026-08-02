@@ -695,6 +695,21 @@ async function applyEntityDetailMutation(
     return jsonResponse({ error: 'detail_type required' }, 400)
   }
 
+  // Detail darf erst nach Entity-Create landen (FK). Sonst klar retrybar antworten.
+  const { data: parent, error: parentError } = await client
+    .from('entities')
+    .select('id')
+    .eq('id', mutation.resourceId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (parentError) throw new Error(parentError.message)
+  if (!parent) {
+    return jsonResponse(
+      { error: `entity ${mutation.resourceId} does not exist`, retryable: true },
+      409,
+    )
+  }
+
   const table = `${detailType}_details`
   const columns = localPayloadToDetailColumns(detailType, nested)
   const row = stripUndefined({

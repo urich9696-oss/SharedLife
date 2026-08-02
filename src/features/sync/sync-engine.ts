@@ -90,6 +90,7 @@ async function syncSingleMutation(mutation: OutboxMutationRow): Promise<{
   ok: boolean
   conflict?: SyncConflict
   error?: string
+  retryable?: boolean
 }> {
   const supabase = getSupabaseClient()
   const {
@@ -113,13 +114,19 @@ async function syncSingleMutation(mutation: OutboxMutationRow): Promise<{
   if (!response.ok) {
     const text = await response.text()
     let message = text || `HTTP ${response.status}`
+    let retryable = response.status === 409 || response.status >= 500
     try {
-      const json = JSON.parse(text) as { error?: string; message?: string }
+      const json = JSON.parse(text) as {
+        error?: string
+        message?: string
+        retryable?: boolean
+      }
       message = json.error ?? json.message ?? message
+      if (json.retryable) retryable = true
     } catch {
       // keep raw text
     }
-    return { ok: false, error: message }
+    return { ok: false, error: message, retryable }
   }
 
   const result = (await response.json()) as {
@@ -183,6 +190,8 @@ export async function flushOutbox(): Promise<FlushResult> {
     return result
   }
 
+  const retryableIds: string[] = []
+
   for (const mutation of pending) {
     await markSyncing(mutation.mutationId)
     try {
@@ -195,7 +204,17 @@ export async function flushOutbox(): Promise<FlushResult> {
         continue
       }
       if (!outcome.ok) {
-        await markFailed(mutation.mutationId, outcome.error ?? 'Unbekannter Fehler')
+        if (outcome.retryable) {
+          retryableIds.push(mutation.mutationId)
+          await db.outbox.update(mutation.mutationId, {
+            status: 'pending',
+            lastError: outcome.error ?? 'Retry',
+            nextRetryAt: null,
+            lastAttemptAt: new Date().toISOString(),
+          })
+        } else {
+          await markFailed(mutation.mutationId, outcome.error ?? 'Unbekannter Fehler')
+        }
         result.failed += 1
         result.errors.push(outcome.error ?? 'Unbekannter Fehler')
         continue
@@ -207,6 +226,26 @@ export async function flushOutbox(): Promise<FlushResult> {
       await markFailed(mutation.mutationId, message)
       result.failed += 1
       result.errors.push(message)
+    }
+  }
+
+  // Sofort nochmal: Details/Items, die auf Entity-Create gewartet haben
+  for (const mutationId of retryableIds) {
+    const mutation = await db.outbox.get(mutationId)
+    if (!mutation || (mutation.status !== 'pending' && mutation.status !== 'failed')) continue
+    await markSyncing(mutation.mutationId)
+    try {
+      const outcome = await syncSingleMutation(mutation)
+      if (outcome.ok) {
+        await markApplied(mutation.mutationId)
+        result.applied += 1
+        result.failed = Math.max(0, result.failed - 1)
+      } else {
+        await markFailed(mutation.mutationId, outcome.error ?? 'Unbekannter Fehler')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Synchronisation fehlgeschlagen'
+      await markFailed(mutation.mutationId, message)
     }
   }
 

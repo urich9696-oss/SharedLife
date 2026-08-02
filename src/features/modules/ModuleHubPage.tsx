@@ -6,6 +6,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { FinanceDashboardPage } from '@/features/finances/FinanceDashboardPage'
 import { IdeasPage } from '@/features/ideas/IdeasPage'
 import { RecipesPage } from '@/features/recipes/RecipesPage'
+import { WishesPage } from '@/features/wishes/WishesPage'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { useEntities } from '@/features/entities/useEntities'
@@ -33,6 +34,10 @@ export function ModuleHubPage() {
 
   if (moduleKey === 'freizeit') {
     return <IdeasPage />
+  }
+
+  if (moduleKey === 'geschenke') {
+    return <WishesPage />
   }
 
   if (moduleKey && LEGACY_MODULE_REDIRECTS[moduleKey]) {

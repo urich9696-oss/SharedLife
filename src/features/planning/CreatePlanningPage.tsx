@@ -15,6 +15,7 @@ import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-
 import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
 import type { RecipeDetailValues } from '@/features/recipes/RecipeForm'
 import { seedRecipeIngredients } from '@/features/recipes/recipe-service'
+import { useSync } from '@/features/sync/SyncProvider'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import type { TripDetailValues } from '@/features/trips/TripForm'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
@@ -22,6 +23,8 @@ import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details
 import { ENTITY_TYPES, type EntityType } from '@/lib/indexed-db/schema'
 
 function resolveType(raw: string | null): EntityType {
+  // Legacy-Links ?type=gift → immer wish (wish_details / Partner-Sync)
+  if (raw === 'gift') return 'wish'
   if (raw && (ENTITY_TYPES as readonly string[]).includes(raw)) return raw as EntityType
   return 'event'
 }
@@ -34,6 +37,7 @@ export function CreatePlanningPage() {
   const meta = getEntityTypeMeta(entityType)
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
+  const { flushNow } = useSync()
   const { data: budgets = [] } = useBudgets()
   const [detailValues, setDetailValues] = useState(() => {
     const base = defaultDetailForType(entityType)
@@ -160,6 +164,13 @@ export function CreatePlanningPage() {
             })
           }
         }
+      }
+
+      // Sofort pushen, damit Partner (und Details/Preis) nicht aufs 15s-Intervall warten
+      try {
+        await flushNow()
+      } catch {
+        // Offline / Sync-Fehler: lokal gespeichert, Retry über SyncProvider
       }
 
       void navigate(entityDetailPath(entityType, id))

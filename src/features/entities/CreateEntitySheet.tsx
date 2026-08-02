@@ -22,6 +22,7 @@ import {
 import { metadataFromDetail } from '@/features/entities/detail-metadata'
 import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
+import { useSync } from '@/features/sync/SyncProvider'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import type { EntityType } from '@/lib/indexed-db/schema'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
@@ -58,6 +59,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   const location = useLocation()
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
+  const { flushNow } = useSync()
   const { data: budgets = [] } = useBudgets()
   const [view, setView] = useState<SheetView>('menu')
   const [selectedType, setSelectedType] = useState<EntityType | null>(null)
@@ -83,8 +85,9 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   }
 
   const openForm = (type: EntityType) => {
-    setSelectedType(type)
-    setDetailValues(defaultDetailForType(type))
+    const resolved = type === 'gift' ? 'wish' : type
+    setSelectedType(resolved)
+    setDetailValues(defaultDetailForType(resolved))
     setView('form')
   }
 
@@ -95,18 +98,19 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       return
     }
     setFormError(null)
+    const entityType = selectedType === 'gift' ? 'wish' : selectedType
     const dates = formValuesToEntityDates(
-      selectedType === 'leisure' ? { ...values, allDay: true } : values,
+      entityType === 'leisure' ? { ...values, allDay: true } : values,
     )
     const id = uuidv4()
 
     try {
-      const metadata = metadataFromDetail(selectedType, detailValues)
+      const metadata = metadataFromDetail(entityType, detailValues)
 
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
-        entity_type: selectedType,
+        entity_type: entityType,
         title: values.title,
         description: values.description || null,
         status: values.status,
@@ -115,7 +119,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         metadata,
       })
 
-      const detailType = detailTypeForEntity(selectedType)
+      const detailType = detailTypeForEntity(entityType)
       if (detailType) {
         await upsertEntityDetail({
           entityId: id,
@@ -125,7 +129,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         })
       }
 
-      if (selectedType === 'list') {
+      if (entityType === 'list') {
         await createChecklist({
           id: uuidv4(),
           spaceId,
@@ -134,7 +138,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         })
       }
 
-      if (selectedType === 'recipe') {
+      if (entityType === 'recipe') {
         await seedRecipeIngredients({
           spaceId,
           entityId: id,
@@ -142,7 +146,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         })
       }
 
-      if (selectedType === 'task') {
+      if (entityType === 'task') {
         const subtasks = String((detailValues as TaskDetailValues).subtasksText || '')
           .split(',')
           .map((s) => s.trim())
@@ -166,7 +170,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         }
       }
 
-      if (selectedType === 'trip') {
+      if (entityType === 'trip') {
         const packing = String((detailValues as TripDetailValues).packingListText || '')
           .split('\n')
           .map((s) => s.trim())
@@ -190,8 +194,14 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         }
       }
 
+      try {
+        await flushNow()
+      } catch {
+        // Offline: lokaler Eintrag bleibt, SyncProvider retried
+      }
+
       handleClose()
-      void navigate(entityDetailPath(selectedType, id))
+      void navigate(entityDetailPath(entityType, id))
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Erstellen fehlgeschlagen')
     }

@@ -36,6 +36,18 @@ export async function enqueueMutation(
   return row
 }
 
+function mutationFlushRank(m: OutboxMutationRow): number {
+  // Entity/Checklist zuerst anlegen, sonst scheitern Details/Items an FKs.
+  if (m.resourceType === 'entity' && (m.operation === 'create' || m.payload?.is_create)) return 0
+  if (m.resourceType === 'entity') return 1
+  if (m.resourceType === 'checklist' && m.operation === 'create') return 2
+  if (m.resourceType === 'checklist') return 3
+  if (m.resourceType === 'entity_detail') return 4
+  if (m.resourceType === 'checklist_item') return 5
+  if (m.resourceType === 'note' || m.resourceType === 'reminder') return 6
+  return 7
+}
+
 export async function listPendingMutations(now = new Date()): Promise<OutboxMutationRow[]> {
   const nowIso = now.toISOString()
   const pending = await db.outbox.where('status').equals('pending').toArray()
@@ -43,7 +55,11 @@ export async function listPendingMutations(now = new Date()): Promise<OutboxMuta
 
   return [...pending, ...failed]
     .filter((m) => !m.nextRetryAt || m.nextRetryAt <= nowIso)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .sort((a, b) => {
+      const byRank = mutationFlushRank(a) - mutationFlushRank(b)
+      if (byRank !== 0) return byRank
+      return a.createdAt.localeCompare(b.createdAt)
+    })
 }
 
 export async function countPendingMutations(): Promise<number> {
