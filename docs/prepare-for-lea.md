@@ -1,23 +1,10 @@
 # SharedLife: Lea einladen
 
-## Fehler „Could not find the table public.space_invites“
+## Status (erledigt)
 
-Die Tabelle fehlt noch in der Remote-Datenbank. Einmal im Supabase SQL Editor ausführen:
-
-1. Öffne https://supabase.com/dashboard/project/uoqlusgimvinjmajtesz/sql/new  
-2. Inhalt von `scripts/ensure-space-invites.sql` einfügen → **Run**  
-3. App neu laden
-
-## Lea freischalten (neueste Version)
-
-1. Deploy/Merge inkl. Passwort-Einladung + Edge Function:
-   ```bash
-   supabase functions deploy invite-partner
-   ```
-2. In der App: **Einstellungen → Lea einladen**
-3. E-Mail: `mariolas.lea@gmail.com`
-4. Passwort: `SharedLife-2026!`
-5. **Zugang freischalten**
+- Tabelle `public.space_invites` ist auf Remote angelegt
+- Edge Function `invite-partner` ist deployed
+- Lea ist freigeschaltet: Mitglied im Space + Passwort-Login
 
 ## Für Lea
 
@@ -25,8 +12,7 @@ Die Tabelle fehlt noch in der Remote-Datenbank. Einmal im Supabase SQL Editor au
 2. **Mit Passwort anmelden**  
 3. E-Mail `mariolas.lea@gmail.com` + Passwort `SharedLife-2026!`
 
-## Fallback ohne Passwort-Feld (alte App)
+## Falls Zugang erneut gesetzt werden muss
 
-1. SQL wie oben ausführen  
-2. Zugang mit E-Mail freischalten  
-3. Supabase → Authentication → Users → Passwort setzen  
+In der App: **Einstellungen → Lea einladen** → E-Mail + Passwort → **Zugang freischalten**  
+Oder SQL/Reset über Supabase Auth → Users.

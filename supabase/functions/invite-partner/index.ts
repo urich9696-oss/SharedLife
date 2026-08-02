@@ -298,15 +298,6 @@ Deno.serve(async (req) => {
     // ignore missing space_invites
   }
 
-  const { data: space } = await admin
-    .from('spaces')
-    .select('partner_b_name')
-    .eq('id', spaceId)
-    .maybeSingle()
-  if (space && (!space.partner_b_name || space.partner_b_name.trim() === '')) {
-    await admin.from('spaces').update({ partner_b_name: inviteeLabel }).eq('id', spaceId)
-  }
-
   return json({
     ok: true,
     email,
