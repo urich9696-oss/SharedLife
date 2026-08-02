@@ -59,7 +59,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
   const location = useLocation()
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
-  const { flushNow } = useSync()
+  const { pushNow } = useSync()
   const { data: budgets = [] } = useBudgets()
   const [view, setView] = useState<SheetView>('menu')
   const [selectedType, setSelectedType] = useState<EntityType | null>(null)
@@ -195,7 +195,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
       }
 
       try {
-        await flushNow()
+        await pushNow()
       } catch {
         // Offline: lokaler Eintrag bleibt, SyncProvider retried
       }

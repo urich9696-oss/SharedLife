@@ -1,19 +1,42 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
-import { useEntities } from '@/features/entities/useEntities'
 import { useSync } from '@/features/sync/SyncProvider'
+import { listEntities } from '@/lib/indexed-db/repositories/entities'
 import { cn } from '@/lib/utilities/cn'
 
 export function WishesPage() {
   const navigate = useNavigate()
-  const { data: entities = [], isLoading, refetch } = useEntities()
-  const { flushNow, online } = useSync()
+  const { spaceId } = useAuth()
+  const { flushNow, pushNow, online } = useSync()
   const [syncing, setSyncing] = useState(false)
+
+  const {
+    data: entities = [],
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['entities', spaceId],
+    queryFn: () => listEntities(spaceId!),
+    enabled: Boolean(spaceId),
+    staleTime: 0,
+    refetchInterval: online ? 5_000 : false,
+    refetchOnWindowFocus: true,
+  })
+
+  const wishes = useMemo(
+    () =>
+      entities
+        .filter((e) => (e.entity_type === 'wish' || e.entity_type === 'gift') && !e.deleted_at)
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [entities],
+  )
 
   useEffect(() => {
     if (!online) return
@@ -25,15 +48,7 @@ export function WishesPage() {
       }
       await refetch()
     })()
-  }, [online]) // eslint-disable-line react-hooks/exhaustive-deps -- einmal bei Online/Mount pull+push
-
-  const wishes = useMemo(
-    () =>
-      entities
-        .filter((e) => (e.entity_type === 'wish' || e.entity_type === 'gift') && !e.deleted_at)
-        .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-    [entities],
-  )
+  }, [online]) // eslint-disable-line react-hooks/exhaustive-deps -- Mount/Online: einmal pull+push
 
   const openCreate = () => {
     void navigate('/planen/neu?type=wish')
@@ -42,7 +57,10 @@ export function WishesPage() {
   const refresh = async () => {
     setSyncing(true)
     try {
-      if (online) await flushNow()
+      if (online) {
+        await pushNow()
+        await flushNow()
+      }
       await refetch()
     } finally {
       setSyncing(false)
@@ -61,7 +79,13 @@ export function WishesPage() {
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button type="button" size="sm" variant="secondary" onClick={() => void refresh()} disabled={syncing}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => void refresh()}
+            disabled={syncing}
+          >
             {syncing ? 'Sync…' : 'Aktualisieren'}
           </Button>
           <Button type="button" size="sm" onClick={openCreate}>
@@ -73,7 +97,7 @@ export function WishesPage() {
       {wishes.length === 0 ? (
         <EmptyState
           title="Noch keine Wünsche"
-          description="Legt den ersten Wunsch an — Preis und Link werden mit synchronisiert."
+          description="Legt den ersten Wunsch an — er erscheint automatisch beim Partner."
           actionLabel="Wunsch erstellen"
           onAction={openCreate}
         />
@@ -84,7 +108,12 @@ export function WishesPage() {
             const status = String(entity.metadata?.wishStatus || 'open')
             return (
               <li key={entity.id}>
-                <Link to={entityDetailPath(entity.entity_type === 'gift' ? 'wish' : entity.entity_type, entity.id)}>
+                <Link
+                  to={entityDetailPath(
+                    entity.entity_type === 'gift' ? 'wish' : entity.entity_type,
+                    entity.id,
+                  )}
+                >
                   <Card
                     interactive
                     padding="md"

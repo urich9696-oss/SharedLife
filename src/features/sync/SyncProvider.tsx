@@ -41,7 +41,10 @@ export interface SyncContextValue {
   lastSyncAt: Date | null
   lastSyncedAt: Date | null
   lastError: string | null
+  /** Pull + Flush (vollständiger Sync-Zyklus) */
   flushNow: () => Promise<void>
+  /** Nur Outbox pushen – nach lokalen Creates, ohne vorherigen Pull */
+  pushNow: () => Promise<void>
   triggerSync: () => Promise<void>
 }
 
@@ -74,6 +77,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
   const syncInFlight = useRef<Promise<void> | null>(null)
+  const syncQueued = useRef(false)
+  const queuedPull = useRef(false)
 
   const syncing = status === 'syncing'
 
@@ -102,12 +107,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setStatus('offline')
         return
       }
+
+      const wantPull = opts?.pull !== false
+
+      // Wenn schon ein Sync läuft: danach noch einmal ausführen (neue Outbox-Items!).
       if (syncInFlight.current) {
+        queuedPull.current = syncQueued.current
+          ? queuedPull.current || wantPull
+          : wantPull
+        syncQueued.current = true
         await syncInFlight.current
+        // Follow-up läuft ggf. schon im ursprünglichen Zyklus — nicht doppelt.
+        if (!syncQueued.current) return
+        syncQueued.current = false
+        const pull = queuedPull.current
+        queuedPull.current = false
+        await runSyncCycle({ pull })
         return
       }
 
-      const shouldPull = opts?.pull !== false
+      const shouldPull = wantPull
       const cycle = (async () => {
         setStatus('syncing')
         setLastError(null)
@@ -120,6 +139,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
             }
           }
           const result = await flushOutbox()
+          if (!shouldPull && result.applied > 0 && spaceId) {
+            // Nach Push UI aktualisieren (eigene Liste)
+            invalidateSpaceQueries(queryClient, spaceId)
+          }
           await refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
           if (result.failed > 0 && result.applied === 0) {
             setStatus('error')
@@ -148,12 +171,23 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       } finally {
         if (syncInFlight.current === cycle) syncInFlight.current = null
       }
+
+      if (syncQueued.current) {
+        syncQueued.current = false
+        const pull = queuedPull.current
+        queuedPull.current = false
+        await runSyncCycle({ pull })
+      }
     },
     [session, online, spaceId, queryClient],
   )
 
   const flushNow = useCallback(async () => {
     await runSyncCycle({ pull: true })
+  }, [runSyncCycle])
+
+  const pushNow = useCallback(async () => {
+    await runSyncCycle({ pull: false })
   }, [runSyncCycle])
 
   useEffect(() => {
@@ -197,6 +231,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncedAt: lastSyncAt,
       lastError,
       flushNow,
+      pushNow,
       triggerSync: flushNow,
     }),
     [
@@ -208,6 +243,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncAt,
       lastError,
       flushNow,
+      pushNow,
     ],
   )
 

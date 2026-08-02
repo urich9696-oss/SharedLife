@@ -37,7 +37,7 @@ export function CreatePlanningPage() {
   const meta = getEntityTypeMeta(entityType)
   const { spaceId } = useAuth()
   const createEntity = useCreateEntity()
-  const { flushNow } = useSync()
+  const { pushNow } = useSync()
   const { data: budgets = [] } = useBudgets()
   const [detailValues, setDetailValues] = useState(() => {
     const base = defaultDetailForType(entityType)
@@ -166,9 +166,9 @@ export function CreatePlanningPage() {
         }
       }
 
-      // Sofort pushen, damit Partner (und Details/Preis) nicht aufs 15s-Intervall warten
+      // Sofort pushen (ohne Pull), damit der Eintrag den Partner erreicht
       try {
-        await flushNow()
+        await pushNow()
       } catch {
         // Offline / Sync-Fehler: lokal gespeichert, Retry über SyncProvider
       }
