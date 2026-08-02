@@ -61,6 +61,30 @@ async function applyCanonicalRow(
     case 'transaction':
       await db.transactions.put(serverRow as never)
       break
+    case 'entity_detail': {
+      // Edge liefert kanonische Detail-Zeile mit payload + detail_type
+      if (serverRow.entity_id && serverRow.detail_type) {
+        const existing = await db.entityDetails.get([
+          String(serverRow.entity_id),
+          serverRow.detail_type as never,
+        ])
+        await db.entityDetails.put({
+          entity_id: String(serverRow.entity_id),
+          detail_type: serverRow.detail_type as never,
+          space_id: String(serverRow.space_id ?? mutation.spaceId),
+          payload: (serverRow.payload as Record<string, unknown>) ?? existing?.payload ?? {},
+          created_at: String(serverRow.created_at ?? existing?.created_at ?? new Date().toISOString()),
+          updated_at: String(serverRow.updated_at ?? new Date().toISOString()),
+        })
+      }
+      break
+    }
+    case 'entity_media':
+      await db.entityMedia.put(serverRow as never)
+      break
+    case 'entity_link':
+      await db.entityLinks.put(serverRow as never)
+      break
     default:
       break
   }

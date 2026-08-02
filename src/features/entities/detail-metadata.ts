@@ -41,6 +41,8 @@ export function metadataFromDetail(
       meta.assigneeRole = d.assigneeRole || ''
       meta.reservationStatus = d.reservationStatus || 'none'
       meta.belongsToEntityId = d.belongsToEntityId || ''
+      // Ort auch in Metadata, damit Listen/Partner-UI ohne Detail-Pull den Ort sehen
+      meta.place = d.venueName || ''
       break
     }
     case 'moment': {

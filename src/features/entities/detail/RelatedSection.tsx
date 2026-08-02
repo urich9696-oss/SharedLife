@@ -103,13 +103,15 @@ export function RelatedTasks({
   )
 }
 
-/** Dates einer Reise */
+/** Dates einer Reise oder eines Termins/Ereignisses */
 export function RelatedDates({
   spaceId,
   parentId,
+  title = 'Zugeordnete Dates',
 }: {
   spaceId: string
   parentId: string
+  title?: string
 }) {
   const { data: dates = [] } = useQuery({
     queryKey: ['related-dates', parentId, spaceId],
@@ -118,7 +120,7 @@ export function RelatedDates({
   if (dates.length === 0) return null
   return (
     <section className="mb-8">
-      <SectionTitle>Dates dieser Reise</SectionTitle>
+      <SectionTitle>{title}</SectionTitle>
       <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
         {dates.map((d, i) => (
           <li key={d.id} className={i > 0 ? 'border-t border-border/70' : ''}>

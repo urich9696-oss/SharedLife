@@ -15,7 +15,17 @@ async function loadOptions(spaceId: string, types: EntityType[]) {
     .sort((a, b) => a.title.localeCompare(b.title, 'de'))
     .map((e) => ({
       value: e.id,
-      label: `${e.title} (${e.entity_type === 'trip' ? 'Reise' : e.entity_type === 'goal' ? 'Ziel' : e.entity_type === 'date' ? 'Date' : e.entity_type})`,
+      label: `${e.title} (${
+        e.entity_type === 'trip'
+          ? 'Reise'
+          : e.entity_type === 'event'
+            ? 'Termin'
+            : e.entity_type === 'goal'
+              ? 'Ziel'
+              : e.entity_type === 'date'
+                ? 'Date'
+                : e.entity_type
+      })`,
     }))
 }
 
@@ -73,23 +83,26 @@ export function TripBelongingSelect({
   spaceId,
   value,
   onChange,
-  label = 'Teil einer Reise',
+  label = 'Zuordnung',
+  types = ['trip', 'event'],
 }: {
   spaceId: string
   value: string
   onChange: (entityId: string) => void
   label?: string
+  /** Standard: Reise oder Termin/Ereignis */
+  types?: EntityType[]
 }) {
   const { data: options = [] } = useQuery({
-    queryKey: ['belonging-options-trip', spaceId],
-    queryFn: () => loadOptions(spaceId, ['trip']),
+    queryKey: ['belonging-options-trip', spaceId, types.join(',')],
+    queryFn: () => loadOptions(spaceId, types),
     enabled: Boolean(spaceId),
   })
 
   return (
     <Select
       label={label}
-      options={[{ value: '', label: 'Keine Reise' }, ...options]}
+      options={[{ value: '', label: 'Keine Zuordnung' }, ...options]}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />

@@ -23,6 +23,7 @@ import {
 } from '@/features/reminders/push-subscription'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DEMO_MODE } from '@/lib/demo'
+import { APP_RELEASE_NAME, APP_VERSION, formatAppVersionLabel } from '@/lib/app-version'
 import { ProfileAvatarPicker } from '@/features/space/ProfileAvatarPicker'
 import { usePairProfile } from '@/features/space/pair-profile'
 
@@ -98,6 +99,20 @@ function SettingsHome() {
       <p className="mb-[var(--section-gap)] text-[17px] text-text-muted">
         Angemeldet als {profile?.displayName ?? 'Dennis'} — nur privater Zugang.
       </p>
+      <div
+        className="mb-[var(--section-gap)] rounded-[16px] border border-border bg-bg px-3 py-3"
+        data-testid="app-version"
+      >
+        <p className="text-sm font-medium text-text">{APP_RELEASE_NAME}</p>
+        <p className="mt-1 text-xs text-text-muted">
+          Version {APP_VERSION}
+          {import.meta.env.VITE_APP_VERSION &&
+          import.meta.env.VITE_APP_VERSION !== APP_VERSION
+            ? ` · Build ${import.meta.env.VITE_APP_VERSION}`
+            : ''}
+        </p>
+        <p className="sr-only">{formatAppVersionLabel()}</p>
+      </div>
       <div className="flex flex-col gap-6">
         <Switch
           label="Push-Benachrichtigungen"

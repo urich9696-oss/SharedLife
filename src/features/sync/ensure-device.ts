@@ -1,4 +1,5 @@
 import { DEMO_MODE } from '@/lib/demo'
+import { APP_VERSION } from '@/lib/app-version'
 import { getOrCreateDeviceId } from '@/lib/indexed-db/device'
 import { db } from '@/lib/indexed-db/db'
 import { getSupabaseClient } from '@/lib/supabase/client'
@@ -29,6 +30,7 @@ export async function ensureRemoteDevice(spaceId: string, userId: string): Promi
       label: local?.label ?? 'Unbenanntes Gerät',
       platform: local?.platform ?? detectPlatform(),
       user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 500) : null,
+      app_version: APP_VERSION,
       last_seen_at: new Date().toISOString(),
       // push_enabled bewusst nicht setzen — sonst überschreibt Sync Push-Abo-Status
     },

@@ -8,7 +8,6 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
 import { PageEnter } from '@/components/ui/PageEnter'
 import { saveDateAsMoment } from '@/features/dates/save-as-moment'
-import { planLeisureAsDate } from '@/features/ideas/leisure-to-date'
 import {
   DETAIL_MENU_ICONS,
   DetailChrome,
@@ -324,20 +323,9 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
     }
   }
 
-  const handleLeisureToDate = async () => {
-    if (!spaceId) return
-    setBusyAction(true)
-    try {
-      const dateId = await planLeisureAsDate({
-        spaceId,
-        leisure: entity,
-        userId: session?.userId,
-      })
-      flash('Als Date geplant')
-      void navigate(`/entities/date/${dateId}`)
-    } finally {
-      setBusyAction(false)
-    }
+  const handleLeisureToDate = () => {
+    // Formular öffnen und vorausfüllen — Speichern erst nach Bestätigung
+    void navigate(`/planen/neu?type=date&fromLeisure=${id}`)
   }
 
   const handleRecipeToShopping = async () => {
@@ -696,7 +684,9 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
               )}
             </section>
 
-            {spaceId ? <RelatedDates spaceId={spaceId} parentId={id} /> : null}
+            {spaceId ? (
+              <RelatedDates spaceId={spaceId} parentId={id} title="Dates dieser Reise" />
+            ) : null}
 
             {spaceId ? (
               <RelatedMoments
@@ -709,6 +699,10 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
               />
             ) : null}
           </>
+        ) : null}
+
+        {type === 'event' && spaceId ? (
+          <RelatedDates spaceId={spaceId} parentId={id} title="Dates zu diesem Termin" />
         ) : null}
 
         {type === 'goal' && spaceId ? (

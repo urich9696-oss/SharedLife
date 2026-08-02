@@ -107,6 +107,9 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
     try {
       const metadata = metadataFromDetail(entityType, detailValues)
 
+      const parentEntityId =
+        String(metadata.belongsToEntityId || metadata.taskAssignmentEntityId || '') || null
+
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
@@ -115,6 +118,7 @@ export function CreateEntitySheet({ open, onClose }: CreateEntitySheetProps) {
         description: values.description || null,
         status: values.status,
         ...dates,
+        parent_entity_id: parentEntityId,
         sort_order: 0,
         metadata,
       })

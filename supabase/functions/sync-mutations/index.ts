@@ -563,6 +563,11 @@ function localPayloadToDetailColumns(
         dress_code: (payload.dressCode as string) || null,
         mood: (payload.mood as string) || null,
         surprise: Boolean(payload.surprise),
+        reservation_reference:
+          (payload.reservationReference as string) ||
+          (payload.reservationStatus as string) ||
+          null,
+        estimated_cost: payload.estimatedCost ? Number(payload.estimatedCost) : null,
       }
     case 'goal': {
       const kind = String(payload.progressKind ?? 'percent')

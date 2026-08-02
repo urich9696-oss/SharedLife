@@ -77,6 +77,19 @@ export async function createBudget(
     )
   })
 
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    try {
+      const { flushResources } = await import('@/features/sync/sync-engine')
+      await flushResources([row.id])
+    } catch (err) {
+      console.warn('[budgets] flush after create failed', {
+        module: 'finances',
+        operation: 'createBudget',
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
   return row
 }
 
@@ -130,6 +143,19 @@ export async function updateBudget(
       { tx: db },
     )
   })
+
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    try {
+      const { flushResources } = await import('@/features/sync/sync-engine')
+      await flushResources([id])
+    } catch (err) {
+      console.warn('[budgets] flush after update failed', {
+        module: 'finances',
+        operation: 'updateBudget',
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
 
   return updated
 }

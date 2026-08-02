@@ -12,6 +12,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useEntities } from '@/features/entities/useEntities'
 import { entityDetailPath } from '@/features/entities/entity-types'
+import { useSync } from '@/features/sync/SyncProvider'
 import { createBudget, listBudgets } from '@/lib/indexed-db/repositories/budgets'
 import { normalizeMoneyInput, parseMoneyAmount } from '@/lib/money'
 import { cn } from '@/lib/utilities/cn'
@@ -33,6 +34,7 @@ export function FinanceDashboardPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { spaceId, session } = useAuth()
+  const { pushNow } = useSync()
   const { data: entities = [], isLoading } = useEntities()
   const [budgetDraft, setBudgetDraft] = useState('')
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
@@ -75,6 +77,15 @@ export function FinanceDashboardPage() {
         },
         session?.userId ?? null,
       )
+      try {
+        await pushNow()
+      } catch (err) {
+        console.warn('[finances] push after budget save failed', {
+          module: 'finances',
+          operation: 'pushNow',
+          message: err instanceof Error ? err.message : String(err),
+        })
+      }
     },
     onSuccess: async () => {
       setBudgetError(null)

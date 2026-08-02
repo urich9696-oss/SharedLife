@@ -63,8 +63,10 @@ export function detailRowToLocalPayload(
         surprise: Boolean(row.surprise),
         estimatedCost: row.estimated_cost != null ? String(row.estimated_cost) : '',
         reservationReference: row.reservation_reference ?? '',
+        // reservationStatus lebt in entities.metadata; Referenz allein ≠ confirmed
         reservationStatus: row.reservation_reference ? 'confirmed' : 'none',
         assigneeRole: 'gemeinsam',
+        belongsToEntityId: '',
       }
     case 'goal':
       return {
@@ -96,6 +98,7 @@ export function detailRowToLocalPayload(
         currency: row.currency ?? 'CHF',
         priority: row.priority ?? 'normal',
         fulfilled: Boolean(row.acquired_at),
+        // occasion/wishStatus (ausser bought) liegen in entities.metadata
         occasion: '',
         wishStatus: row.acquired_at ? 'bought' : 'open',
       }
@@ -299,15 +302,34 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
     async () => {
       const protectedIds = await protectedResourceIds()
 
+      const entitiesById = new Map(entities.map((e) => [e.id, e]))
       const detailRecords: EntityDetailRow[] = []
       for (const { type, row } of remoteDetailRows) {
         const entityId = String(row.entity_id)
         if (protectedIds.has(entityId)) continue
+        const payload = detailRowToLocalPayload(type, row)
+        const entity = entitiesById.get(entityId)
+        const meta = entity?.metadata ?? {}
+        // Felder, die nur in entities.metadata leben, beim Pull wieder einspielen
+        if (type === 'wish') {
+          if (meta.occasion) payload.occasion = meta.occasion
+          if (meta.wishStatus && !payload.fulfilled) payload.wishStatus = meta.wishStatus
+        }
+        if (type === 'date') {
+          if (meta.reservationStatus) payload.reservationStatus = meta.reservationStatus
+          if (meta.assigneeRole) payload.assigneeRole = meta.assigneeRole
+          if (meta.belongsToEntityId) payload.belongsToEntityId = meta.belongsToEntityId
+          else if (entity?.parent_entity_id) payload.belongsToEntityId = entity.parent_entity_id
+          // Ort in Metadata spiegeln für Partner-Listen ohne Detail-UI
+          if (payload.venueName && entity && meta.place !== payload.venueName) {
+            entity.metadata = { ...meta, place: String(payload.venueName) }
+          }
+        }
         detailRecords.push({
           entity_id: entityId,
           detail_type: type,
           space_id: spaceId,
-          payload: detailRowToLocalPayload(type, row),
+          payload,
           created_at: String(row.created_at ?? new Date().toISOString()),
           updated_at: String(row.updated_at ?? new Date().toISOString()),
         })

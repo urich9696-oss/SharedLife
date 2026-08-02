@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid'
 import { useAuth } from '@/features/auth/AuthProvider'
 import {
@@ -13,12 +14,15 @@ import { formValuesToEntityDates } from '@/features/entities/entity-date-utils'
 import type { EntityFormValues } from '@/features/entities/entity-form-schema'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { useBudgets, useCreateEntity } from '@/features/entities/useEntities'
+import type { DateDetailValues } from '@/features/dates/DateForm'
+import { leisurePrefill, planLeisureAsDate } from '@/features/ideas/leisure-to-date'
 import type { RecipeDetailValues } from '@/features/recipes/RecipeForm'
 import { seedRecipeIngredients } from '@/features/recipes/recipe-service'
 import { useSync } from '@/features/sync/SyncProvider'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import type { TripDetailValues } from '@/features/trips/TripForm'
 import { createChecklist, createChecklistItem } from '@/lib/indexed-db/repositories/checklists'
+import { getEntity } from '@/lib/indexed-db/repositories/entities'
 import { upsertEntityDetail } from '@/lib/indexed-db/repositories/entity-details'
 import { ENTITY_TYPES, type EntityType } from '@/lib/indexed-db/schema'
 
@@ -34,11 +38,15 @@ export function CreatePlanningPage() {
   const [params] = useSearchParams()
   const entityType = useMemo(() => resolveType(params.get('type')), [params])
   const parentId = params.get('parent') || ''
+  const fromLeisureId = params.get('fromLeisure') || ''
   const meta = getEntityTypeMeta(entityType)
-  const { spaceId } = useAuth()
+  const { spaceId, session } = useAuth()
   const createEntity = useCreateEntity()
   const { pushNow } = useSync()
   const { data: budgets = [] } = useBudgets()
+  const submittingRef = useRef(false)
+  const [saving, setSaving] = useState(false)
+  const [formDefaults, setFormDefaults] = useState<Partial<EntityFormValues> | undefined>()
   const [detailValues, setDetailValues] = useState(() => {
     const base = defaultDetailForType(entityType)
     if (entityType === 'task' && parentId) {
@@ -51,6 +59,12 @@ export function CreatePlanningPage() {
   })
   const [error, setError] = useState<string | null>(null)
 
+  const { data: leisureSource } = useQuery({
+    queryKey: ['from-leisure', fromLeisureId],
+    enabled: Boolean(fromLeisureId) && entityType === 'date',
+    queryFn: () => getEntity(fromLeisureId),
+  })
+
   useEffect(() => {
     if (entityType === 'list') {
       void navigate('/einkauf?focus=1', { replace: true })
@@ -58,15 +72,27 @@ export function CreatePlanningPage() {
   }, [entityType, navigate])
 
   useEffect(() => {
+    if (leisureSource && entityType === 'date') {
+      const prefill = leisurePrefill(leisureSource)
+      setFormDefaults(prefill.form)
+      setDetailValues({
+        ...defaultDetailForType('date'),
+        ...prefill.detail,
+        ...(parentId ? { belongsToEntityId: parentId } : {}),
+      })
+      return
+    }
+
     const base = defaultDetailForType(entityType)
     if (entityType === 'task' && parentId) {
       setDetailValues({ ...base, assignmentEntityId: parentId })
     } else if ((entityType === 'date' || entityType === 'moment') && parentId) {
       setDetailValues({ ...base, belongsToEntityId: parentId })
-    } else {
+    } else if (!fromLeisureId) {
       setDetailValues(base)
+      setFormDefaults(undefined)
     }
-  }, [entityType, parentId])
+  }, [entityType, parentId, leisureSource, fromLeisureId])
 
   const budgetOptions = budgets.map((b) => ({ value: b.id, label: b.name }))
 
@@ -75,18 +101,52 @@ export function CreatePlanningPage() {
       setError('Kein Space geladen.')
       return
     }
+    if (submittingRef.current || saving || createEntity.isPending) return
+    submittingRef.current = true
+    setSaving(true)
     setError(null)
-    const id = uuidv4()
-    const dates = formValuesToEntityDates(
-      entityType === 'leisure' ? { ...values, allDay: true } : values,
-    )
-    const metadata = metadataFromDetail(entityType, detailValues)
-    const resolvedParent =
-      parentId ||
-      String(metadata.belongsToEntityId || metadata.taskAssignmentEntityId || '') ||
-      null
 
     try {
+      // Date-Idee → Date: nach Bestätigung speichern, Idee bleibt erhalten
+      if (entityType === 'date' && leisureSource) {
+        const dates = formValuesToEntityDates(values)
+        const dateId = await planLeisureAsDate({
+          spaceId,
+          leisure: leisureSource,
+          userId: session?.userId ?? null,
+          title: values.title.trim(),
+          description: values.description?.trim() || null,
+          startsAt: dates.starts_at ?? null,
+          allDayStart: dates.all_day_start ?? null,
+          belongsToEntityId:
+            parentId ||
+            String((detailValues as DateDetailValues).belongsToEntityId || '') ||
+            null,
+          detail: detailValues as DateDetailValues,
+        })
+        try {
+          await pushNow()
+        } catch (err) {
+          console.warn('[create-planning] push after leisure→date failed', {
+            module: 'dates',
+            operation: 'pushNow',
+            message: err instanceof Error ? err.message : String(err),
+          })
+        }
+        void navigate(entityDetailPath('date', dateId))
+        return
+      }
+
+      const id = uuidv4()
+      const dates = formValuesToEntityDates(
+        entityType === 'leisure' ? { ...values, allDay: true } : values,
+      )
+      const metadata = metadataFromDetail(entityType, detailValues)
+      const resolvedParent =
+        parentId ||
+        String(metadata.belongsToEntityId || metadata.taskAssignmentEntityId || '') ||
+        null
+
       await createEntity.mutateAsync({
         id,
         space_id: spaceId,
@@ -166,27 +226,41 @@ export function CreatePlanningPage() {
         }
       }
 
-      // Sofort pushen (ohne Pull), damit der Eintrag den Partner erreicht
       try {
         await pushNow()
-      } catch {
-        // Offline / Sync-Fehler: lokal gespeichert, Retry über SyncProvider
+      } catch (err) {
+        console.warn('[create-planning] push after create failed', {
+          module: entityType,
+          operation: 'pushNow',
+          message: err instanceof Error ? err.message : String(err),
+        })
       }
 
       void navigate(entityDetailPath(entityType, id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen')
+    } finally {
+      submittingRef.current = false
+      setSaving(false)
     }
   }
 
   if (entityType === 'list') return null
 
+  const formKey = `${entityType}:${fromLeisureId}:${formDefaults?.title ?? ''}`
+
   return (
     <div className="mx-auto max-w-lg px-page py-6 lg:py-8">
       <header className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Neu</p>
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
+          {fromLeisureId && entityType === 'date' ? 'Aus Date-Idee' : 'Neu'}
+        </p>
         <h1 className="mt-1 font-serif text-3xl text-text">{meta.label}</h1>
-        <p className="mt-2 text-sm text-text-muted">{meta.description}</p>
+        <p className="mt-2 text-sm text-text-muted">
+          {fromLeisureId && entityType === 'date'
+            ? 'Titel, Ort und Notiz sind vorausgefüllt — Datum wählen und speichern.'
+            : meta.description}
+        </p>
       </header>
 
       {error ? (
@@ -196,11 +270,13 @@ export function CreatePlanningPage() {
       ) : null}
 
       <EntityForm
+        key={formKey}
         entityType={entityType}
+        defaultValues={formDefaults}
         onSubmit={handleSubmit}
         onCancel={() => void navigate(-1)}
         submitLabel="Speichern"
-        loading={createEntity.isPending}
+        loading={saving || createEntity.isPending}
       >
         <EntityTypeDetailFields
           entityType={entityType}

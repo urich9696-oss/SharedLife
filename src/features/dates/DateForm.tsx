@@ -76,6 +76,8 @@ export function DateFormFields({ values, onChange }: DateFormFieldsProps) {
       {spaceId ? (
         <TripBelongingSelect
           spaceId={spaceId}
+          label="Zuordnung (Reise oder Termin)"
+          types={['trip', 'event']}
           value={values.belongsToEntityId}
           onChange={(id) => onChange({ ...values, belongsToEntityId: id })}
         />
