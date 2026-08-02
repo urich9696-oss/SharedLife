@@ -63,7 +63,8 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     label: 'Wünsche',
     description: 'Wünsche und Geschenkideen',
     path: '/module/geschenke',
-    entityTypes: ['gift', 'wish'],
+    // wish zuerst: „Neu“ muss wish anlegen (wish_details). gift bleibt nur für Altbestand sichtbar.
+    entityTypes: ['wish', 'gift'],
     accent: 'bg-emotional/15 text-emotional',
     imageHint: 'Wünsche',
     group: 'inspiration',

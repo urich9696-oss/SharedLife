@@ -582,18 +582,41 @@ function localPayloadToDetailColumns(
         due_date: (payload.dueDate as string) || null,
       }
     }
-    case 'wish':
+    case 'wish': {
+      const rawPrice = payload.price
+      let price: number | null = null
+      if (typeof rawPrice === 'number' && Number.isFinite(rawPrice)) {
+        price = rawPrice
+      } else if (typeof rawPrice === 'string' && rawPrice.trim()) {
+        let s = rawPrice.trim().replace(/\s/g, '').replace(/'/g, '')
+        if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.')
+        else if (s.includes(',')) s = s.replace(',', '.')
+        const n = Number(s)
+        price = Number.isFinite(n) ? n : null
+      }
+      const priorityRaw = String(payload.priority ?? 'normal')
+      const priority = priorityRaw === 'medium' ? 'normal' : priorityRaw || 'normal'
+      const fulfilledExplicit =
+        payload.fulfilled === true || payload.wishStatus === 'bought'
+          ? true
+          : payload.fulfilled === false ||
+              payload.wishStatus === 'open' ||
+              payload.wishStatus === 'reserved'
+            ? false
+            : undefined
       return {
         url: (payload.url as string) || (payload.link as string) || null,
-        price: payload.price ? Number(payload.price) : null,
+        price,
         currency: (payload.currency as string) || 'CHF',
-        priority: (payload.priority as string) || 'normal',
-        acquired_at: payload.fulfilled
-          ? new Date().toISOString()
-          : payload.fulfilled === false
-            ? null
-            : undefined,
+        priority,
+        acquired_at:
+          fulfilledExplicit === true
+            ? new Date().toISOString()
+            : fulfilledExplicit === false
+              ? null
+              : undefined,
       }
+    }
     case 'moment':
       return {
         captured_at: (payload.capturedAt as string) || null,

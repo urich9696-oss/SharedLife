@@ -104,6 +104,8 @@ export function detailTypeForEntity(type: EntityType): DetailType | null {
     goal: 'goal',
     task: 'task',
     wish: 'wish',
+    // Altbestand „gift“ nutzt dieselbe Detailtabelle wie wish
+    gift: 'wish',
     moment: 'moment',
     project: 'project',
     event: 'event',

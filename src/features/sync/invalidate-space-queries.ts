@@ -35,6 +35,8 @@ export function invalidateSpaceQueries(
   void queryClient.invalidateQueries({ queryKey: ['recipe-ingredients'] })
   void queryClient.invalidateQueries({ queryKey: ['date-ideas-covers', spaceId] })
   void queryClient.invalidateQueries({ queryKey: ['recipes', spaceId] })
+  void queryClient.invalidateQueries({ queryKey: ['entity-detail'] })
+  void queryClient.invalidateQueries({ queryKey: ['entityDetail'] })
 
   if (entityId) {
     void queryClient.invalidateQueries({ queryKey: ['entity', entityId] })
