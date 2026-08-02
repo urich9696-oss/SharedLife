@@ -73,5 +73,14 @@ export async function upsertEntityDetail(input: {
     )
   })
 
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    try {
+      const { flushResources } = await import('@/features/sync/sync-engine')
+      await flushResources([input.entityId])
+    } catch {
+      // Retry über SyncProvider
+    }
+  }
+
   return row
 }

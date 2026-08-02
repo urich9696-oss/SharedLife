@@ -115,6 +115,16 @@ export async function createEntity(
     )
   })
 
+  // Sofort pushen — nicht auf SyncProvider-Intervall/Queue warten (Partner-Sync).
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    try {
+      const { flushResources } = await import('@/features/sync/sync-engine')
+      await flushResources([row.id])
+    } catch {
+      // Offline/Fehler: Outbox + SyncProvider übernehmen den Retry
+    }
+  }
+
   return row
 }
 

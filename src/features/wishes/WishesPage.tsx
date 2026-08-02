@@ -26,7 +26,6 @@ export function WishesPage() {
     queryFn: () => listEntities(spaceId!),
     enabled: Boolean(spaceId),
     staleTime: 0,
-    refetchInterval: online ? 5_000 : false,
     refetchOnWindowFocus: true,
   })
 
@@ -38,17 +37,25 @@ export function WishesPage() {
     [entities],
   )
 
+  // Partner-Wünsche: regelmäßig pullen (nicht nur IndexedDB neu lesen).
   useEffect(() => {
     if (!online) return
-    void (async () => {
+    let cancelled = false
+    const tick = async () => {
       try {
         await flushNow()
       } catch {
         // ignore
       }
-      await refetch()
-    })()
-  }, [online]) // eslint-disable-line react-hooks/exhaustive-deps -- Mount/Online: einmal pull+push
+      if (!cancelled) await refetch()
+    }
+    void tick()
+    const id = window.setInterval(() => void tick(), 8_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [online, flushNow, refetch])
 
   const openCreate = () => {
     void navigate('/planen/neu?type=wish')

@@ -117,12 +117,16 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           : wantPull
         syncQueued.current = true
         await syncInFlight.current
-        // Follow-up läuft ggf. schon im ursprünglichen Zyklus — nicht doppelt.
-        if (!syncQueued.current) return
-        syncQueued.current = false
-        const pull = queuedPull.current
-        queuedPull.current = false
-        await runSyncCycle({ pull })
+        // Follow-up: entweder wir starten ihn, oder der andere Zyklus hat ihn
+        // bereits gestartet — dann darauf warten (Create darf nicht „fertig“ melden).
+        if (syncQueued.current) {
+          syncQueued.current = false
+          const pull = queuedPull.current
+          queuedPull.current = false
+          await runSyncCycle({ pull })
+        } else if (syncInFlight.current) {
+          await syncInFlight.current
+        }
         return
       }
 

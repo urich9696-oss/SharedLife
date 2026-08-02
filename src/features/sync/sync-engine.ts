@@ -102,11 +102,13 @@ async function syncSingleMutation(mutation: OutboxMutationRow): Promise<{
   }
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
   const response = await fetch(`${supabaseUrl}/functions/v1/sync-mutations`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
+      ...(anonKey ? { apikey: anonKey, 'x-client-info': 'sharedlife-web' } : {}),
     },
     body: JSON.stringify({ mutation }),
   })
@@ -163,16 +165,24 @@ async function syncSingleMutation(mutation: OutboxMutationRow): Promise<{
   return { ok: true }
 }
 
-export async function flushOutbox(): Promise<FlushResult> {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    throw toAppError('network', 'OFFLINE', 'Offline – Synchronisation nicht möglich', {
-      retryable: true,
-    })
+/** Serialisiert alle Flush-Pfade (Create-Eager-Push + SyncProvider). */
+let flushGate: Promise<void> = Promise.resolve()
+
+async function withFlushLock<T>(fn: () => Promise<T>): Promise<T> {
+  const previous = flushGate
+  let release!: () => void
+  flushGate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await previous
+  try {
+    return await fn()
+  } finally {
+    release()
   }
+}
 
-  await resetSyncingToPending()
-  const pending = await listPendingMutations()
-
+async function flushMutationList(pending: OutboxMutationRow[]): Promise<FlushResult> {
   const result: FlushResult = {
     applied: 0,
     conflicts: [],
@@ -180,7 +190,6 @@ export async function flushOutbox(): Promise<FlushResult> {
     errors: [],
   }
 
-  // Demo: lokale Daten bleiben kanonisch, Outbox wird als angewendet markiert.
   if (DEMO_MODE) {
     for (const mutation of pending) {
       await markApplied(mutation.mutationId)
@@ -254,6 +263,71 @@ export async function flushOutbox(): Promise<FlushResult> {
   }
 
   return result
+}
+
+export async function flushOutbox(): Promise<FlushResult> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw toAppError('network', 'OFFLINE', 'Offline – Synchronisation nicht möglich', {
+      retryable: true,
+    })
+  }
+
+  return withFlushLock(async () => {
+    await resetSyncingToPending()
+    return flushMutationList(await listPendingMutations())
+  })
+}
+
+/**
+ * Pusht Outbox-Einträge für konkrete Ressourcen sofort (ohne Backoff-Wartezeit).
+ * Nach Create/Detail nutzen — unabhängig vom SyncProvider-Intervall.
+ */
+export async function flushResources(resourceIds: string[]): Promise<FlushResult> {
+  const ids = [...new Set(resourceIds.filter(Boolean))]
+  const empty: FlushResult = { applied: 0, conflicts: [], failed: 0, errors: [] }
+  if (!ids.length) return empty
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw toAppError('network', 'OFFLINE', 'Offline – Synchronisation nicht möglich', {
+      retryable: true,
+    })
+  }
+
+  return withFlushLock(async () => {
+    await resetSyncingToPending()
+
+    const rows = await db.outbox
+      .where('status')
+      .anyOf(['pending', 'failed', 'syncing'])
+      .toArray()
+
+    const targets = rows.filter((m) => ids.includes(m.resourceId))
+    for (const m of targets) {
+      await db.outbox.update(m.mutationId, {
+        status: 'pending',
+        nextRetryAt: null,
+      })
+    }
+
+    const pending = (await Promise.all(targets.map((m) => db.outbox.get(m.mutationId)))).filter(
+      (m): m is OutboxMutationRow => Boolean(m),
+    )
+
+    pending.sort((a, b) => {
+      const rank = (m: OutboxMutationRow) => {
+        if (m.resourceType === 'entity' && (m.operation === 'create' || m.payload?.is_create))
+          return 0
+        if (m.resourceType === 'entity') return 1
+        if (m.resourceType === 'entity_detail') return 4
+        return 7
+      }
+      const byRank = rank(a) - rank(b)
+      if (byRank !== 0) return byRank
+      return a.createdAt.localeCompare(b.createdAt)
+    })
+
+    return flushMutationList(pending)
+  })
 }
 
 export async function getLastSyncAt(): Promise<Date | null> {

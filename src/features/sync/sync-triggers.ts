@@ -5,7 +5,7 @@ let intervalId: ReturnType<typeof setInterval> | null = null
 let started = false
 
 /** Pull + Flush Intervall – Partner-Änderungen sollen ohne Reload ankommen. */
-const DEFAULT_INTERVAL_MS = 15_000
+const DEFAULT_INTERVAL_MS = 8_000
 
 function triggerSync(): void {
   if (!syncHandler || typeof navigator === 'undefined' || !navigator.onLine) return

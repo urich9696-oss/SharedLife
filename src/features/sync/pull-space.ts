@@ -183,7 +183,6 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
   if (DEMO_MODE) return
 
   const supabase = getSupabaseClient()
-  const protectedIds = await protectedResourceIds()
 
   const [
     entitiesRes,
@@ -261,25 +260,20 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
   const viewLayouts = (layoutsRes.data ?? []) as ViewLayoutRow[]
   const entityLinks = (linksRes.data ?? []) as EntityLinkRow[]
 
-  const detailRecords: EntityDetailRow[] = []
+  const remoteDetailRows: Array<{
+    type: DetailType
+    row: Record<string, unknown>
+  }> = []
   for (const { table, type } of DETAIL_TABLES) {
     const { data, error } = await supabase.from(table).select('*').eq('space_id', spaceId)
     throwIfError(error)
     for (const row of data ?? []) {
-      const r = row as Record<string, unknown>
-      const entityId = String(r.entity_id)
-      if (protectedIds.has(entityId)) continue
-      detailRecords.push({
-        entity_id: entityId,
-        detail_type: type,
-        space_id: spaceId,
-        payload: detailRowToLocalPayload(type, r),
-        created_at: String(r.created_at ?? new Date().toISOString()),
-        updated_at: String(r.updated_at ?? new Date().toISOString()),
-      })
+      remoteDetailRows.push({ type, row: row as Record<string, unknown> })
     }
   }
 
+  // protectedIds erst unmittelbar vor dem Replace lesen — sonst löscht ein
+  // paralleler Create während des Netzwerk-Fetches lokale Outbox-Einträge.
   await db.transaction(
     'rw',
     [
@@ -299,9 +293,26 @@ export async function pullSpaceIntoDexie(spaceId: string): Promise<void> {
       db.widgetInstances,
       db.viewLayouts,
       db.entityLinks,
+      db.outbox,
       db.syncMeta,
     ],
     async () => {
+      const protectedIds = await protectedResourceIds()
+
+      const detailRecords: EntityDetailRow[] = []
+      for (const { type, row } of remoteDetailRows) {
+        const entityId = String(row.entity_id)
+        if (protectedIds.has(entityId)) continue
+        detailRecords.push({
+          entity_id: entityId,
+          detail_type: type,
+          space_id: spaceId,
+          payload: detailRowToLocalPayload(type, row),
+          created_at: String(row.created_at ?? new Date().toISOString()),
+          updated_at: String(row.updated_at ?? new Date().toISOString()),
+        })
+      }
+
       await replaceSpaceTable('entities', spaceId, entities, protectedIds)
       await replaceSpaceTable('notes', spaceId, notes, protectedIds)
       await replaceSpaceTable('checklists', spaceId, checklists, protectedIds)

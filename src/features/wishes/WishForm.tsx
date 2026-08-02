@@ -54,7 +54,10 @@ export function WishFormFields({ values, onChange }: WishFormFieldsProps) {
       />
       <Input
         label="Shop Link"
-        type="url"
+        type="text"
+        inputMode="url"
+        autoCapitalize="off"
+        autoCorrect="off"
         value={values.url}
         onChange={(e) => onChange({ ...values, url: e.target.value })}
         placeholder="https://…"
