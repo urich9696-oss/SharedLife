@@ -41,8 +41,11 @@ export function metadataFromDetail(
       meta.assigneeRole = d.assigneeRole || ''
       meta.reservationStatus = d.reservationStatus || 'none'
       meta.belongsToEntityId = d.belongsToEntityId || ''
-      // Ort auch in Metadata, damit Listen/Partner-UI ohne Detail-Pull den Ort sehen
+      // Ort/Budget/Reservierung auch in Metadata — Entity-Sync trägt manchen
+      // Partner-Stand auch dann, wenn date_details-Spalten verzögert nachziehen.
       meta.place = d.venueName || ''
+      meta.estimatedCost = d.estimatedCost || ''
+      meta.reservationReference = d.reservationReference || ''
       break
     }
     case 'moment': {

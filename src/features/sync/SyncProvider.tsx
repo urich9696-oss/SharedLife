@@ -79,6 +79,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const syncInFlight = useRef<Promise<void> | null>(null)
   const syncQueued = useRef(false)
   const queuedPull = useRef(false)
+  const runSyncCycleRef = useRef<(opts?: { pull?: boolean }) => Promise<void>>(async () => {})
 
   const syncing = status === 'syncing'
 
@@ -123,7 +124,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           syncQueued.current = false
           const pull = queuedPull.current
           queuedPull.current = false
-          await runSyncCycle({ pull })
+          await runSyncCycleRef.current({ pull })
         } else if (syncInFlight.current) {
           await syncInFlight.current
         }
@@ -180,11 +181,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         syncQueued.current = false
         const pull = queuedPull.current
         queuedPull.current = false
-        await runSyncCycle({ pull })
+        await runSyncCycleRef.current({ pull })
       }
     },
     [session, online, spaceId, queryClient],
   )
+
+  useEffect(() => {
+    runSyncCycleRef.current = runSyncCycle
+  }, [runSyncCycle])
 
   const flushNow = useCallback(async () => {
     await runSyncCycle({ pull: true })

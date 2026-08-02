@@ -194,7 +194,15 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
             venueName:
               (detailPayload as DateDetailValues | null)?.venueName ||
               String(entity.metadata?.place ?? ''),
-            belongsToEntityId: String(entity.metadata?.belongsToEntityId ?? ''),
+            estimatedCost:
+              (detailPayload as DateDetailValues | null)?.estimatedCost ||
+              String(entity.metadata?.estimatedCost ?? ''),
+            reservationReference:
+              (detailPayload as DateDetailValues | null)?.reservationReference ||
+              String(entity.metadata?.reservationReference ?? ''),
+            belongsToEntityId: String(
+              entity.metadata?.belongsToEntityId ?? entity.parent_entity_id ?? '',
+            ),
             reservationStatus: (entity.metadata?.reservationStatus as DateDetailValues['reservationStatus']) || 'none',
             assigneeRole: String(entity.metadata?.assigneeRole ?? 'gemeinsam'),
           }

@@ -31,9 +31,15 @@ test.describe('SharedLife mobile UI (iPhone width)', () => {
 
   test('login stays within viewport and inputs are ≥16px', async ({ page }) => {
     await page.goto('/login')
+    await expect(page.getByRole('heading', { name: 'Willkommen' })).toBeVisible({
+      timeout: 15_000,
+    })
     await assertNoHorizontalOverflow(page)
 
-    const email = page.getByLabel('E-Mail')
+    const email = page
+      .getByLabel('E-Mail')
+      .or(page.getByPlaceholder('du@beispiel.ch'))
+      .first()
     await expect(email).toBeVisible({ timeout: 15_000 })
     await assertNoHorizontalOverflow(page)
 

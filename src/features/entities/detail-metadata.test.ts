@@ -13,5 +13,19 @@ describe('metadataFromDetail date (V6)', () => {
     expect(meta.place).toBe('Seebar')
     expect(meta.belongsToEntityId).toBe('trip-1')
     expect(meta.reservationStatus).toBe('requested')
+    expect(meta.estimatedCost).toBe('')
+    expect(meta.reservationReference).toBe('')
+  })
+
+  it('spiegelt Budget und Reservierungsreferenz', () => {
+    const meta = metadataFromDetail('date', {
+      ...defaultDateDetail,
+      venueName: 'Seebar',
+      estimatedCost: '90',
+      reservationReference: 'T-3',
+      reservationStatus: 'confirmed',
+    })
+    expect(meta.estimatedCost).toBe('90')
+    expect(meta.reservationReference).toBe('T-3')
   })
 })
