@@ -1,38 +1,50 @@
-type FlushHandler = () => Promise<void>
+type SyncHandler = () => Promise<void>
 
-let flushHandler: FlushHandler | null = null
+let syncHandler: SyncHandler | null = null
 let intervalId: ReturnType<typeof setInterval> | null = null
 let started = false
 
-const DEFAULT_INTERVAL_MS = 30_000
+/** Pull + Flush Intervall – Partner-Änderungen sollen ohne Reload ankommen. */
+const DEFAULT_INTERVAL_MS = 15_000
 
-export function registerFlushHandler(handler: FlushHandler): void {
-  flushHandler = handler
+function triggerSync(): void {
+  if (!syncHandler || typeof navigator === 'undefined' || !navigator.onLine) return
+  void syncHandler().catch(() => {
+    // errors surfaced via SyncProvider
+  })
+}
+
+function onVisibilityChange(): void {
+  if (document.visibilityState === 'visible') triggerSync()
+}
+
+export function registerFlushHandler(handler: SyncHandler): void {
+  syncHandler = handler
+}
+
+/** @deprecated Alias – Handler führt inzwischen Pull + Flush aus. */
+export function registerSyncHandler(handler: SyncHandler): void {
+  syncHandler = handler
 }
 
 export function startSyncTriggers(intervalMs = DEFAULT_INTERVAL_MS): void {
   if (started || typeof window === 'undefined') return
   started = true
 
-  const trigger = () => {
-    if (!flushHandler || !navigator.onLine) return
-    void flushHandler().catch(() => {
-      // errors surfaced via SyncProvider
-    })
-  }
+  window.addEventListener('online', triggerSync)
+  window.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('focus', triggerSync)
 
-  window.addEventListener('online', trigger)
-  window.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') trigger()
-  })
-  window.addEventListener('focus', trigger)
-
-  intervalId = setInterval(trigger, intervalMs)
+  intervalId = setInterval(triggerSync, intervalMs)
 }
 
 export function stopSyncTriggers(): void {
   if (!started || typeof window === 'undefined') return
   started = false
+
+  window.removeEventListener('online', triggerSync)
+  window.removeEventListener('visibilitychange', onVisibilityChange)
+  window.removeEventListener('focus', triggerSync)
 
   if (intervalId) {
     clearInterval(intervalId)

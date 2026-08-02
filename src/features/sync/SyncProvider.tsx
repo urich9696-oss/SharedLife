@@ -24,6 +24,7 @@ import {
 } from '@/features/sync/sync-triggers'
 import { subscribeToSpaceChanges, unsubscribeFromSpaceChanges } from '@/features/sync/realtime'
 import { pullSpaceIntoDexie } from '@/features/sync/pull-space'
+import { invalidateSpaceQueries } from '@/features/sync/invalidate-space-queries'
 import { ensureRemoteDevice } from '@/features/sync/ensure-device'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { DEMO_MODE } from '@/lib/demo'
@@ -71,6 +72,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [conflicts, setConflicts] = useState<ConflictCopyRow[]>([])
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
+  const syncInFlight = useRef<Promise<void> | null>(null)
 
   const syncing = status === 'syncing'
 
@@ -92,47 +94,72 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
   }, [])
 
-  const flushNow = useCallback(async () => {
-    if (!session) return
-    if (!online) {
-      setStatus('offline')
-      return
-    }
-
-    setStatus('syncing')
-    setLastError(null)
-    try {
-      if (!DEMO_MODE && spaceId) {
-        await ensureRemoteDevice(spaceId, session.userId)
-      }
-      const result = await flushOutbox()
-      await refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
-      if (result.failed > 0 && result.applied === 0) {
-        setStatus('error')
-        setLastError(result.errors[0] ?? 'Synchronisation fehlgeschlagen')
-      } else if (result.conflicts.length > 0) {
-        setStatus('error')
-        setLastError('Versionskonflikte müssen aufgelöst werden')
-      } else {
-        setStatus(pendingCount > 0 ? 'idle' : 'idle')
-      }
-    } catch (err) {
-      if (isAppError(err) && err.code === 'OFFLINE') {
+  const runSyncCycle = useCallback(
+    async (opts?: { pull?: boolean }) => {
+      if (!session) return
+      if (!online) {
         setStatus('offline')
-      } else {
-        setStatus('error')
-        setLastError(toUserMessage(err))
+        return
       }
-    } finally {
-      void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
-    }
-  }, [session, online, pendingCount, spaceId])
+      if (syncInFlight.current) {
+        await syncInFlight.current
+        return
+      }
+
+      const shouldPull = opts?.pull !== false
+      const cycle = (async () => {
+        setStatus('syncing')
+        setLastError(null)
+        try {
+          if (!DEMO_MODE && spaceId) {
+            await ensureRemoteDevice(spaceId, session.userId)
+            if (shouldPull) {
+              await pullSpaceIntoDexie(spaceId)
+              invalidateSpaceQueries(queryClient, spaceId)
+            }
+          }
+          const result = await flushOutbox()
+          await refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
+          if (result.failed > 0 && result.applied === 0) {
+            setStatus('error')
+            setLastError(result.errors[0] ?? 'Synchronisation fehlgeschlagen')
+          } else if (result.conflicts.length > 0) {
+            setStatus('error')
+            setLastError('Versionskonflikte müssen aufgelöst werden')
+          } else {
+            setStatus('idle')
+          }
+        } catch (err) {
+          if (isAppError(err) && err.code === 'OFFLINE') {
+            setStatus('offline')
+          } else {
+            setStatus('error')
+            setLastError(toUserMessage(err))
+          }
+        } finally {
+          void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
+        }
+      })()
+
+      syncInFlight.current = cycle
+      try {
+        await cycle
+      } finally {
+        if (syncInFlight.current === cycle) syncInFlight.current = null
+      }
+    },
+    [session, online, spaceId, queryClient],
+  )
+
+  const flushNow = useCallback(async () => {
+    await runSyncCycle({ pull: true })
+  }, [runSyncCycle])
 
   useEffect(() => {
-    registerFlushHandler(flushNow)
+    registerFlushHandler(() => runSyncCycle({ pull: true }))
     startSyncTriggers()
     return () => stopSyncTriggers()
-  }, [flushNow])
+  }, [runSyncCycle])
 
   useEffect(() => {
     if (!spaceId || !session) {
@@ -149,29 +176,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     void (async () => {
-      setStatus('syncing')
-      setLastError(null)
-      try {
-        if (!DEMO_MODE) {
-          await pullSpaceIntoDexie(spaceId)
-          if (cancelled) return
-          await queryClient.invalidateQueries()
-        }
-        if (cancelled) return
-        await flushNow()
-      } catch (err) {
-        if (cancelled) return
-        if (isAppError(err) && err.code === 'OFFLINE') {
-          setStatus('offline')
-        } else {
-          setStatus('error')
-          setLastError(toUserMessage(err))
-        }
-      } finally {
-        if (!cancelled) {
-          void refreshCounts(setPendingCount, setConflicts, setLastSyncAt)
-        }
-      }
+      if (cancelled) return
+      await runSyncCycle({ pull: true })
     })()
 
     return () => {
