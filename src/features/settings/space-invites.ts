@@ -64,7 +64,15 @@ export async function listSpaceInvites(spaceId: string): Promise<SpaceInvite[]> 
     .select('*')
     .eq('space_id', spaceId)
     .order('created_at', { ascending: false })
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Tabelle fehlt noch auf älteren Remote-DBs — Einladen trotzdem erlauben
+    const msg = error.message.toLowerCase()
+    if (msg.includes('space_invites') || msg.includes('schema cache')) {
+      console.warn('space_invites nicht verfügbar:', error.message)
+      return []
+    }
+    throw new Error(error.message)
+  }
   return (data ?? []).map(mapInvite)
 }
 

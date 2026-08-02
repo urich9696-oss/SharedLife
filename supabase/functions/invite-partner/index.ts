@@ -255,42 +255,47 @@ Deno.serve(async (req) => {
   }
 
   const now = new Date().toISOString()
-  const { data: existingInvite } = await admin
-    .from('space_invites')
-    .select('id')
-    .eq('space_id', spaceId)
-    .ilike('invitee_email', email)
-    .in('status', ['draft', 'ready'])
-    .maybeSingle()
-
   const inviteNote = passwordSet
     ? `${inviteeLabel} kann sich in der PWA mit E-Mail und Passwort anmelden.`
     : `${inviteeLabel} kann sich in der PWA mit Code anmelden.`
 
-  if (existingInvite) {
-    const { error: updateError } = await admin
+  // Invite-Protokoll: wenn Tabelle fehlt (ältere DBs), Login trotzdem freischalten
+  try {
+    const { data: existingInvite, error: findInviteError } = await admin
       .from('space_invites')
-      .update({
-        invitee_label: inviteeLabel,
-        invitee_email: email,
-        status: 'ready',
-        note: inviteNote,
-        sent_at: now,
-        updated_at: now,
-      })
-      .eq('id', existingInvite.id)
-    if (updateError) return json({ error: updateError.message }, 500)
-  } else {
-    const { error: insertError } = await admin.from('space_invites').insert({
-      space_id: spaceId,
-      created_by: user.id,
-      invitee_label: inviteeLabel,
-      invitee_email: email,
-      status: 'ready',
-      note: inviteNote,
-      sent_at: now,
-    })
-    if (insertError) return json({ error: insertError.message }, 500)
+      .select('id')
+      .eq('space_id', spaceId)
+      .ilike('invitee_email', email)
+      .in('status', ['draft', 'ready'])
+      .maybeSingle()
+
+    if (!findInviteError) {
+      if (existingInvite) {
+        await admin
+          .from('space_invites')
+          .update({
+            invitee_label: inviteeLabel,
+            invitee_email: email,
+            status: 'ready',
+            note: inviteNote,
+            sent_at: now,
+            updated_at: now,
+          })
+          .eq('id', existingInvite.id)
+      } else {
+        await admin.from('space_invites').insert({
+          space_id: spaceId,
+          created_by: user.id,
+          invitee_label: inviteeLabel,
+          invitee_email: email,
+          status: 'ready',
+          note: inviteNote,
+          sent_at: now,
+        })
+      }
+    }
+  } catch {
+    // ignore missing space_invites
   }
 
   const { data: space } = await admin

@@ -1,36 +1,32 @@
 # SharedLife: Lea einladen
 
-## Für Dennis (in der App)
+## Fehler „Could not find the table public.space_invites“
 
-1. **Einstellungen → Lea einladen**
-2. E-Mail eintragen, z. B. `mariolas.lea@gmail.com`
-3. Optional **Passwort** setzen (mind. 8 Zeichen), z. B. `SharedLife-2026!`
-4. **Zugang freischalten**
+Die Tabelle fehlt noch in der Remote-Datenbank. Einmal im Supabase SQL Editor ausführen:
 
-Damit passiert serverseitig:
+1. Öffne https://supabase.com/dashboard/project/uoqlusgimvinjmajtesz/sql/new  
+2. Inhalt von `scripts/ensure-space-invites.sql` einfügen → **Run**  
+3. App neu laden
 
-- Auth-User für Lea (falls noch nicht vorhanden)
-- Passwort (wenn angegeben)
-- Space-Mitgliedschaft
-- Einladung auf Status „freigeschaltet“
+## Lea freischalten (neueste Version)
 
-### Edge Function deployen (wenn Passwort-Feld neu ist)
-
-```bash
-supabase functions deploy invite-partner
-```
+1. Deploy/Merge inkl. Passwort-Einladung + Edge Function:
+   ```bash
+   supabase functions deploy invite-partner
+   ```
+2. In der App: **Einstellungen → Lea einladen**
+3. E-Mail: `mariolas.lea@gmail.com`
+4. Passwort: `SharedLife-2026!`
+5. **Zugang freischalten**
 
 ## Für Lea
 
-1. https://shared-life-theta.vercel.app öffnen (oder PWA installieren)
-2. **Mit Passwort anmelden** tippen
-3. E-Mail + Passwort eingeben → fertig
+1. https://shared-life-theta.vercel.app  
+2. **Mit Passwort anmelden**  
+3. E-Mail `mariolas.lea@gmail.com` + Passwort `SharedLife-2026!`
 
-Alternativ weiterhin: E-Mail → Code aus der Mail.
+## Fallback ohne Passwort-Feld (alte App)
 
-## Manuell Passwort setzen (falls App noch kein Passwort-Feld hat)
-
-1. Dennis: Lea wie oben **ohne** Passwort freischalten
-2. Supabase Dashboard → **Authentication → Users** → User mit Leas E-Mail öffnen
-3. **Send password recovery** oder Passwort direkt setzen
-4. Lea meldet sich mit „Mit Passwort anmelden“ an
+1. SQL wie oben ausführen  
+2. Zugang mit E-Mail freischalten  
+3. Supabase → Authentication → Users → Passwort setzen  
