@@ -25,6 +25,10 @@ V7 korrigiert die Home-Sektion „Letzte Momente“, vervollständigt die Wunsch
 
 Keine. Bestehende Datensätze bleiben typisiert wie in V6.
 
+## Deploy-Hinweis
+
+Production wurde nicht ausgerollt. Vercel erstellt bei Push automatisch ein Branch-Preview-Deployment — „nichts deployt“ bezieht sich daher nur auf Production.
+
 ## Manuelle Prüfung
 
 1. Version in Einstellungen: SharedLife V7 · 7.0.0

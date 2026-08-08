@@ -19,6 +19,7 @@ import {
   selectTimelinePreview,
   selectTodayForUs,
   timelinePreviewTypeLabel,
+  todaySectionEmptyKind,
 } from '@/features/home/home-dashboard'
 import { selectHomeHero } from '@/features/home/hero'
 import { selectRecentMoments } from '@/features/home/recent-moments'
@@ -110,6 +111,17 @@ export function HomePage() {
         limit: 4,
       }),
     [entities, reminders, now, hero.entityId],
+  )
+
+  const todayEmptyKind = useMemo(
+    () =>
+      todaySectionEmptyKind({
+        todayItems,
+        entities,
+        reminders,
+        now,
+      }),
+    [todayItems, entities, reminders, now],
   )
 
   const anticipation = useMemo(
@@ -228,7 +240,7 @@ export function HomePage() {
                       Kalender
                     </Link>
                   </div>
-                  {todayItems.length > 0 ? (
+                  {todayEmptyKind === 'list' ? (
                     <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
                       {todayItems.map((item) => (
                         <li key={item.id} className="border-b border-border/60 last:border-b-0">
@@ -253,6 +265,18 @@ export function HomePage() {
                         </li>
                       ))}
                     </ul>
+                  ) : todayEmptyKind === 'covered_by_hero' ? (
+                    <p className="rounded-lg border border-border/60 bg-surface px-5 py-4 text-[15px] leading-relaxed text-text-muted">
+                      Das Wichtigste von heute ist oben hervorgehoben.
+                      {hero.href ? (
+                        <>
+                          {' '}
+                          <Link to={hero.href} className="font-medium text-primary">
+                            Öffnen
+                          </Link>
+                        </>
+                      ) : null}
+                    </p>
                   ) : (
                     <p className="rounded-lg border border-border/60 bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))] px-5 py-5 text-[15px] leading-relaxed text-text">
                       Heute ist ruhig — Zeit für euch beide.

@@ -5,6 +5,7 @@ import {
   selectTodayForUs,
   selectTimelinePreview,
   timelinePreviewTypeLabel,
+  todaySectionEmptyKind,
 } from '@/features/home/home-dashboard'
 import type { TimelineItem } from '@/features/timeline/derive-timeline'
 import type { EntityRow, ReminderRow } from '@/lib/indexed-db/schema'
@@ -50,6 +51,38 @@ describe('home dashboard sections (V7)', () => {
       now,
     })
     expect(items).toEqual([])
+    expect(
+      todaySectionEmptyKind({
+        todayItems: items,
+        entities: [entity({ id: 'w1', entity_type: 'wish', title: 'Kamera' })],
+        reminders: [],
+        now,
+      }),
+    ).toBe('calm')
+  })
+
+  it('markiert Heute als durch Hero abgedeckt statt ruhig', () => {
+    const date = entity({
+      id: 'd1',
+      entity_type: 'date',
+      title: 'Dinner',
+      starts_at: '2026-08-08T18:00:00.000Z',
+    })
+    const todayItems = selectTodayForUs({
+      entities: [date],
+      reminders: [],
+      now,
+      excludeEntityId: 'd1',
+    })
+    expect(todayItems).toEqual([])
+    expect(
+      todaySectionEmptyKind({
+        todayItems,
+        entities: [date],
+        reminders: [],
+        now,
+      }),
+    ).toBe('covered_by_hero')
   })
 
   it('schließt Hero-Entity aus Vorfreude aus', () => {

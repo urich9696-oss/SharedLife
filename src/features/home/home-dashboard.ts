@@ -102,6 +102,38 @@ export function selectTodayForUs(input: {
   return items.slice(0, limit)
 }
 
+/**
+ * Ob heute überhaupt Aktivität existiert — inklusive einer Entity,
+ * die bereits als Hero hervorgehoben und aus der Liste ausgeschlossen wurde.
+ */
+export function hasTodayActivity(input: {
+  entities: EntityRow[]
+  reminders: ReminderRow[]
+  now: Date
+}): boolean {
+  return (
+    selectTodayForUs({
+      entities: input.entities,
+      reminders: input.reminders,
+      now: input.now,
+      excludeEntityId: null,
+      limit: 1,
+    }).length > 0
+  )
+}
+
+/** Leerzustand für „Heute für uns“: ruhig nur wenn wirklich nichts heute ansteht. */
+export function todaySectionEmptyKind(input: {
+  todayItems: HomeTodayItem[]
+  entities: EntityRow[]
+  reminders: ReminderRow[]
+  now: Date
+}): 'list' | 'covered_by_hero' | 'calm' {
+  if (input.todayItems.length > 0) return 'list'
+  if (hasTodayActivity(input)) return 'covered_by_hero'
+  return 'calm'
+}
+
 export function selectAnticipationItems(input: {
   entities: EntityRow[]
   now: Date
