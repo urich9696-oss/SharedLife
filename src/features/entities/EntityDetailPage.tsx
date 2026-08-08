@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -59,6 +59,7 @@ import type { DateDetailValues } from '@/features/dates/DateForm'
 import type { MomentDetailValues } from '@/features/moments/MomentForm'
 import type { TaskDetailValues } from '@/features/tasks/TaskForm'
 import { TripCountdownCard } from '@/features/trips/TripCountdown'
+import { wishPriorityLabel } from '@/features/wishes/wish-priority'
 import { v4 as uuidv4 } from 'uuid'
 
 interface EntityDetailPageProps {
@@ -76,6 +77,7 @@ function assigneeLabelOf(meta: Record<string, unknown> | undefined): string | nu
 
 export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { spaceId, session } = useAuth()
   const { data: entity, isLoading, error } = useEntity(id)
   const detailType = detailTypeForEntity(type)
@@ -86,7 +88,12 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
   const { data: budgets = [] } = useBudgets()
   const [editing, setEditing] = useState(false)
   const [detailValues, setDetailValues] = useState(parseDetailPayload(type, null))
+  const detailValuesRef = useRef(detailValues)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    detailValuesRef.current = detailValues
+  }, [detailValues])
   const [toast, setToast] = useState<string | null>(null)
   const [busyAction, setBusyAction] = useState(false)
 
@@ -264,8 +271,10 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
         entityId: id,
         spaceId,
         detailType,
-        payload: detailValues as Record<string, unknown>,
+        payload: detailValuesRef.current as Record<string, unknown>,
       })
+      void queryClient.invalidateQueries({ queryKey: ['entity-detail', id] })
+      void queryClient.invalidateQueries({ queryKey: ['wish-priorities', spaceId] })
     }
     setEditing(false)
     flash('Gespeichert')
@@ -553,6 +562,12 @@ export function EntityDetailPage({ type, id }: EntityDetailPageProps) {
                       ? `${(detailPayload as { price?: string }).price} CHF`
                       : null
                   }
+                />
+                <MetaRow
+                  label="Priorität"
+                  value={wishPriorityLabel(
+                    (detailPayload as { priority?: string } | null)?.priority,
+                  )}
                 />
                 <MetaRow label="Anlass" value={String(entity.metadata?.occasion || '')} />
                 <MetaRow label="Status" value={String(entity.metadata?.wishStatus || 'open')} last />

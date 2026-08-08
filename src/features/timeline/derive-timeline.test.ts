@@ -101,4 +101,34 @@ describe('deriveTimelineItems', () => {
     expect(items[0]?.storagePath).toBe('space/media/app/photo.jpg')
     expect(items[0]?.kind).toBe('trip')
   })
+
+  it('behält breite Timeline-Aggregation für Non-Moment-Typen (V7)', () => {
+    const items = deriveTimelineItems({
+      entities: [
+        entity({
+          id: '55555555-5555-4555-8555-555555555555',
+          entity_type: 'date',
+          title: 'Dinner',
+          starts_at: '2026-08-01T18:00:00.000Z',
+        }),
+        entity({
+          id: '66666666-6666-4666-8666-666666666666',
+          entity_type: 'trip',
+          title: 'Paris',
+          starts_at: '2026-09-01T08:00:00.000Z',
+        }),
+        entity({
+          id: '77777777-7777-4777-8777-777777777777',
+          entity_type: 'wish',
+          title: 'Kamera',
+        }),
+      ],
+      timelineEntries: [],
+      entityMedia: [],
+      mediaAssets: [],
+    })
+
+    expect(items.map((i) => i.entityType)).toEqual(['trip', 'date'])
+    expect(items.some((i) => i.entityType === 'wish')).toBe(false)
+  })
 })

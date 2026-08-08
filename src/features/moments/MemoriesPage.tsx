@@ -110,7 +110,7 @@ export function MemoriesPage() {
     [data],
   )
 
-  /** Jedes Bild = eigene Swipe-Card; Tap öffnet immer dieselbe Moment-Detailseite */
+  /** Galerie-Karten: Parent-Typ beibehalten — nie pauschal als moment labeln. */
   const deckCards = useMemo(() => {
     const entitiesById = new Map((data?.entities ?? []).map((e) => [e.id, e]))
     const fromGallery: MomentDeckCard[] = (data?.gallery ?? []).map((g) => {
@@ -122,7 +122,7 @@ export function MemoriesPage() {
         location: entity ? String(entity.metadata?.place ?? '') || null : null,
         storagePath: g.src,
         entityId: g.entityId,
-        entityType: entity?.entity_type ?? 'moment',
+        entityType: entity?.entity_type ?? null,
       }
     })
     if (fromGallery.length > 0) return fromGallery
@@ -133,7 +133,7 @@ export function MemoriesPage() {
       location: item.location,
       storagePath: item.storagePath,
       entityId: item.entityId,
-      entityType: item.entityType,
+      entityType: item.entityType ?? null,
     }))
   }, [data])
 

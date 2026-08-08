@@ -1,14 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import {
-  endOfDay,
-  format,
-  isBefore,
-  isSameDay,
-  parseISO,
-  startOfDay,
-} from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { motion } from 'motion/react'
 import { AppHeaderHome } from '@/components/shared/AppHeader'
@@ -17,47 +10,27 @@ import { ProgressCard } from '@/components/ui/ProgressCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
+import { entityDetailPath } from '@/features/entities/entity-types'
 import { useEntities, useReminders } from '@/features/entities/useEntities'
+import {
+  HOME_QUICK_ACCESS,
+  selectAnticipationItems,
+  selectSharedHighlight,
+  selectTimelinePreview,
+  selectTodayForUs,
+  timelinePreviewTypeLabel,
+} from '@/features/home/home-dashboard'
 import { selectHomeHero } from '@/features/home/hero'
+import { selectRecentMoments } from '@/features/home/recent-moments'
 import { MediaImage } from '@/features/media/MediaImage'
 import { daysTogether, usePairProfile } from '@/features/space/pair-profile'
 import { TripCountdownBadge } from '@/features/trips/TripCountdown'
 import { deriveTimelineItems } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
-import type { EntityRow } from '@/lib/indexed-db/schema'
-
-function entityStart(entity: EntityRow): Date | null {
-  if (entity.starts_at) return parseISO(entity.starts_at)
-  if (entity.all_day_start) return parseISO(entity.all_day_start)
-  return null
-}
-
-function isTodayRelevant(entity: EntityRow, now: Date): boolean {
-  if (entity.deleted_at || entity.status === 'cancelled' || entity.status === 'archived') return false
-  const start = entityStart(entity)
-  const end = entity.ends_at
-    ? parseISO(entity.ends_at)
-    : entity.all_day_end
-      ? parseISO(entity.all_day_end)
-      : null
-
-  if (entity.entity_type === 'task' && entity.status === 'active') {
-    if (!start) return false
-    return isSameDay(start, now) || isBefore(start, endOfDay(now))
-  }
-
-  if (['event', 'date', 'trip', 'milestone'].includes(entity.entity_type) && start) {
-    if (isSameDay(start, now)) return true
-    if (end && !isBefore(end, startOfDay(now)) && !isBefore(endOfDay(now), start)) return true
-  }
-
-  return false
-}
 
 const fadeUp = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
 }
 
 export function HomePage() {
@@ -127,61 +100,61 @@ export function HomePage() {
     [now, entities, mediaByEntityId, pair, together],
   )
 
-  const todayItems = useMemo(() => {
-    const todayEntities = entities
-      .filter((e) => isTodayRelevant(e, now))
-      .filter((e) => e.id !== hero.entityId)
-      .slice(0, 4)
-      .map((e) => ({
-        id: e.id,
-        label: e.title,
-        meta: getEntityTypeMeta(e.entity_type).label,
-        href: entityDetailPath(e.entity_type, e.id) as string | null,
-      }))
-
-    const todayReminders = reminders
-      .filter((r) => !r.deleted_at && r.is_active && isSameDay(parseISO(r.remind_at), now))
-      .slice(0, 2)
-      .map((r) => ({
-        id: r.id,
-        label: r.title,
-        meta: 'Erinnerung',
-        href: null as string | null,
-      }))
-
-    return [...todayEntities, ...todayReminders].slice(0, 4)
-  }, [entities, reminders, now, hero.entityId])
-
-  const activeGoals = useMemo(
+  const todayItems = useMemo(
     () =>
-      entities
-        .filter((e) => e.entity_type === 'goal' && !e.deleted_at && e.status === 'active')
-        .slice(0, 6)
-        .map((e) => ({
-          id: e.id,
-          title: e.title,
-          href: entityDetailPath('goal', e.id),
-          progress: detailProgress[e.id] ?? 0,
-        })),
-    [entities, detailProgress],
+      selectTodayForUs({
+        entities,
+        reminders,
+        now,
+        excludeEntityId: hero.entityId,
+        limit: 4,
+      }),
+    [entities, reminders, now, hero.entityId],
   )
 
-  const activeTrips = useMemo(
+  const anticipation = useMemo(
     () =>
-      entities
-        .filter(
-          (e) =>
-            e.entity_type === 'trip' &&
-            !e.deleted_at &&
-            (e.status === 'active' || e.status === 'draft'),
-        )
-        .sort((a, b) => (entityStart(a)?.getTime() ?? 0) - (entityStart(b)?.getTime() ?? 0))
-        .slice(0, 4),
-    [entities],
+      selectAnticipationItems({
+        entities,
+        now,
+        mediaByEntityId,
+        excludeEntityId: hero.entityId,
+        limit: 3,
+      }),
+    [entities, now, mediaByEntityId, hero.entityId],
+  )
+
+  const highlight = useMemo(
+    () =>
+      selectSharedHighlight({
+        entities,
+        detailProgress,
+      }),
+    [entities, detailProgress],
   )
 
   const { data: recentMoments = [] } = useQuery({
     queryKey: ['home-recent-moments', spaceId],
+    enabled: Boolean(spaceId),
+    queryFn: async () => {
+      const [ents, details, mediaLinks, mediaAssets] = await Promise.all([
+        db.entities.where('space_id').equals(spaceId!).toArray(),
+        db.entityDetails.toArray(),
+        db.entityMedia.toArray(),
+        db.mediaAssets.where('space_id').equals(spaceId!).toArray(),
+      ])
+      return selectRecentMoments({
+        entities: ents,
+        entityDetails: details.filter((d) => d.space_id === spaceId),
+        entityMedia: mediaLinks.filter((l) => l.space_id === spaceId),
+        mediaAssets: mediaAssets.filter((m) => !m.deleted_at),
+        limit: 12,
+      })
+    },
+  })
+
+  const { data: timelinePreview = [] } = useQuery({
+    queryKey: ['home-timeline-preview', spaceId, hero.entityId ?? null],
     enabled: Boolean(spaceId),
     queryFn: async () => {
       const [ents, entries, mediaLinks, mediaAssets] = await Promise.all([
@@ -190,23 +163,32 @@ export function HomePage() {
         db.entityMedia.toArray(),
         db.mediaAssets.where('space_id').equals(spaceId!).toArray(),
       ])
-      return deriveTimelineItems({
+      const items = deriveTimelineItems({
         entities: ents.filter((e) => !e.deleted_at),
         timelineEntries: entries.filter((e) => !e.deleted_at),
-        entityMedia: mediaLinks,
+        entityMedia: mediaLinks.filter((l) => l.space_id === spaceId),
         mediaAssets: mediaAssets.filter((m) => !m.deleted_at),
-      }).slice(0, 12)
+      })
+      return selectTimelinePreview(items, {
+        excludeEntityIds: hero.entityId ? [hero.entityId] : [],
+        limit: 6,
+      })
     },
   })
 
   const hasAnyContent =
-    entities.length > 0 || reminders.some((r) => !r.deleted_at) || recentMoments.length > 0
+    entities.some((e) => !e.deleted_at) ||
+    reminders.some((r) => !r.deleted_at) ||
+    recentMoments.length > 0
 
   return (
     <div className="mx-auto max-w-5xl">
-      <AppHeaderHome />
+      <AppHeaderHome
+        togetherDays={together}
+        coupleBlurb={pair?.coupleBlurb}
+      />
 
-      <div className="px-page pt-[26px] pb-6 lg:pb-8">
+      <div className="px-page pt-[22px] pb-6 lg:pb-8">
         {isLoading ? (
           <LoadingState className="min-h-[40dvh] py-10" />
         ) : (
@@ -214,7 +196,7 @@ export function HomePage() {
             <motion.section
               className="mb-[var(--section-gap)]"
               {...fadeUp}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <HeroCard
                 title={hero.title}
@@ -237,152 +219,243 @@ export function HomePage() {
               />
             ) : (
               <>
-          {todayItems.length > 0 ? (
-            <section className="mb-[var(--section-gap)]">
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Heute</h2>
-                <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
-                  Kalender
-                </Link>
-              </div>
-              <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
-                {todayItems.map((item) => (
-                  <li key={item.id} className="border-b border-border/60 last:border-b-0">
-                    {item.href ? (
+                <section className="mb-[var(--section-gap)]">
+                  <div className="mb-3 flex items-end justify-between gap-4">
+                    <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">
+                      Heute für uns
+                    </h2>
+                    <Link to="/planen?tab=kalender" className="text-sm font-medium text-primary">
+                      Kalender
+                    </Link>
+                  </div>
+                  {todayItems.length > 0 ? (
+                    <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
+                      {todayItems.map((item) => (
+                        <li key={item.id} className="border-b border-border/60 last:border-b-0">
+                          {item.href ? (
+                            <Link
+                              to={item.href}
+                              className="flex min-h-14 items-center justify-between gap-4 px-6 py-4"
+                            >
+                              <span className="text-[17px] text-text">{item.label}</span>
+                              <span className="shrink-0 text-sm font-medium text-text-muted">
+                                {item.meta}
+                              </span>
+                            </Link>
+                          ) : (
+                            <div className="flex min-h-14 items-center justify-between gap-4 px-6 py-4">
+                              <span className="text-[17px] text-text">{item.label}</span>
+                              <span className="shrink-0 text-sm font-medium text-text-muted">
+                                {item.meta}
+                              </span>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="rounded-lg border border-border/60 bg-[linear-gradient(145deg,var(--color-pastel-1),var(--color-pastel-2))] px-5 py-5 text-[15px] leading-relaxed text-text">
+                      Heute ist ruhig — Zeit für euch beide.
+                    </p>
+                  )}
+                </section>
+
+                <section className="mb-[var(--section-gap)]">
+                  <h2 className="mb-3 text-lg font-semibold tracking-[-0.02em] text-text">
+                    Schnellzugriff
+                  </h2>
+                  <div className="grid grid-cols-4 gap-2">
+                    {HOME_QUICK_ACCESS.map((item) => (
                       <Link
-                        to={item.href}
-                        className="flex min-h-14 items-center justify-between gap-4 px-6 py-4"
+                        key={item.key}
+                        to={item.path}
+                        className={`flex min-h-[4.5rem] flex-col items-center justify-center rounded-[20px] border border-border/70 px-2 py-3 text-center text-xs font-semibold tracking-[-0.01em] shadow-xs ${item.accent}`}
                       >
-                        <span className="text-[17px] text-text">{item.label}</span>
-                        <span className="shrink-0 text-sm font-medium text-text-muted">
-                          {item.meta}
-                        </span>
+                        {item.label}
                       </Link>
-                    ) : (
-                      <div className="flex min-h-14 items-center justify-between gap-4 px-6 py-4">
-                        <span className="text-[17px] text-text">{item.label}</span>
-                        <span className="shrink-0 text-sm font-medium text-text-muted">
-                          {item.meta}
-                        </span>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                    ))}
+                  </div>
+                </section>
 
-          {activeGoals.length > 0 ? (
-            <section className="mb-[var(--section-gap)]">
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktive Ziele</h2>
-                <Link to="/planen?tab=vorhaben&filter=goal" className="text-sm font-medium text-primary">
-                  Alle
-                </Link>
-              </div>
-              <div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {activeGoals.map((goal, i) => (
-                  <ProgressCard
-                    key={goal.id}
-                    title={goal.title}
-                    subtitle="Ziel"
-                    progress={goal.progress}
-                    href={goal.href}
-                    tone={(['sage', 'sand', 'rose', 'sky'] as const)[i % 4]}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
+                {anticipation.length > 0 ? (
+                  <section className="mb-[var(--section-gap)]">
+                    <div className="mb-3 flex items-end justify-between gap-4">
+                      <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">
+                        Vorfreude
+                      </h2>
+                      <Link
+                        to="/planen?tab=vorhaben"
+                        className="text-sm font-medium text-primary"
+                      >
+                        Alle
+                      </Link>
+                    </div>
+                    <ul className="card-stack">
+                      {anticipation.map((item) => {
+                        const entity = entities.find((e) => e.id === item.id)
+                        return (
+                          <li key={item.id}>
+                            <Link
+                              to={item.href}
+                              className="flex overflow-hidden rounded-lg border border-border/80 bg-surface shadow-xs"
+                            >
+                              <div className="w-24 shrink-0">
+                                {item.mediaPath && spaceId ? (
+                                  <MediaImage
+                                    storagePath={item.mediaPath}
+                                    spaceId={spaceId}
+                                    alt={item.title}
+                                    aspectRatio={1}
+                                    className="rounded-none"
+                                  />
+                                ) : (
+                                  <div className="aspect-square bg-pastel-1" />
+                                )}
+                              </div>
+                              <div className="flex min-w-0 flex-1 flex-col justify-center p-4">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-serif text-lg text-text">{item.title}</p>
+                                  {entity?.entity_type === 'trip' ? (
+                                    <TripCountdownBadge entity={entity} />
+                                  ) : null}
+                                </div>
+                                <p className="mt-1 text-xs text-text-muted">
+                                  {item.meta}
+                                  {' · '}
+                                  {format(item.startsAt, 'd. MMM yyyy', { locale: de })}
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </section>
+                ) : null}
 
-          {activeTrips.length > 0 ? (
-            <section className="mb-[var(--section-gap)]">
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Aktuelle Reisen</h2>
-                <Link to="/planen?tab=vorhaben&filter=trip" className="text-sm font-medium text-primary">
-                  Alle
-                </Link>
-              </div>
-              <ul className="card-stack">
-                {activeTrips.map((trip) => (
-                  <li key={trip.id}>
-                    <Link
-                      to={entityDetailPath('trip', trip.id)}
-                      className="flex overflow-hidden rounded-lg border border-border/80 bg-surface shadow-xs"
-                    >
-                      <div className="w-24 shrink-0">
-                        {mediaByEntityId[trip.id] && spaceId ? (
-                          <MediaImage
-                            storagePath={mediaByEntityId[trip.id]}
-                            spaceId={spaceId}
-                            alt={trip.title}
-                            aspectRatio={1}
-                            className="rounded-none"
-                          />
-                        ) : (
-                          <div className="aspect-square bg-pastel-1" />
-                        )}
-                      </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-center p-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-serif text-lg text-text">{trip.title}</p>
-                          <TripCountdownBadge entity={trip} />
-                        </div>
-                        <p className="mt-1 text-xs text-text-muted">
-                          {entityStart(trip)
-                            ? format(entityStart(trip)!, 'd. MMM yyyy', { locale: de })
-                            : 'Reise'}
+                {recentMoments.length > 0 && spaceId ? (
+                  <section className="mb-[var(--section-gap)]">
+                    <div className="mb-3 flex items-end justify-between gap-4">
+                      <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">
+                        Letzte Momente
+                      </h2>
+                      <Link to="/erinnerungen" className="text-sm font-medium text-primary">
+                        Alle
+                      </Link>
+                    </div>
+                    <div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {recentMoments.map((moment) => (
+                        <Link
+                          key={moment.id}
+                          to={entityDetailPath('moment', moment.entityId)}
+                          className="min-w-[14rem] snap-start overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs"
+                        >
+                          {moment.storagePath ? (
+                            <MediaImage
+                              storagePath={moment.storagePath}
+                              spaceId={spaceId}
+                              alt={moment.title}
+                              aspectRatio={4 / 5}
+                            />
+                          ) : (
+                            <div className="aspect-[4/5] bg-[linear-gradient(160deg,var(--color-pastel-2),var(--color-sand))]" />
+                          )}
+                          <div className="p-4">
+                            <p className="text-lg font-bold leading-tight tracking-[-0.025em] text-text">
+                              {moment.title}
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-text-muted">
+                              {format(parseISO(moment.occurredAt), 'd. MMM yyyy', { locale: de })}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {timelinePreview.length > 0 && spaceId ? (
+                  <section className="mb-[var(--section-gap)]">
+                    <div className="mb-3 flex items-end justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">
+                          Unser gemeinsamer Weg
+                        </h2>
+                        <p className="mt-1 text-sm text-text-muted">
+                          Was bei euch passiert — Reisen, Dates und mehr.
                         </p>
                       </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                      <Link to="/timeline" className="text-sm font-medium text-primary">
+                        Timeline
+                      </Link>
+                    </div>
+                    <ul className="overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs">
+                      {timelinePreview.map((item) => (
+                        <li key={item.id} className="border-b border-border/60 last:border-b-0">
+                          <Link
+                            to={
+                              item.entityId && item.entityType
+                                ? `/entities/${item.entityType}/${item.entityId}`
+                                : '/timeline'
+                            }
+                            className="flex min-h-14 items-center gap-3 px-4 py-3.5"
+                          >
+                            <div className="size-12 shrink-0 overflow-hidden rounded-[14px] bg-pastel-1">
+                              {item.storagePath ? (
+                                <MediaImage
+                                  storagePath={item.storagePath}
+                                  spaceId={spaceId}
+                                  alt=""
+                                  aspectRatio={1}
+                                  className="rounded-none"
+                                />
+                              ) : null}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[16px] font-medium text-text">
+                                {item.title}
+                              </p>
+                              <p className="mt-0.5 text-xs font-medium text-text-muted">
+                                {timelinePreviewTypeLabel(item)}
+                                {' · '}
+                                {format(parseISO(item.occurredAt), 'd. MMM yyyy', {
+                                  locale: de,
+                                })}
+                              </p>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
 
-          {recentMoments.length > 0 && spaceId ? (
-            <section className="mb-2">
-              <div className="mb-3 flex items-end justify-between gap-4">
-                <h2 className="text-2xl font-bold tracking-[-0.025em] text-text">Letzte Momente</h2>
-                <Link to="/erinnerungen" className="text-sm font-medium text-primary">
-                  Alle
-                </Link>
-              </div>
-              <div className="flex snap-x gap-4 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {recentMoments.map((moment) => (
-                  <Link
-                    key={moment.id}
-                    to={
-                      moment.entityId && moment.entityType
-                        ? `/entities/${moment.entityType}/${moment.entityId}`
-                        : '/erinnerungen'
-                    }
-                    className="min-w-[14rem] snap-start overflow-hidden rounded-lg border border-border/70 bg-surface shadow-xs"
-                  >
-                    {moment.storagePath ? (
-                      <MediaImage
-                        storagePath={moment.storagePath}
-                        spaceId={spaceId}
-                        alt={moment.title}
-                        aspectRatio={4 / 5}
+                {highlight ? (
+                  <section className="mb-2">
+                    <h2 className="mb-3 text-2xl font-bold tracking-[-0.025em] text-text">
+                      Gemeinsames Highlight
+                    </h2>
+                    {highlight.kind === 'goal_progress' && highlight.progress !== undefined ? (
+                      <ProgressCard
+                        title={highlight.title}
+                        subtitle={highlight.subtitle}
+                        progress={highlight.progress}
+                        href={highlight.href}
+                        tone="sage"
                       />
                     ) : (
-                      <div className="aspect-[4/5] bg-pastel-2" />
+                      <Link
+                        to={highlight.href}
+                        className="block rounded-lg border border-border/70 bg-[linear-gradient(145deg,var(--color-pastel-2),var(--color-surface))] p-5 shadow-xs"
+                      >
+                        <p className="text-xs font-medium uppercase tracking-[0.12em] text-text-muted">
+                          {highlight.subtitle}
+                        </p>
+                        <p className="mt-2 font-serif text-2xl text-text">{highlight.title}</p>
+                      </Link>
                     )}
-                    <div className="p-4">
-                      <p className="text-lg font-bold leading-tight tracking-[-0.025em] text-text">
-                        {moment.title}
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-text-muted">
-                        {format(parseISO(moment.occurredAt), 'd. MMM yyyy', { locale: de })}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
+                  </section>
+                ) : null}
               </>
             )}
           </>
