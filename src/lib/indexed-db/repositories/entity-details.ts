@@ -3,6 +3,7 @@ import { db } from '@/lib/indexed-db/db'
 import { getOrCreateDeviceId } from '@/lib/indexed-db/device'
 import type { DetailType, EntityDetailRow } from '@/lib/indexed-db/schema'
 import { enqueueMutation } from '@/features/sync/outbox'
+import { normalizeWishPriority } from '@/features/wishes/wish-priority'
 import { normalizeMoneyInput } from '@/lib/money'
 
 function nowIso(): string {
@@ -20,7 +21,9 @@ function normalizeDetailPayload(
     next.price = normalized ?? ''
   }
   if (next.wishStatus === 'bought') next.fulfilled = true
-  if (next.priority === 'medium') next.priority = 'normal'
+  if (next.priority !== undefined) {
+    next.priority = normalizeWishPriority(next.priority)
+  }
   return next
 }
 

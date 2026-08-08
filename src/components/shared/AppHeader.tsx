@@ -62,7 +62,15 @@ export function CompactBrandBar({ visible }: { visible: boolean }) {
   )
 }
 
-export function AppHeaderHome({ className }: { className?: string }) {
+export function AppHeaderHome({
+  className,
+  togetherDays,
+  coupleBlurb,
+}: {
+  className?: string
+  togetherDays?: number | null
+  coupleBlurb?: string | null
+}) {
   const { profile } = useAuth()
   const { data: pair } = usePairProfile()
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -73,6 +81,11 @@ export function AppHeaderHome({ className }: { className?: string }) {
   const displayName = profile?.displayName?.trim() || 'Dennis'
   const greeting = getGreeting(new Date(), displayName)
   const coupleLabel = formatCoupleLabel(partnerA, partnerB)
+  const blurb = (coupleBlurb ?? pair?.coupleBlurb)?.trim()
+  const togetherLabel =
+    togetherDays !== null && togetherDays !== undefined
+      ? `${togetherDays} gemeinsame Tage`
+      : null
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -125,7 +138,16 @@ export function AppHeaderHome({ className }: { className?: string }) {
             {greeting}
           </h1>
           <p className="mt-1 text-[15px] font-normal leading-snug text-text-muted">
-            Euer gemeinsames Zuhause
+            {togetherLabel
+              ? togetherLabel
+              : blurb
+                ? blurb
+                : 'Euer gemeinsames Zuhause'}
+            {togetherLabel && blurb ? (
+              <span className="mt-1 block line-clamp-2 text-[14px] text-text-muted/90">
+                {blurb}
+              </span>
+            ) : null}
           </p>
         </div>
       </header>

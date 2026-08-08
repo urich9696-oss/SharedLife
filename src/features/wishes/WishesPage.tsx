@@ -8,7 +8,13 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath, getEntityTypeMeta } from '@/features/entities/entity-types'
 import { useSync } from '@/features/sync/SyncProvider'
+import { db } from '@/lib/indexed-db/db'
 import { listEntities } from '@/lib/indexed-db/repositories/entities'
+import {
+  normalizeWishPriority,
+  wishPriorityLabel,
+  wishPriorityTone,
+} from '@/features/wishes/wish-priority'
 import { cn } from '@/lib/utilities/cn'
 
 export function WishesPage() {
@@ -27,6 +33,20 @@ export function WishesPage() {
     enabled: Boolean(spaceId),
     staleTime: 0,
     refetchOnWindowFocus: true,
+  })
+
+  const { data: priorityByEntityId = {} } = useQuery({
+    queryKey: ['wish-priorities', spaceId],
+    enabled: Boolean(spaceId),
+    queryFn: async () => {
+      const details = await db.entityDetails.where('space_id').equals(spaceId!).toArray()
+      const map: Record<string, string> = {}
+      for (const d of details) {
+        if (d.detail_type !== 'wish') continue
+        map[d.entity_id] = normalizeWishPriority(d.payload?.priority)
+      }
+      return map
+    },
   })
 
   const wishes = useMemo(
@@ -113,6 +133,7 @@ export function WishesPage() {
           {wishes.map((entity) => {
             const meta = getEntityTypeMeta(entity.entity_type)
             const status = String(entity.metadata?.wishStatus || 'open')
+            const priority = normalizeWishPriority(priorityByEntityId[entity.id] ?? 'normal')
             return (
               <li key={entity.id}>
                 <Link
@@ -128,7 +149,17 @@ export function WishesPage() {
                       'h-full transition duration-[var(--duration-normal)] hover:-translate-y-0.5',
                     )}
                   >
-                    <p className="text-xs font-medium text-primary">{meta.label}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-medium text-primary">{meta.label}</p>
+                      <span
+                        className={cn(
+                          'inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium',
+                          wishPriorityTone(priority),
+                        )}
+                      >
+                        {wishPriorityLabel(priority)}
+                      </span>
+                    </div>
                     <CardTitle className="mt-1">{entity.title || 'Ohne Titel'}</CardTitle>
                     <CardDescription>
                       {status === 'bought'
