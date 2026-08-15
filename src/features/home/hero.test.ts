@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { EntityRow } from '@/lib/indexed-db/schema'
-import { selectHomeHero } from '@/features/home/hero'
+import { getNextPlannedDateOrTrip, selectHomeHero } from '@/features/home/hero'
 
 function makeEntity(overrides: Partial<EntityRow>): EntityRow {
   return {
@@ -32,148 +32,163 @@ function makeEntity(overrides: Partial<EntityRow>): EntityRow {
   }
 }
 
-describe('selectHomeHero V8', () => {
-  const now = new Date('2026-08-01T12:00:00.000Z')
+describe('getNextPlannedDateOrTrip', () => {
+  const now = new Date('2026-08-15T12:00:00.000Z')
 
-  it('wählt das früheste zukünftige geplante Date', () => {
-    const hero = selectHomeHero({
+  it('zeigt zukünftige geplante Reise (status draft = Geplant)', () => {
+    const hero = getNextPlannedDateOrTrip({
       now,
+      entitiesLoaded: true,
+      entities: [
+        makeEntity({
+          id: 'trip-planned',
+          entity_type: 'trip',
+          title: 'Griechenland',
+          status: 'draft',
+          all_day_start: '2026-09-20',
+          all_day_end: '2026-09-30',
+        }),
+      ],
+    })
+    expect(hero.kind).toBe('next_trip')
+    expect(hero.id).toBe('trip-planned')
+    expect(hero.ctaLabel).toBe('Reise ansehen')
+  })
+
+  it('nächste Reise gewinnt gegen ein späteres Date', () => {
+    const hero = getNextPlannedDateOrTrip({
+      now,
+      entitiesLoaded: true,
       entities: [
         makeEntity({
           id: 'date-later',
           entity_type: 'date',
+          title: 'Späteres Date',
+          status: 'active',
+          starts_at: '2026-10-01T18:00:00.000Z',
+        }),
+        makeEntity({
+          id: 'trip-soon',
+          entity_type: 'trip',
+          title: 'Baldige Reise',
+          status: 'draft',
+          all_day_start: '2026-08-25',
+        }),
+      ],
+    })
+    expect(hero.id).toBe('trip-soon')
+    expect(hero.kind).toBe('next_trip')
+  })
+
+  it('früheres Date gewinnt gegen eine spätere Reise', () => {
+    const hero = getNextPlannedDateOrTrip({
+      now,
+      entitiesLoaded: true,
+      entities: [
+        makeEntity({
+          id: 'trip-later',
+          entity_type: 'trip',
           title: 'Später',
-          starts_at: '2026-08-20T18:00:00.000Z',
+          status: 'active',
+          starts_at: '2026-09-15T10:00:00.000Z',
         }),
         makeEntity({
           id: 'date-soon',
           entity_type: 'date',
           title: 'Bald',
-          starts_at: '2026-08-03T18:00:00.000Z',
+          status: 'active',
+          starts_at: '2026-08-18T18:00:00.000Z',
         }),
       ],
     })
     expect(hero.id).toBe('date-soon')
     expect(hero.kind).toBe('next_date')
-    expect(hero.ctaLabel).toBe('Date ansehen')
   })
 
-  it('wählt die früheste zukünftige geplante Reise', () => {
-    const hero = selectHomeHero({
+  it('Reiseidee ohne Planung wird ausgeschlossen', () => {
+    const hero = getNextPlannedDateOrTrip({
       now,
+      entitiesLoaded: true,
       entities: [
         makeEntity({
-          id: 'trip-b',
+          id: 'idea',
           entity_type: 'trip',
-          title: 'B',
-          starts_at: '2026-09-01T10:00:00.000Z',
+          title: 'Irgendwann Island',
+          status: 'draft',
+          starts_at: null,
+          all_day_start: null,
         }),
-        makeEntity({
-          id: 'trip-a',
-          entity_type: 'trip',
-          title: 'A',
-          starts_at: '2026-08-10T10:00:00.000Z',
-        }),
-      ],
-    })
-    expect(hero.id).toBe('trip-a')
-    expect(hero.kind).toBe('next_trip')
-  })
-
-  it('vergleicht Date und Reise korrekt miteinander', () => {
-    const hero = selectHomeHero({
-      now,
-      entities: [
-        makeEntity({
-          id: 'trip',
-          entity_type: 'trip',
-          title: 'Reise',
-          starts_at: '2026-08-15T10:00:00.000Z',
-        }),
-        makeEntity({
-          id: 'date',
-          entity_type: 'date',
-          title: 'Date',
-          starts_at: '2026-08-05T18:00:00.000Z',
-        }),
-      ],
-    })
-    expect(hero.id).toBe('date')
-  })
-
-  it('ignoriert Ideen ohne verbindliches Datum', () => {
-    const hero = selectHomeHero({
-      now,
-      entities: [
         makeEntity({
           id: 'leisure',
           entity_type: 'leisure',
           title: 'Date-Idee',
-          starts_at: '2026-08-04T18:00:00.000Z',
-        }),
-        makeEntity({
-          id: 'trip-idea',
-          entity_type: 'trip',
-          title: 'Reiseidee',
-          starts_at: null,
-          all_day_start: null,
-          status: 'draft',
+          starts_at: '2026-08-20T18:00:00.000Z',
         }),
       ],
     })
     expect(hero.kind).toBe('empty')
   })
 
-  it('ignoriert vergangene, abgesagte und archivierte Einträge', () => {
-    const hero = selectHomeHero({
+  it('abgesagte oder vergangene Reise wird ausgeschlossen', () => {
+    const hero = getNextPlannedDateOrTrip({
       now,
+      entitiesLoaded: true,
       entities: [
-        makeEntity({
-          id: 'past',
-          entity_type: 'date',
-          title: 'Vergangen',
-          starts_at: '2026-07-01T18:00:00.000Z',
-        }),
         makeEntity({
           id: 'cancelled',
           entity_type: 'trip',
           title: 'Abgesagt',
-          starts_at: '2026-08-10T10:00:00.000Z',
           status: 'cancelled',
+          all_day_start: '2026-09-01',
         }),
         makeEntity({
-          id: 'archived',
-          entity_type: 'date',
-          title: 'Archiv',
-          starts_at: '2026-08-12T18:00:00.000Z',
-          status: 'archived',
+          id: 'past',
+          entity_type: 'trip',
+          title: 'Vorbei',
+          status: 'active',
+          all_day_start: '2026-07-01',
+          all_day_end: '2026-07-10',
+        }),
+        makeEntity({
+          id: 'completed',
+          entity_type: 'trip',
+          title: 'Erledigt',
+          status: 'completed',
+          all_day_start: '2026-09-01',
         }),
       ],
     })
     expect(hero.kind).toBe('empty')
   })
 
-  it('zeigt Empty State wenn nichts geeignet ist', () => {
-    const hero = selectHomeHero({ now, entities: [] })
-    expect(hero.kind).toBe('empty')
-    expect(hero.ctaLabel).toBe('Date oder Reise planen')
-    expect(hero.href).toContain('type=date')
-  })
-
-  it('behandelt ganztägige Datumswerte deterministisch', () => {
-    const hero = selectHomeHero({
-      now,
+  it('date-only-Startdatum wird lokal korrekt behandelt', () => {
+    // all_day_start morgen — darf nicht durch UTC-Mitternacht als „vergangen“ gelten
+    const localNow = new Date(2026, 7, 15, 22, 30, 0) // 15. Aug 22:30 lokal
+    const hero = getNextPlannedDateOrTrip({
+      now: localNow,
+      entitiesLoaded: true,
       entities: [
         makeEntity({
-          id: 'all-day',
+          id: 'all-day-tomorrow',
           entity_type: 'trip',
-          title: 'Ganztägig',
-          all_day_start: '2026-08-08',
+          title: 'Ganztägig morgen',
+          status: 'draft',
+          all_day_start: '2026-08-16',
         }),
       ],
     })
-    expect(hero.id).toBe('all-day')
     expect(hero.kind).toBe('next_trip')
+    expect(hero.id).toBe('all-day-tomorrow')
+  })
+
+  it('während des Ladens erscheint kein falscher Empty State', () => {
+    const hero = getNextPlannedDateOrTrip({
+      now,
+      entitiesLoaded: false,
+      entities: [],
+    })
+    expect(hero.kind).toBe('loading')
+    expect(hero.kind).not.toBe('empty')
   })
 
   it('ist deterministisch bei gleicher Startzeit', () => {
@@ -182,18 +197,40 @@ describe('selectHomeHero V8', () => {
         id: 'b-trip',
         entity_type: 'trip',
         title: 'B',
-        starts_at: '2026-08-05T10:00:00.000Z',
+        status: 'draft',
+        starts_at: '2026-08-20T10:00:00.000Z',
       }),
       makeEntity({
         id: 'a-trip',
         entity_type: 'trip',
         title: 'A',
-        starts_at: '2026-08-05T10:00:00.000Z',
+        status: 'draft',
+        starts_at: '2026-08-20T10:00:00.000Z',
       }),
     ]
-    const first = selectHomeHero({ now, entities })
-    const second = selectHomeHero({ now, entities: [...entities].reverse() })
+    const first = getNextPlannedDateOrTrip({ now, entitiesLoaded: true, entities })
+    const second = getNextPlannedDateOrTrip({
+      now,
+      entitiesLoaded: true,
+      entities: [...entities].reverse(),
+    })
     expect(first.id).toBe(second.id)
     expect(first.id).toBe('a-trip')
+  })
+
+  it('selectHomeHero bleibt als Alias kompatibel', () => {
+    const hero = selectHomeHero({
+      now,
+      entities: [
+        makeEntity({
+          id: 't1',
+          entity_type: 'trip',
+          title: 'Trip',
+          status: 'draft',
+          all_day_start: '2026-09-01',
+        }),
+      ],
+    })
+    expect(hero.kind).toBe('next_trip')
   })
 })

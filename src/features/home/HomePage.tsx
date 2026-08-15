@@ -8,10 +8,11 @@ import { AppHeaderHome } from '@/components/shared/AppHeader'
 import { HeroCard } from '@/components/ui/HeroCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath } from '@/features/entities/entity-types'
 import { useEntities, useReminders } from '@/features/entities/useEntities'
-import { selectHomeHero } from '@/features/home/hero'
+import { getNextPlannedDateOrTrip } from '@/features/home/hero'
 import {
   selectTodayForUs,
   todaySectionEmptyKind,
@@ -30,7 +31,9 @@ export function HomePage() {
   const navigate = useNavigate()
   const { spaceId } = useAuth()
   const { data: pair } = usePairProfile()
-  const { data: entities = [], isLoading } = useEntities()
+  const entitiesQuery = useEntities()
+  const { data: entities = [], isPending: entitiesPending, isFetching } = entitiesQuery
+  const entitiesLoaded = Boolean(spaceId) && !entitiesPending
   const { data: reminders = [] } = useReminders()
   const now = useMemo(() => new Date(), [])
   const together = daysTogether(pair?.togetherSince ?? null, now)
@@ -56,12 +59,13 @@ export function HomePage() {
 
   const hero = useMemo(
     () =>
-      selectHomeHero({
+      getNextPlannedDateOrTrip({
         now,
         entities,
         mediaByEntityId,
+        entitiesLoaded,
       }),
-    [now, entities, mediaByEntityId],
+    [now, entities, mediaByEntityId, entitiesLoaded],
   )
 
   const todayItems = useMemo(
@@ -109,13 +113,14 @@ export function HomePage() {
 
   const a = pair?.partnerAName ?? 'Dennis'
   const b = pair?.partnerBName ?? 'Lea'
+  const pageLoading = Boolean(spaceId) && entitiesPending && isFetching
 
   return (
     <div className="mx-auto max-w-5xl">
       <AppHeaderHome />
 
       <div className="px-page pt-[26px] pb-6 lg:pb-8">
-        {isLoading ? (
+        {pageLoading ? (
           <LoadingState className="min-h-[40dvh] py-10" />
         ) : (
           <>
@@ -135,7 +140,13 @@ export function HomePage() {
               {...fadeUp}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1], delay: 0.04 }}
             >
-              {hero.kind === 'empty' ? (
+              {hero.kind === 'loading' ? (
+                <div className="overflow-hidden rounded-lg border border-border/80 bg-surface p-5 shadow-xs">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="mt-3 h-7 w-48" />
+                  <Skeleton className="mt-3 h-4 w-64" />
+                </div>
+              ) : hero.kind === 'empty' ? (
                 <div className="rounded-lg border border-border/80 bg-surface p-5 shadow-xs">
                   <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-text-muted">
                     {hero.eyebrow}
@@ -216,7 +227,7 @@ export function HomePage() {
                 <h2 className="text-[24px] font-semibold tracking-[-0.025em] text-text">
                   Letzte Momente
                 </h2>
-                <Link to="/erinnerungen?tab=weg" className="text-sm font-medium text-primary">
+                <Link to="/erinnerungen" className="text-sm font-medium text-primary">
                   Alle
                 </Link>
               </div>

@@ -18,33 +18,28 @@ import { momentDisplayTitle } from '@/features/home/recent-moments'
 import { TimelineBrowser } from '@/features/timeline/TimelineBrowser'
 import { deriveMomentChronicle, type TimelineItem } from '@/features/timeline/derive-timeline'
 import { db } from '@/lib/indexed-db/db'
+import { cn } from '@/lib/utilities/cn'
 
 const MOMENT_TABS = [
-  { key: 'deck', label: 'Erleben' },
-  { key: 'weg', label: 'Unser Weg' },
+  { key: 'momente', label: 'Momente' },
   { key: 'fotos', label: 'Fotos' },
   { key: 'alben', label: 'Alben' },
-  { key: 'favoriten', label: 'Favoriten' },
 ] as const
 
 type MomentTab = (typeof MOMENT_TABS)[number]['key']
+
+function resolveTab(raw: string | null): MomentTab {
+  if (raw === 'fotos' || raw === 'alben') return raw
+  // Legacy: deck / weg / timeline / favoriten → Momente
+  return 'momente'
+}
 
 export function MemoriesPage() {
   const navigate = useNavigate()
   const { spaceId } = useAuth()
   const [params, setParams] = useSearchParams()
-  const tabParam = params.get('tab')
-  const tab: MomentTab =
-    tabParam === 'fotos' ||
-    tabParam === 'alben' ||
-    tabParam === 'favoriten' ||
-    tabParam === 'weg' ||
-    tabParam === 'timeline' || // legacy
-    tabParam === 'deck'
-      ? tabParam === 'timeline'
-        ? 'weg'
-        : (tabParam as MomentTab)
-      : 'deck'
+  const tab = resolveTab(params.get('tab'))
+  const [photosFilter, setPhotosFilter] = useState<'all' | 'favorites'>('all')
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
   const [browserIndex, setBrowserIndex] = useState<number | null>(null)
 
@@ -71,7 +66,6 @@ export function MemoriesPage() {
         entityMedia: mediaLinks,
         mediaAssets: assets,
       })
-      // Fotos nur von Moment-Entities — keine Rezept-/Wunsch-Uploads
       const gallery = mediaLinks
         .filter((link) => momentIds.has(link.entity_id))
         .map((link) => {
@@ -101,8 +95,10 @@ export function MemoriesPage() {
 
   const setTab = (next: MomentTab) => {
     const nextParams = new URLSearchParams(params)
-    nextParams.set('tab', next)
+    if (next === 'momente') nextParams.delete('tab')
+    else nextParams.set('tab', next)
     setParams(nextParams, { replace: true })
+    if (next !== 'fotos') setPhotosFilter('all')
   }
 
   const albums = useMemo(() => {
@@ -119,10 +115,11 @@ export function MemoriesPage() {
     return [...map.values()].sort((a, b) => b.count - a.count)
   }, [data])
 
-  const favorites = useMemo(
-    () => (data?.gallery ?? []).filter((g) => g.favorite).slice(0, 48),
-    [data],
-  )
+  const photoItems = useMemo(() => {
+    const gallery = data?.gallery ?? []
+    if (photosFilter === 'favorites') return gallery.filter((g) => g.favorite)
+    return gallery
+  }, [data, photosFilter])
 
   const deckCards = useMemo(() => {
     const entitiesById = new Map((data?.entities ?? []).map((e) => [e.id, e]))
@@ -167,17 +164,13 @@ export function MemoriesPage() {
 
   const hasContent = (data?.items.length ?? 0) > 0 || (data?.gallery.length ?? 0) > 0
   const timelineItems = data?.items ?? []
+  const favoriteCount = (data?.gallery ?? []).filter((g) => g.favorite).length
 
   return (
     <div className="mx-auto max-w-3xl">
       <AppHeaderMain
         title="Momente"
         description="Gemeinsam Erlebtes — bewusst festgehalten."
-        action={
-          <Button type="button" size="sm" onClick={() => void navigate('/erinnerungen/neu')}>
-            Neu
-          </Button>
-        }
       />
 
       <div className="px-page pt-[26px] pb-6 lg:pb-8">
@@ -196,135 +189,173 @@ export function MemoriesPage() {
             {!hasContent ? (
               <EmptyState
                 title="Noch keine Momente"
-                description="Haltet besondere Augenblicke fest — mit Foto, Text oder beidem."
+                description="Haltet besondere Augenblicke fest — mit Foto, Text oder beidem. Nutzt den Plus-Button."
                 actionLabel="Moment festhalten"
-                onAction={() => void navigate('/erinnerungen/neu')}
+                onAction={() => void navigate('/planen/neu?type=moment')}
               />
             ) : null}
 
-            {hasContent && tab === 'deck' && spaceId ? (
-              <section className="pb-2">
-                <MomentSwipeDeck
-                  items={deckCards}
-                  spaceId={spaceId}
-                  onOpen={(item) => {
-                    if (item.entityId) {
-                      void navigate(`/entities/moment/${item.entityId}`)
-                      return
-                    }
-                    const idx = timelineItems.findIndex((t) => t.id === item.id)
-                    setBrowserIndex(idx >= 0 ? idx : 0)
-                  }}
-                />
-              </section>
-            ) : null}
+            {hasContent && tab === 'momente' ? (
+              <section className="space-y-6">
+                {spaceId && deckCards.length > 0 ? (
+                  <MomentSwipeDeck
+                    items={deckCards}
+                    spaceId={spaceId}
+                    onOpen={(item) => {
+                      if (item.entityId) {
+                        void navigate(`/entities/moment/${item.entityId}`)
+                        return
+                      }
+                      const idx = timelineItems.findIndex((t) => t.id === item.id)
+                      setBrowserIndex(idx >= 0 ? idx : 0)
+                    }}
+                  />
+                ) : null}
 
-            {hasContent && tab === 'weg' ? (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-text">
-                    Unser gemeinsamer Weg
-                  </h2>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewYear((y) => y - 1)}
-                    >
-                      ←
-                    </Button>
-                    <span className="flex min-h-11 items-center text-sm text-text-muted">
-                      {viewYear}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewYear((y) => y + 1)}
-                    >
-                      →
-                    </Button>
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-text">
+                      Unser gemeinsamer Weg
+                    </h2>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Vorheriges Jahr"
+                        onClick={() => setViewYear((y) => y - 1)}
+                      >
+                        ←
+                      </Button>
+                      <span className="min-w-12 text-center text-sm text-text-muted">{viewYear}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Nächstes Jahr"
+                        onClick={() => setViewYear((y) => y + 1)}
+                      >
+                        →
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                {byMonth.length === 0 ? (
-                  <p className="text-sm text-text-muted">Keine Momente in {viewYear}.</p>
-                ) : (
-                  <div className="space-y-6">
-                    {byMonth.map(([month, items]) => (
-                      <div key={month}>
-                        <h3 className="mb-2 text-sm font-medium text-primary">
-                          {format(new Date(viewYear, month, 1), 'MMMM', { locale: de })}
-                        </h3>
-                        <ul className="card-stack">
-                          {items.map((item) => {
-                            const globalIndex = timelineItems.findIndex((t) => t.id === item.id)
-                            return (
-                              <li key={item.id}>
-                                <button
-                                  type="button"
-                                  className="w-full text-left"
-                                  onClick={() => {
-                                    if (item.entityId) {
-                                      void navigate(`/entities/moment/${item.entityId}`)
-                                      return
-                                    }
-                                    setBrowserIndex(globalIndex >= 0 ? globalIndex : 0)
-                                  }}
-                                >
-                                  <Card padding="sm" className="flex items-center gap-3">
-                                    {item.storagePath && spaceId ? (
-                                      <div className="size-14 shrink-0 overflow-hidden rounded-[16px]">
-                                        <MediaImage
-                                          storagePath={item.storagePath}
-                                          spaceId={spaceId}
-                                          alt={item.title}
-                                          aspectRatio={1}
-                                        />
+
+                  {byMonth.length === 0 ? (
+                    <p className="text-sm text-text-muted">Keine Momente in {viewYear}.</p>
+                  ) : (
+                    <div className="space-y-6">
+                      {byMonth.map(([month, items]) => (
+                        <div key={month}>
+                          <h3 className="mb-2 text-sm font-medium text-primary">
+                            {format(new Date(viewYear, month, 1), 'MMMM', { locale: de })}
+                          </h3>
+                          <ul className="card-stack">
+                            {items.map((item) => {
+                              const globalIndex = timelineItems.findIndex((t) => t.id === item.id)
+                              return (
+                                <li key={item.id}>
+                                  <button
+                                    type="button"
+                                    className="w-full text-left"
+                                    onClick={() => {
+                                      if (item.entityId) {
+                                        void navigate(`/entities/moment/${item.entityId}`)
+                                        return
+                                      }
+                                      setBrowserIndex(globalIndex >= 0 ? globalIndex : 0)
+                                    }}
+                                  >
+                                    <Card padding="sm" className="flex items-center gap-3">
+                                      {item.storagePath && spaceId ? (
+                                        <div className="size-14 shrink-0 overflow-hidden rounded-[16px]">
+                                          <MediaImage
+                                            storagePath={item.storagePath}
+                                            spaceId={spaceId}
+                                            alt={item.title}
+                                            aspectRatio={1}
+                                          />
+                                        </div>
+                                      ) : null}
+                                      <div className="min-w-0">
+                                        <p className="truncate text-[16px] font-medium text-text">
+                                          {item.title}
+                                        </p>
+                                        <p className="text-[13px] text-text-muted">
+                                          {format(parseISO(item.occurredAt), 'd. MMMM yyyy', {
+                                            locale: de,
+                                          })}
+                                          {item.location ? ` · ${item.location}` : ''}
+                                        </p>
                                       </div>
-                                    ) : null}
-                                    <div className="min-w-0">
-                                      <p className="truncate text-[16px] font-medium text-text">
-                                        {item.title}
-                                      </p>
-                                      <p className="text-[13px] text-text-muted">
-                                        {format(parseISO(item.occurredAt), 'd. MMMM yyyy', {
-                                          locale: de,
-                                        })}
-                                        {item.location ? ` · ${item.location}` : ''}
-                                      </p>
-                                    </div>
-                                  </Card>
-                                </button>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                                    </Card>
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </section>
             ) : null}
 
             {hasContent && tab === 'fotos' && spaceId ? (
               <section>
-                <Gallery items={data!.gallery} spaceId={spaceId} />
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {data!.gallery.map((item) => (
-                    <figure
-                      key={item.id}
-                      className="overflow-hidden rounded-[22px] border border-border/80"
-                    >
-                      <MediaImage
-                        storagePath={item.src}
-                        spaceId={spaceId}
-                        alt={humanizeMediaTitle(item.caption, item.originalFilename)}
-                        aspectRatio={1}
-                      />
-                    </figure>
-                  ))}
+                <div className="mb-4 flex items-center gap-2">
+                  <button
+                    type="button"
+                    className={cn(
+                      'min-h-11 rounded-[16px] px-3 text-sm font-medium transition',
+                      photosFilter === 'all'
+                        ? 'bg-primary/12 text-primary'
+                        : 'bg-surface-soft text-text-muted',
+                    )}
+                    onClick={() => setPhotosFilter('all')}
+                  >
+                    Alle
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      'min-h-11 rounded-[16px] px-3 text-sm font-medium transition',
+                      photosFilter === 'favorites'
+                        ? 'bg-primary/12 text-primary'
+                        : 'bg-surface-soft text-text-muted',
+                    )}
+                    onClick={() => setPhotosFilter('favorites')}
+                  >
+                    Favoriten{favoriteCount > 0 ? ` · ${favoriteCount}` : ''}
+                  </button>
                 </div>
+
+                {photoItems.length === 0 ? (
+                  <p className="text-sm text-text-muted">
+                    {photosFilter === 'favorites'
+                      ? 'Noch keine Favoriten markiert.'
+                      : 'Noch keine Fotos zu Momenten.'}
+                  </p>
+                ) : (
+                  <>
+                    <Gallery items={photoItems} spaceId={spaceId} />
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {photoItems.map((item) => (
+                        <figure
+                          key={item.id}
+                          className="overflow-hidden rounded-[22px] border border-border/80"
+                        >
+                          <MediaImage
+                            storagePath={item.src}
+                            spaceId={spaceId}
+                            alt={humanizeMediaTitle(item.caption, item.originalFilename)}
+                            aspectRatio={1}
+                          />
+                        </figure>
+                      ))}
+                    </div>
+                  </>
+                )}
               </section>
             ) : null}
 
@@ -359,34 +390,6 @@ export function MemoriesPage() {
                       </li>
                     ))}
                   </ul>
-                )}
-              </section>
-            ) : null}
-
-            {hasContent && tab === 'favoriten' ? (
-              <section>
-                {favorites.length === 0 ? (
-                  <p className="text-sm text-text-muted">
-                    Markierte Favoriten erscheinen hier.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {favorites.map((item) => (
-                      <figure
-                        key={item.id}
-                        className="overflow-hidden rounded-[22px] border border-border/80"
-                      >
-                        {spaceId ? (
-                          <MediaImage
-                            storagePath={item.src}
-                            spaceId={spaceId}
-                            alt={humanizeMediaTitle(item.caption, item.originalFilename)}
-                            aspectRatio={1}
-                          />
-                        ) : null}
-                      </figure>
-                    ))}
-                  </div>
                 )}
               </section>
             ) : null}
