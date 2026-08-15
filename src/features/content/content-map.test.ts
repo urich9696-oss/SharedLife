@@ -19,10 +19,16 @@ describe('V3 content architecture', () => {
     expect(PRIMARY_NAV.map((n) => n.label)).toEqual(['Home', 'Planen', 'Momente'])
   })
 
-  it('groups Mehr into four fixed sections', () => {
+  it('groups Mehr into V8 Ablage-Abschnitte', () => {
     const groups = getGroupedModules({ includeSystem: true })
-    expect(groups.map((g) => g.key)).toEqual(['alltag', 'inspiration', 'finanzen', 'einstellungen'])
+    expect(groups.map((g) => g.key)).toEqual(['fuer-uns', 'alltag', 'finanzen', 'app'])
     expect(groups.every((g) => g.modules.length > 0)).toBe(true)
+    expect(groups.find((g) => g.key === 'fuer-uns')?.modules.map((m) => m.key)).toEqual(
+      expect.arrayContaining(['geschenke', 'freizeit', 'reiseideen']),
+    )
+    expect(groups.find((g) => g.key === 'alltag')?.modules.map((m) => m.key)).toEqual(
+      expect.arrayContaining(['einkauf', 'rezepte', 'aufgaben']),
+    )
   })
 
   it('maps vorhaben types without renaming database entity types', () => {

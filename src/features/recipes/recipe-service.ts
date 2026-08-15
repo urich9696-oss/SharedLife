@@ -13,8 +13,16 @@ export interface RecipeIngredient {
   unit?: string | null
 }
 
+function normalizeIngredientName(title: string): string {
+  return title
+    .trim()
+    .replace(/^[\s,.;:·•\-–—]+/, '')
+    .replace(/[\s,.;:·•]+$/u, '')
+    .replace(/\s+/g, ' ')
+}
+
 function normalizeTitle(title: string) {
-  return title.trim().toLowerCase().replace(/\s+/g, ' ')
+  return normalizeIngredientName(title).toLowerCase()
 }
 
 export async function getRecipeIngredients(entityId: string): Promise<{
@@ -82,9 +90,11 @@ export function parseIngredientLines(text: string | null | undefined): string[] 
   if (!text) return []
   return text
     .split('\n')
-    .map((line) => line.trim())
+    .map((line) => normalizeIngredientName(line))
     .filter(Boolean)
 }
+
+export { normalizeIngredientName }
 
 /** Legt die Zutaten-Checkliste an und füllt optionale Zeilen. */
 export async function seedRecipeIngredients(input: {
@@ -161,7 +171,8 @@ export async function addRecipeIngredientsToShopping(input: {
   let added = 0
   let skipped = 0
   for (const ingredient of ingredients) {
-    const key = normalizeTitle(ingredient.name)
+    const cleaned = normalizeIngredientName(ingredient.name)
+    const key = normalizeTitle(cleaned)
     if (!key || activeTitles.has(key)) {
       skipped += 1
       continue
@@ -170,7 +181,7 @@ export async function addRecipeIngredientsToShopping(input: {
       id: uuidv4(),
       spaceId: input.spaceId,
       checklistId,
-      title: ingredient.name.trim(),
+      title: cleaned,
       sortOrder: existing.length + added,
       quantity: ingredient.quantity ?? null,
       unit: ingredient.unit ?? null,

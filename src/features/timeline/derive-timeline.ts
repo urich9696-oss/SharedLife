@@ -1,5 +1,7 @@
 import { humanizeMediaTitle } from '@/features/media/media-url'
+import { momentDisplayTitle, momentOccurredAt } from '@/features/home/recent-moments'
 import type {
+  EntityDetailRow,
   EntityMediaRow,
   EntityRow,
   MediaAssetRow,
@@ -173,6 +175,70 @@ export function deriveTimelineItems(input: DeriveTimelineInput): TimelineItem[] 
       sourceLabel: KIND_LABELS.photo,
       entityId: link.entity_id,
       storagePath: asset.storage_path,
+    })
+  }
+
+  return items.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+}
+
+export interface DeriveMomentChronicleInput {
+  entities: EntityRow[]
+  entityDetails?: EntityDetailRow[]
+  entityMedia: EntityMediaRow[]
+  mediaAssets: MediaAssetRow[]
+  /** Bewusste manuelle Erinnerungseinträge (keine Aktivitätslogs). */
+  timelineEntries?: TimelineEntryRow[]
+}
+
+/**
+ * Beziehungschronik „Unser gemeinsamer Weg“:
+ * nur echte Momente (+ optionale bewusste Timeline-Einträge).
+ * Keine Rezepte, Wünsche, Orphan-Uploads, Ideen oder Aktivitätsfeeds.
+ */
+export function deriveMomentChronicle(input: DeriveMomentChronicleInput): TimelineItem[] {
+  const mediaById = new Map(input.mediaAssets.map((m) => [m.id, m]))
+  const items: TimelineItem[] = []
+
+  for (const entity of input.entities) {
+    if (entity.entity_type !== 'moment' || entity.deleted_at) continue
+    const media = firstMediaForEntity(
+      entity.id,
+      entity.cover_media_id,
+      mediaById,
+      input.entityMedia,
+    )
+    items.push({
+      id: `entity:${entity.id}`,
+      title: momentDisplayTitle(entity.title),
+      subtitle: entity.subtitle,
+      body: entity.description,
+      occurredAt: momentOccurredAt(entity, input.entityDetails),
+      location: (entity.metadata?.location as string | undefined) ?? null,
+      kind: 'memory',
+      sourceType: 'entity',
+      sourceLabel: KIND_LABELS.memory,
+      entityId: entity.id,
+      entityType: 'moment',
+      storagePath: media?.storage_path ?? null,
+      coverMediaId: entity.cover_media_id,
+      favorite: Boolean(entity.metadata?.favorite),
+    })
+  }
+
+  for (const entry of input.timelineEntries ?? []) {
+    if (entry.deleted_at) continue
+    items.push({
+      id: `entry:${entry.id}`,
+      title: momentDisplayTitle(entry.title),
+      subtitle: null,
+      body: entry.body,
+      occurredAt: entry.occurred_at,
+      kind: 'manual',
+      sourceType: 'timeline_entry',
+      sourceLabel: KIND_LABELS.manual,
+      entityId: entry.entity_id,
+      highlight: entry.highlight,
+      favorite: entry.highlight,
     })
   }
 

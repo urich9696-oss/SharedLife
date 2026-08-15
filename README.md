@@ -42,6 +42,7 @@ Details: [docs/setup.md](docs/setup.md)
 
 ## Dokumentation
 
+- [V8 Produkt](docs/v8-product.md)
 - [V4 Premium](docs/v4-premium.md)
 - [V4 manuelle QA](docs/qa-checklist-v4.md)
 - [V3 Product Cleanup](docs/v3-product-cleanup.md)

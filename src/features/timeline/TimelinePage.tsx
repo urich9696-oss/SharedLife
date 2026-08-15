@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { MediaImage } from '@/features/media/MediaImage'
 import { TimelineBrowser } from '@/features/timeline/TimelineBrowser'
 import {
-  deriveTimelineItems,
+  deriveMomentChronicle,
   timelineKindLabel,
   type TimelineItem,
 } from '@/features/timeline/derive-timeline'
@@ -49,7 +49,7 @@ export function TimelinePage() {
         db.entityMedia.toArray(),
         db.mediaAssets.where('space_id').equals(spaceId!).toArray(),
       ])
-      return deriveTimelineItems({
+      return deriveMomentChronicle({
         entities: entities.filter((e) => !e.deleted_at),
         timelineEntries: entries.filter((e) => !e.deleted_at),
         entityMedia: mediaLinks,
@@ -97,9 +97,11 @@ export function TimelinePage() {
       <header className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
         <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Unsere Geschichte</p>
-          <h1 className="font-serif text-[1.75rem] text-text sm:text-3xl">Timeline</h1>
+          <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-text">
+            Unser gemeinsamer Weg
+          </h1>
           <p className="mt-2 text-sm text-text-muted sm:text-base">
-            Die gemeinsame Geschichte von euch beiden — bildorientiert und chronologisch.
+            Bewusst festgehaltene Momente — chronologisch und bildorientiert.
           </p>
         </div>
         <Button type="button" size="sm" className="shrink-0" onClick={() => setComposeOpen(true)}>
