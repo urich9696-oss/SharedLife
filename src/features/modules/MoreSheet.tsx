@@ -7,6 +7,7 @@ import {
   ShoppingCart,
   Sparkles,
   UtensilsCrossed,
+  Wallet,
 } from 'lucide-react'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { ListRow } from '@/components/ui/ListRow'
@@ -37,6 +38,8 @@ function moduleIcon(key: string) {
       return <CheckSquare size={18} strokeWidth={ICON_STROKE} />
     case 'settings':
       return <Settings size={18} strokeWidth={ICON_STROKE} />
+    case 'finanzen':
+      return <Wallet size={18} strokeWidth={ICON_STROKE} />
     default:
       return <Sparkles size={18} strokeWidth={ICON_STROKE} />
   }
