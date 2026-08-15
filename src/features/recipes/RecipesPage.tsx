@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -8,18 +8,12 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { entityDetailPath } from '@/features/entities/entity-types'
 import { useEntities } from '@/features/entities/useEntities'
 import { MediaImage } from '@/features/media/MediaImage'
-import { RecipeIngredientsEditor } from '@/features/recipes/RecipeIngredientsEditor'
-import { addRecipeIngredientsToShopping } from '@/features/recipes/recipe-service'
 import { db } from '@/lib/indexed-db/db'
-import { cn } from '@/lib/utilities/cn'
 
 export function RecipesPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { spaceId, session } = useAuth()
+  const { spaceId } = useAuth()
   const { data: entities = [], isLoading } = useEntities()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [statusMsg, setStatusMsg] = useState<string | null>(null)
 
   const recipes = useMemo(
     () =>
@@ -48,59 +42,46 @@ export function RecipesPage() {
     },
   })
 
-  const activeId = selectedId ?? recipes[0]?.id ?? null
-  const active = recipes.find((r) => r.id === activeId) ?? null
-
-  const handleAddToShopping = async () => {
-    if (!spaceId || !activeId) return
-    const result = await addRecipeIngredientsToShopping({
-      spaceId,
-      entityId: activeId,
-      userId: session?.userId,
-    })
-    setStatusMsg(
-      result.added > 0
-        ? `${result.added} Zutat${result.added === 1 ? '' : 'en'} zur Einkaufsliste`
-        : 'Alle Zutaten waren bereits vorhanden',
-    )
-    await queryClient.invalidateQueries({ queryKey: ['shopping'] })
-  }
-
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="mx-auto max-w-5xl px-page py-6 lg:py-8">
+    <div className="mx-auto max-w-3xl px-page py-6 lg:py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl text-text">Rezepte</h1>
-          <p className="mt-2 text-sm text-text-muted">Kochbuch mit Zutaten und Notiz.</p>
+          <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-text">Rezepte</h1>
+          <p className="mt-2 text-sm text-text-muted">Kochbuch mit Zutaten und Notizen</p>
         </div>
         <Button type="button" size="sm" onClick={() => void navigate('/planen/neu?type=recipe')}>
-          Neu
+          + Rezept
         </Button>
       </header>
 
       {recipes.length === 0 ? (
         <EmptyState
           title="Noch kein Rezept"
-          description="Legt euer erstes Gericht an — Hero-Bild, Zutaten, Notiz."
-          actionLabel="Rezept erstellen"
+          description="Legt euer erstes Gericht an — Bild, Zutaten und Notiz."
+          actionLabel="+ Rezept"
           onAction={() => void navigate('/planen/neu?type=recipe')}
         />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <ul className="space-y-3">
-            {recipes.map((recipe) => (
-              <li key={recipe.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(recipe.id)}
-                  className={cn(
-                    'flex w-full overflow-hidden rounded-lg border bg-surface text-left shadow-xs transition',
-                    activeId === recipe.id ? 'border-primary/40' : 'border-border/80',
-                  )}
+        <ul className="overflow-hidden rounded-lg border border-border/80 bg-surface shadow-xs">
+          {recipes.map((recipe) => {
+            const category = String(recipe.metadata?.category ?? recipe.subtitle ?? '')
+            const minutes = recipe.metadata?.prepMinutes ?? recipe.metadata?.cookTime
+            const metaBits = [
+              category || null,
+              typeof minutes === 'number' || typeof minutes === 'string'
+                ? `${minutes} Min.`
+                : null,
+            ].filter(Boolean)
+
+            return (
+              <li key={recipe.id} className="border-b border-border/60 last:border-b-0">
+                <Link
+                  to={entityDetailPath('recipe', recipe.id)}
+                  className="flex min-h-14 items-center gap-3 px-3 py-2.5"
                 >
-                  <div className="w-24 shrink-0">
+                  <div className="size-14 shrink-0 overflow-hidden rounded-[14px] bg-pastel-2">
                     {covers[recipe.id] && spaceId ? (
                       <MediaImage
                         storagePath={covers[recipe.id]}
@@ -110,66 +91,24 @@ export function RecipesPage() {
                         className="rounded-none"
                       />
                     ) : (
-                      <div className="aspect-square bg-pastel-2" />
+                      <div className="size-full bg-pastel-2" />
                     )}
                   </div>
-                  <div className="p-4">
-                    <p className="font-serif text-xl text-text">{recipe.title}</p>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {active && spaceId ? (
-            <section className="rounded-lg border border-border/80 bg-surface p-5 shadow-sm">
-              {covers[active.id] ? (
-                <div className="mb-4 overflow-hidden rounded-lg">
-                  <MediaImage
-                    storagePath={covers[active.id]}
-                    spaceId={spaceId}
-                    alt={active.title}
-                    aspectRatio={16 / 10}
-                  />
-                </div>
-              ) : (
-                <div className="mb-4 aspect-[16/10] rounded-lg bg-pastel-1" />
-              )}
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="font-serif text-3xl text-text">{active.title}</h2>
-                <Link
-                  to={entityDetailPath('recipe', active.id)}
-                  className="text-sm font-medium text-primary"
-                >
-                  Öffnen
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[17px] font-medium leading-snug text-text">
+                      {recipe.title}
+                    </span>
+                    {metaBits.length > 0 ? (
+                      <span className="mt-0.5 block text-[13px] text-text-muted">
+                        {metaBits.join(' · ')}
+                      </span>
+                    ) : null}
+                  </span>
                 </Link>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="mb-3 font-serif text-xl text-text">Zutaten</h3>
-                <RecipeIngredientsEditor entityId={active.id} compact />
-                <Button
-                  type="button"
-                  className="mt-4"
-                  fullWidth
-                  onClick={() => void handleAddToShopping()}
-                >
-                  Zutaten zur Einkaufsliste hinzufügen
-                </Button>
-                {statusMsg ? <p className="mt-2 text-sm text-text-muted">{statusMsg}</p> : null}
-              </div>
-
-              {active.description ? (
-                <div className="mt-6">
-                  <h3 className="font-serif text-xl text-text">Notiz</h3>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-text-muted">
-                    {active.description}
-                  </p>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-        </div>
+              </li>
+            )
+          })}
+        </ul>
       )}
     </div>
   )

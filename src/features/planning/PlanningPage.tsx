@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   addMonths,
@@ -14,12 +14,15 @@ import {
 } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { toZonedTime } from 'date-fns-tz'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { motion } from 'motion/react'
 import { AppHeaderMain } from '@/components/shared/AppHeader'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { VORHABEN_TYPES } from '@/features/content/content-map'
 import {
   entityDetailPath,
@@ -30,11 +33,16 @@ import {
 } from '@/features/entities/entity-types'
 import { formatEntityDateRange } from '@/features/entities/entity-date-utils'
 import { useEntities, useUpdateEntity } from '@/features/entities/useEntities'
+import {
+  daysOfWeek,
+  decideWeekSwipe,
+  shiftWeek,
+  type CalendarViewMode,
+} from '@/features/planning/week-calendar'
+import { TripCountdownBadge } from '@/features/trips/TripCountdown'
 import { APP_TIMEZONE } from '@/lib/dates/timezone'
 import type { EntityRow, EntityType } from '@/lib/indexed-db/schema'
 import { cn } from '@/lib/utilities/cn'
-import { TripCountdownBadge } from '@/features/trips/TripCountdown'
-import { motion } from 'motion/react'
 
 const LEGACY_SEGMENT_TO_TAB: Record<string, PlanningTabKey> = Object.fromEntries(
   PLANNING_SEGMENTS.map((s) => [s.key, s.tab]),
@@ -123,7 +131,13 @@ function AufgabenSection({ tasks }: { tasks: EntityRow[] }) {
           const meta = getEntityTypeMeta(entity.entity_type)
           const role = String(entity.metadata?.assigneeRole ?? '')
           const roleLabel =
-            role === 'dennis' ? 'Dennis' : role === 'lea' ? 'Lea' : role === 'gemeinsam' ? 'Gemeinsam' : null
+            role === 'dennis'
+              ? 'Dennis'
+              : role === 'lea'
+                ? 'Lea'
+                : role === 'gemeinsam'
+                  ? 'Gemeinsam'
+                  : null
           const isCompleting = completingId === entity.id
           return (
             <li key={entity.id}>
@@ -141,7 +155,7 @@ function AufgabenSection({ tasks }: { tasks: EntityRow[] }) {
                     type="button"
                     aria-label="Als erledigt markieren"
                     className={cn(
-                      'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[10px] border transition',
+                      'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-[10px] border transition',
                       entity.status === 'completed'
                         ? 'border-primary bg-primary text-surface'
                         : 'border-border bg-surface text-transparent hover:border-primary/50',
@@ -184,13 +198,55 @@ function AufgabenSection({ tasks }: { tasks: EntityRow[] }) {
   )
 }
 
+function AgendaList({
+  entities,
+  emptyTitle,
+  emptyDescription,
+}: {
+  entities: EntityRow[]
+  emptyTitle: string
+  emptyDescription: string
+}) {
+  const navigate = useNavigate()
+  if (entities.length === 0) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        actionLabel="Termin erstellen"
+        onAction={() => void navigate('/planen/neu?type=event')}
+      />
+    )
+  }
+  return (
+    <ul className="card-stack">
+      {entities.map((entity) => (
+        <li key={entity.id}>
+          <EntityListItem entity={entity} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function PlanningPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const tab = resolveTab(params)
   const filter = params.get('filter') as EntityType | null
-  const [month, setMonth] = useState(() => toZonedTime(new Date(), APP_TIMEZONE))
+  const now = useMemo(() => toZonedTime(new Date(), APP_TIMEZONE), [])
+  const [selectedDay, setSelectedDay] = useState(() => now)
+  const [weekAnchor, setWeekAnchor] = useState(() => now)
+  const [month, setMonth] = useState(() => now)
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('week')
   const [showVorhabenFilter, setShowVorhabenFilter] = useState(Boolean(filter))
+  const swipeRef = useRef<{
+    pointerId: number
+    x: number
+    y: number
+    t: number
+  } | null>(null)
+  const swipeLock = useRef(false)
 
   const { data: allEntities = [], isLoading } = useEntities()
 
@@ -247,11 +303,76 @@ export function PlanningPage() {
     [allEntities],
   )
 
+  const weekDays = daysOfWeek(weekAnchor)
+  const selectedDayEvents = getEventsForDay(calendarEntities, selectedDay)
+  const weekEvents = useMemo(() => {
+    const ids = new Set<string>()
+    const list: EntityRow[] = []
+    for (const day of weekDays) {
+      for (const event of getEventsForDay(calendarEntities, day)) {
+        if (ids.has(event.id)) continue
+        ids.add(event.id)
+        list.push(event)
+      }
+    }
+    return list.sort((a, b) => {
+      const aStart = entityStart(a)?.getTime() ?? 0
+      const bStart = entityStart(b)?.getTime() ?? 0
+      return aStart - bStart
+    })
+  }, [calendarEntities, weekDays])
+
   const monthStart = startOfMonth(month)
   const monthEnd = endOfMonth(month)
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
-  const days = eachDayOfInterval({ start: gridStart, end: gridEnd })
+  const monthDays = eachDayOfInterval({ start: gridStart, end: gridEnd })
+
+  const goToday = () => {
+    const today = toZonedTime(new Date(), APP_TIMEZONE)
+    setSelectedDay(today)
+    setWeekAnchor(today)
+    setMonth(today)
+  }
+
+  const moveWeek = (delta: number) => {
+    if (swipeLock.current) return
+    swipeLock.current = true
+    const next = shiftWeek(weekAnchor, delta)
+    setWeekAnchor(next)
+    // Behalte Wochentag-Index relativ zur Woche
+    const idx = weekDays.findIndex((d) => isSameDay(d, selectedDay))
+    const nextDays = daysOfWeek(next)
+    setSelectedDay(nextDays[idx >= 0 ? idx : 0] ?? next)
+    window.setTimeout(() => {
+      swipeLock.current = false
+    }, 280)
+  }
+
+  const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    swipeRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      t: performance.now(),
+    }
+  }
+
+  const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = swipeRef.current
+    swipeRef.current = null
+    if (!start || start.pointerId !== event.pointerId) return
+    const dx = event.clientX - start.x
+    const dy = event.clientY - start.y
+    const dt = Math.max(16, performance.now() - start.t)
+    const vx = dx / dt
+    const reducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const decision = decideWeekSwipe({ dx, dy, vx, reducedMotion })
+    if (decision.deltaWeeks !== 0) moveWeek(decision.deltaWeeks)
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -265,196 +386,283 @@ export function PlanningPage() {
 
         {!isLoading ? (
           <>
-      <div
-        className="mb-[var(--section-gap)] grid grid-cols-3 gap-1 rounded-[18px] border border-border bg-surface-soft/70 p-1"
-        role="tablist"
-        aria-label="Planen"
-      >
-        {PLANNING_TABS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.key}
-            onClick={() => setTab(item.key)}
-            className={cn(
-              'min-h-11 rounded-[14px] px-2 text-sm font-medium transition duration-200',
-              tab === item.key
-                ? 'bg-surface text-text shadow-xs'
-                : 'text-text-muted hover:text-text',
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'kalender' ? (
-        <section>
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <p className="capitalize text-sm text-text-muted">
-              {format(month, 'MMMM yyyy', { locale: de })}
-            </p>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setMonth((m) => addMonths(m, -1))}>
-                Zurück
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setMonth(toZonedTime(new Date(), APP_TIMEZONE))}
-              >
-                Heute
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setMonth((m) => addMonths(m, 1))}>
-                Weiter
-              </Button>
-            </div>
-          </div>
-
-          {calendarEntities.length === 0 ? (
-            <EmptyState
-              title="Noch nichts im Kalender"
-              description="Termine, Dates und Reisen mit Datum erscheinen hier automatisch."
-              actionLabel="Termin erstellen"
-              onAction={() => void navigate('/planen/neu?type=event')}
+            <SegmentedControl
+              className="mb-[var(--section-gap)]"
+              ariaLabel="Planen"
+              options={PLANNING_TABS.map((item) => ({ key: item.key, label: item.label }))}
+              value={tab}
+              onChange={setTab}
             />
-          ) : (
-            <>
-              <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-medium text-text-muted">
-                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
-                  <div key={d}>{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {days.map((day) => {
-                  const dayEvents = getEventsForDay(calendarEntities, day)
-                  const inMonth = isSameMonth(day, month)
-                  const isToday = isSameDay(day, toZonedTime(new Date(), APP_TIMEZONE))
-                  return (
+
+            {tab === 'kalender' ? (
+              <section>
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <p className="text-sm capitalize text-text-muted">
+                    {viewMode === 'week'
+                      ? `${format(weekDays[0]!, 'd. MMM', { locale: de })} – ${format(weekDays[6]!, 'd. MMM yyyy', { locale: de })}`
+                      : format(month, 'MMMM yyyy', { locale: de })}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="secondary" size="sm" onClick={goToday}>
+                      Heute
+                    </Button>
+                    {viewMode === 'week' ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setViewMode('month')
+                          setMonth(selectedDay)
+                        }}
+                      >
+                        Monat
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setViewMode('week')
+                          setWeekAnchor(selectedDay)
+                        }}
+                      >
+                        Woche
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {viewMode === 'week' ? (
+                  <>
+                    <div className="mb-3 flex items-center justify-between">
+                      <button
+                        type="button"
+                        aria-label="Vorherige Woche"
+                        className="flex size-11 items-center justify-center rounded-[14px] text-text-muted hover:bg-surface-soft"
+                        onClick={() => moveWeek(-1)}
+                      >
+                        <ChevronLeft size={22} strokeWidth={1.75} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Nächste Woche"
+                        className="flex size-11 items-center justify-center rounded-[14px] text-text-muted hover:bg-surface-soft"
+                        onClick={() => moveWeek(1)}
+                      >
+                        <ChevronRight size={22} strokeWidth={1.75} />
+                      </button>
+                    </div>
+
                     <div
-                      key={day.toISOString()}
+                      className="touch-pan-y"
+                      onPointerDown={onPointerDown}
+                      onPointerUp={onPointerUp}
+                      onPointerCancel={() => {
+                        swipeRef.current = null
+                      }}
+                    >
+                      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[12px] font-medium text-text-muted">
+                        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
+                          <div key={d}>{d}</div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {weekDays.map((day) => {
+                          const dayEvents = getEventsForDay(calendarEntities, day)
+                          const isToday = isSameDay(day, now)
+                          const isSelected = isSameDay(day, selectedDay)
+                          return (
+                            <button
+                              key={day.toISOString()}
+                              type="button"
+                              onClick={() => setSelectedDay(day)}
+                              className={cn(
+                                'flex min-h-[4.5rem] flex-col items-center rounded-[16px] border px-1 py-2 transition',
+                                isSelected
+                                  ? 'border-primary/40 bg-primary/10'
+                                  : 'border-border/70 bg-surface',
+                                isToday && !isSelected && 'ring-2 ring-primary/20',
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  'flex size-8 items-center justify-center rounded-full text-sm font-semibold',
+                                  isToday ? 'bg-primary text-surface' : 'text-text',
+                                )}
+                              >
+                                {format(day, 'd')}
+                              </span>
+                              <span className="mt-1 flex gap-0.5">
+                                {dayEvents.slice(0, 3).map((event) => (
+                                  <span
+                                    key={event.id}
+                                    className="size-1.5 rounded-full bg-primary"
+                                    title={event.title}
+                                  />
+                                ))}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.02em] text-text">
+                        {format(selectedDay, 'EEEE, d. MMMM', { locale: de })}
+                      </h2>
+                      <AgendaList
+                        entities={selectedDayEvents.length > 0 ? selectedDayEvents : weekEvents}
+                        emptyTitle="Nichts in dieser Woche"
+                        emptyDescription="Termine, Dates und Reisen mit Datum erscheinen hier."
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setMonth((m) => addMonths(m, -1))}
+                      >
+                        Zurück
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setMonth((m) => addMonths(m, 1))}
+                      >
+                        Weiter
+                      </Button>
+                    </div>
+                    <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[12px] font-medium text-text-muted">
+                      {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
+                        <div key={d}>{d}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {monthDays.map((day) => {
+                        const dayEvents = getEventsForDay(calendarEntities, day)
+                        const inMonth = isSameMonth(day, month)
+                        const isToday = isSameDay(day, now)
+                        const isSelected = isSameDay(day, selectedDay)
+                        return (
+                          <button
+                            key={day.toISOString()}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDay(day)
+                              setWeekAnchor(day)
+                            }}
+                            className={cn(
+                              'min-h-14 rounded-[14px] border p-1.5 text-left',
+                              inMonth ? 'border-border/80 bg-surface' : 'border-transparent bg-bg/40 opacity-45',
+                              isSelected && 'ring-2 ring-primary/30',
+                              isToday && 'bg-primary/8',
+                            )}
+                          >
+                            <span className="text-xs font-semibold text-text">{format(day, 'd')}</span>
+                            <span className="mt-1 flex flex-wrap gap-0.5">
+                              {dayEvents.slice(0, 2).map((event) => (
+                                <span
+                                  key={event.id}
+                                  className="size-1.5 rounded-full bg-primary"
+                                  title={event.title}
+                                />
+                              ))}
+                              {dayEvents.length > 2 ? (
+                                <span className="text-[9px] text-text-muted">+{dayEvents.length - 2}</span>
+                              ) : null}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="mt-6">
+                      <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.02em] text-text">
+                        {format(selectedDay, 'EEEE, d. MMMM', { locale: de })}
+                      </h2>
+                      <AgendaList
+                        entities={getEventsForDay(calendarEntities, selectedDay)}
+                        emptyTitle="Keine Einträge an diesem Tag"
+                        emptyDescription="Wähle einen anderen Tag oder lege etwas Neues an."
+                      />
+                    </div>
+                  </>
+                )}
+              </section>
+            ) : null}
+
+            {tab === 'vorhaben' ? (
+              <section>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-sm text-text-muted">Reisen, Dates, Ziele und gemeinsame Projekte</p>
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-primary"
+                    onClick={() => setShowVorhabenFilter((v) => !v)}
+                  >
+                    {showVorhabenFilter ? 'Filter ausblenden' : 'Filter'}
+                  </button>
+                </div>
+
+                {showVorhabenFilter ? (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new URLSearchParams(params)
+                        next.delete('filter')
+                        setParams(next, { replace: true })
+                      }}
                       className={cn(
-                        'min-h-20 rounded-[16px] border p-1.5',
-                        inMonth ? 'border-border/80 bg-surface' : 'border-transparent bg-bg/50 opacity-50',
-                        isToday && 'ring-2 ring-primary/25',
+                        'min-h-10 rounded-[16px] px-3 text-sm',
+                        !filter ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
                       )}
                     >
-                      <span className="text-xs font-medium text-text-muted">{format(day, 'd')}</span>
-                      <ul className="mt-1 flex flex-col gap-0.5">
-                        {dayEvents.slice(0, 2).map((event) => (
-                          <li key={event.id}>
-                            <button
-                              type="button"
-                              className="w-full truncate rounded-md bg-primary/10 px-1 py-0.5 text-left text-[10px] text-primary hover:bg-primary/20"
-                              onClick={() =>
-                                void navigate(entityDetailPath(event.entity_type, event.id))
-                              }
-                            >
-                              {event.title}
-                            </button>
-                          </li>
-                        ))}
-                        {dayEvents.length > 2 ? (
-                          <li className="text-[10px] text-text-muted">+{dayEvents.length - 2}</li>
-                        ) : null}
-                      </ul>
-                    </div>
-                  )
-                })}
-              </div>
+                      Alle
+                    </button>
+                    {VORHABEN_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          const next = new URLSearchParams(params)
+                          next.set('filter', type)
+                          setParams(next, { replace: true })
+                        }}
+                        className={cn(
+                          'min-h-10 rounded-[16px] px-3 text-sm',
+                          filter === type ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
+                        )}
+                      >
+                        {getEntityTypeMeta(type).labelPlural}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
 
-              <div className="mt-6">
-                <h2 className="mb-3 font-serif text-xl text-text">In diesem Monat</h2>
-                <ul className="card-stack">
-                  {calendarEntities
-                    .filter((e) => {
-                      const d = entityStart(e)
-                      return d && isSameMonth(d, month)
-                    })
-                    .map((entity) => (
+                {vorhaben.length === 0 ? (
+                  <EmptyState
+                    title="Noch keine Vorhaben"
+                    description="Plant eine Reise, ein Date oder ein gemeinsames Ziel."
+                    actionLabel="Vorhaben planen"
+                    onAction={() => void navigate('/planen/neu?type=trip')}
+                  />
+                ) : (
+                  <ul className="card-stack">
+                    {vorhaben.map((entity) => (
                       <li key={entity.id}>
                         <EntityListItem entity={entity} />
                       </li>
                     ))}
-                </ul>
-              </div>
-            </>
-          )}
-        </section>
-      ) : null}
-
-      {tab === 'vorhaben' ? (
-        <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-text-muted">Reisen, Dates, Ziele und gemeinsame Projekte</p>
-            <button
-              type="button"
-              className="text-sm font-medium text-primary"
-              onClick={() => setShowVorhabenFilter((v) => !v)}
-            >
-              {showVorhabenFilter ? 'Filter ausblenden' : 'Filter'}
-            </button>
-          </div>
-
-          {showVorhabenFilter ? (
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const next = new URLSearchParams(params)
-                  next.delete('filter')
-                  setParams(next, { replace: true })
-                }}
-                className={cn(
-                  'min-h-10 rounded-[16px] px-3 text-sm',
-                  !filter ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
+                  </ul>
                 )}
-              >
-                Alle
-              </button>
-              {VORHABEN_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => {
-                    const next = new URLSearchParams(params)
-                    next.set('filter', type)
-                    setParams(next, { replace: true })
-                  }}
-                  className={cn(
-                    'min-h-10 rounded-[16px] px-3 text-sm',
-                    filter === type ? 'bg-primary text-surface' : 'bg-sand/30 text-text-muted',
-                  )}
-                >
-                  {getEntityTypeMeta(type).labelPlural}
-                </button>
-              ))}
-            </div>
-          ) : null}
+              </section>
+            ) : null}
 
-          {vorhaben.length === 0 ? (
-            <EmptyState
-              title="Noch keine Vorhaben"
-              description="Plant eine Reise, ein Date oder ein gemeinsames Ziel."
-              actionLabel="Vorhaben planen"
-              onAction={() => void navigate('/planen/neu?type=trip')}
-            />
-          ) : (
-            <ul className="card-stack">
-              {vorhaben.map((entity) => (
-                <li key={entity.id}>
-                  <EntityListItem entity={entity} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {tab === 'aufgaben' ? (
-        <AufgabenSection tasks={tasks} />
-      ) : null}
+            {tab === 'aufgaben' ? <AufgabenSection tasks={tasks} /> : null}
           </>
         ) : null}
       </div>

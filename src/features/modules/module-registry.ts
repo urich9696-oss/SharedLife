@@ -11,8 +11,8 @@ export interface ModuleDefinition {
   group?: ModuleGroupKey
 }
 
-/** V3 Mehr-Gruppen */
-export type ModuleGroupKey = 'alltag' | 'inspiration' | 'finanzen' | 'einstellungen'
+/** V8 Mehr-Gruppen */
+export type ModuleGroupKey = 'fuer-uns' | 'alltag' | 'app' | 'finanzen' | 'einstellungen'
 
 export interface ModuleGroup {
   key: ModuleGroupKey
@@ -39,6 +39,36 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     imageHint: 'Planen',
   },
   {
+    key: 'geschenke',
+    label: 'Wünsche',
+    description: 'Wünsche und Geschenkideen',
+    path: '/module/geschenke',
+    entityTypes: ['wish', 'gift'],
+    accent: 'bg-emotional/15 text-emotional',
+    imageHint: 'Wünsche',
+    group: 'fuer-uns',
+  },
+  {
+    key: 'freizeit',
+    label: 'Date-Ideen',
+    description: 'Ideen für gemeinsame Dates',
+    path: '/module/freizeit',
+    entityTypes: ['leisure'],
+    accent: 'bg-blue/15 text-blue',
+    imageHint: 'Date Ideen',
+    group: 'fuer-uns',
+  },
+  {
+    key: 'reiseideen',
+    label: 'Reiseideen',
+    description: 'Reisewünsche ohne festen Termin',
+    path: '/module/reiseideen',
+    entityTypes: ['trip'],
+    accent: 'bg-orange/15 text-orange',
+    imageHint: 'Reiseideen',
+    group: 'fuer-uns',
+  },
+  {
     key: 'einkauf',
     label: 'Einkauf',
     description: 'Gemeinsame Einkaufsliste',
@@ -51,7 +81,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   {
     key: 'rezepte',
     label: 'Rezepte',
-    description: 'Lieblingsgerichte zu zweit',
+    description: 'Kochbuch mit Zutaten und Notizen',
     path: '/module/rezepte',
     entityTypes: ['recipe'],
     accent: 'bg-coral/15 text-coral',
@@ -59,27 +89,15 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     group: 'alltag',
   },
   {
-    key: 'geschenke',
-    label: 'Wünsche',
-    description: 'Wünsche und Geschenkideen',
-    path: '/module/geschenke',
-    // wish zuerst: „Neu“ muss wish anlegen (wish_details). gift bleibt nur für Altbestand sichtbar.
-    entityTypes: ['wish', 'gift'],
-    accent: 'bg-emotional/15 text-emotional',
-    imageHint: 'Wünsche',
-    group: 'inspiration',
+    key: 'aufgaben',
+    label: 'Aufgaben',
+    description: 'Gemeinsame To-dos',
+    path: '/planen?tab=aufgaben',
+    entityTypes: ['task'],
+    accent: 'bg-primary/15 text-primary',
+    imageHint: 'Aufgaben',
+    group: 'alltag',
   },
-  {
-    key: 'freizeit',
-    label: 'Date Ideen',
-    description: 'Ideen für gemeinsame Dates',
-    path: '/module/freizeit',
-    entityTypes: ['leisure'],
-    accent: 'bg-blue/15 text-blue',
-    imageHint: 'Date Ideen',
-    group: 'inspiration',
-  },
-
   {
     key: 'finanzen',
     label: 'Finanzen',
@@ -92,12 +110,12 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
   {
     key: 'settings',
-    label: 'App-Einstellungen',
+    label: 'Einstellungen',
     description: 'Darstellung, Sync und Benachrichtigungen',
     path: '/settings',
     accent: 'bg-surface-soft text-text-muted',
     imageHint: 'Settings',
-    group: 'einstellungen',
+    group: 'app',
   },
   {
     key: 'pair',
@@ -106,7 +124,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     path: '/settings/pair',
     accent: 'bg-surface-soft text-text',
     imageHint: 'Paar',
-    group: 'einstellungen',
+    group: 'app',
   },
   {
     key: 'trash',
@@ -115,7 +133,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     path: '/trash',
     accent: 'bg-surface-soft text-text-muted',
     imageHint: 'Papierkorb',
-    group: 'einstellungen',
+    group: 'app',
   },
   {
     key: 'conflicts',
@@ -124,7 +142,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     path: '/conflicts',
     accent: 'bg-surface-soft text-text-muted',
     imageHint: 'Sync',
-    group: 'einstellungen',
+    group: 'app',
   },
 ]
 
@@ -133,20 +151,19 @@ export const LEGACY_MODULE_REDIRECTS: Record<string, string> = {
   reisen: '/planen?tab=vorhaben&filter=trip',
   ziele: '/planen?tab=vorhaben&filter=goal',
   beziehung: '/erinnerungen',
-  /** Zuhause-Modul entfernt – Deep Links landen im Alltag (Einkauf) */
   zuhause: '/einkauf',
 }
 
 const GROUP_ORDER: { key: ModuleGroupKey; label: string }[] = [
+  { key: 'fuer-uns', label: 'Für uns' },
   { key: 'alltag', label: 'Alltag' },
-  { key: 'inspiration', label: 'Inspiration' },
   { key: 'finanzen', label: 'Finanzen' },
-  { key: 'einstellungen', label: 'Einstellungen' },
+  { key: 'app', label: 'App' },
 ]
 
 export function getGroupedModules(options?: { includeSystem?: boolean }): ModuleGroup[] {
   const includeSystem = options?.includeSystem ?? true
-  return GROUP_ORDER.filter((g) => includeSystem || g.key !== 'einstellungen').map((g) => ({
+  return GROUP_ORDER.filter((g) => includeSystem || g.key !== 'app').map((g) => ({
     key: g.key,
     label: g.label,
     modules: MODULE_REGISTRY.filter((m) => m.group === g.key),

@@ -180,7 +180,9 @@ export function ShoppingPage() {
       <header className="mb-5">
         <h1 className="font-serif text-3xl text-text">Einkauf</h1>
         <p className="mt-1 text-sm text-text-muted">
-          {openCount === 0 ? 'Liste ist leer' : `${openCount} offen`}
+          {openCount === 0
+            ? 'Liste ist leer'
+            : `${openCount} offene${openCount === 1 ? 'r Artikel' : ' Artikel'}`}
         </p>
       </header>
 
@@ -273,13 +275,13 @@ export function ShoppingPage() {
 
                 <button
                   type="button"
-                  className="min-h-11 min-w-11 text-text-muted"
-                  aria-label={`${item.title} löschen`}
+                  className="min-h-11 min-w-11 text-[13px] font-medium text-text-muted opacity-70"
+                  aria-label={`${item.title} entfernen`}
                   onClick={() => {
                     if (window.confirm(`„${item.title}“ entfernen?`)) removeItem.mutate(item.id)
                   }}
                 >
-                  ×
+                  Mehr
                 </button>
               </li>
             )

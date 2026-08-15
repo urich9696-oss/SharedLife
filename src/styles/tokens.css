@@ -74,8 +74,9 @@
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* ── Spacing scale: only 8 / 16 / 24 / 32 / 48 ────────── */
+  /* ── Spacing scale: 4 / 8 / 16 / 24 / 32 / 48 ─────────── */
   --space-0: 0;
+  --space-px: 0.25rem; /* 4 */
   --space-1: 0.5rem; /* 8 */
   --space-2: 0.5rem; /* 8 — alias */
   --space-3: 1rem; /* 16 — promote mid values to scale */
@@ -93,6 +94,16 @@
   --space-md: 1.5rem; /* 24 */
   --space-lg: 2rem; /* 32 */
   --space-xl: 3rem; /* 48 */
+
+  /* ── Type roles (V8) ──────────────────────────────────── */
+  --text-page-title: 2rem; /* 32 */
+  --text-section-title: 1.5rem; /* 24 */
+  --text-card-title: 1.0625rem; /* 17 */
+  --text-body: 1.0625rem; /* 17 */
+  --text-meta: 0.875rem; /* 14 */
+  --text-label: 0.8125rem; /* 13 */
+
+  --touch-min: 2.75rem; /* 44 */
 
   /* ── Mobile layout rhythm ─────────────────────────────── */
   --page-gutter: 1.25rem; /* 20 — horizontal page inset */

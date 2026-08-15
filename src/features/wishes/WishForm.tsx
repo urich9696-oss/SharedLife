@@ -19,7 +19,7 @@ const priorityOptions = [
   { value: 'low', label: 'Niedrig' },
   { value: 'normal', label: 'Normal' },
   { value: 'high', label: 'Hoch' },
-  { value: 'dream', label: 'Traum' },
+  { value: 'dream', label: 'Herzenswunsch' },
 ]
 
 const occasionOptions = [
